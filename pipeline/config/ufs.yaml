@@ -1,6 +1,8 @@
 # UFs processadas pelo pipeline. Rodar outro estado = adicionar/ativar aqui. Nenhuma mudança de código.
 # expected_municipalities: conferido contra a API de Localidades do IBGE em tempo de execução;
 # divergência derruba o pipeline (SPEC §9).
+# census2022_population: total oficial da UF no Censo 2022 (IBGE, Panorama/SIDRA). A soma municipal tem de bater
+# com tolerância zero. Conferido: soma da tabela SIDRA 9514 (via espelho) = valor abaixo.
 default_uf: BA
 ufs:
   BA:
@@ -8,6 +10,7 @@ ufs:
     name: Bahia
     region: Nordeste
     expected_municipalities: 417
+    census2022_population: 14141626
     active: true
     slug: ba
   CE:
@@ -15,5 +18,6 @@ ufs:
     name: Ceará
     region: Nordeste
     expected_municipalities: 184
+    census2022_population: 8794957
     active: true
     slug: ce

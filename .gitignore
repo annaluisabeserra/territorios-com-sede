@@ -18,3 +18,4 @@ data/raw/
 .env.*
 .dev.vars
 worker/.wrangler/
+data/public/

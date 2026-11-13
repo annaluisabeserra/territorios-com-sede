@@ -47,12 +47,23 @@ def municipal_series(uf: UF) -> SourceResult:
         # Uma linha por município-ano (a tabela já é agregada por município; garantimos)
         df = df.groupby(["cod_ibge7", "year"], as_index=False).first()
         flags = {}
+        # Perdas fora de 0–100 são inconsistências de medição declaradas pelo prestador: viram ausentes.
+        if "snis_perdas_pct" in df.columns:
+            bad = (df["snis_perdas_pct"] < 0) | (df["snis_perdas_pct"] > 100)
+            flags["snis_perdas_pct_invalid_to_null"] = int(bad.sum())
+            df.loc[bad, "snis_perdas_pct"] = float("nan")
         for col in PCT_CAP & set(df.columns):
             over = df[col] > 100
             flags[f"{col}_capped"] = int(over.sum())
             df.loc[over, col] = 100.0
         years = f"{int(df['year'].min())}–{int(df['year'].max())}" if len(df) else "sem dados"
-        meta = make_meta("snis", f, years, src.note + "; valores acima de 100% limitados a 100 (ver flags)")
+        meta = make_meta(
+            "snis",
+            f,
+            years,
+            src.note
+            + "; coberturas acima de 100% limitadas a 100 e perdas fora de 0–100 tratadas como ausentes (ver flags)",
+        )
         return SourceResult(df, meta, flags)
 
     return try_chain("snis", uf, {"mirror": mirror})

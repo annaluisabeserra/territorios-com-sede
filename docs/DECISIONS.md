@@ -42,3 +42,9 @@ Formato: contexto → decisão → alternativas → consequências.
 - **Contexto:** a população quilombola por município no espelho é a soma de células idade × sexo, e células pequenas vêm vazias por sigilo.
 - **Decisão:** exibir como "pelo menos N pessoas" (flag `lower_bound`) até a tabela oficial de total (SIDRA) ser lida no GitHub Actions.
 - **Consequências:** nenhum número apresentado como exato quando não é.
+
+## ADR-007. Versionar `data/processed`, gerar `data/public` no deploy
+
+- **Contexto:** os arquivos públicos (fichas JSON, CSVs por município, GeoJSON) somam ~9,5 MB por UF e chegariam a ~250 MB com 27 estados. Os Parquet processados somam ~1,6 MB por UF.
+- **Decisão:** `data/processed/{uf}` é versionado (histórico por data no git); `data/public` é regenerado em segundos por `python -m pipeline.run --only-build` no workflow de deploy, antes do build do site.
+- **Consequências:** repositório pequeno; o deploy depende de Python (já usado no CI). Os downloads abertos continuam publicados no site.

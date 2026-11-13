@@ -31,6 +31,7 @@ class UF:
     name: str
     region: str
     expected_municipalities: int
+    census2022_population: int
     slug: str
     active: bool
 

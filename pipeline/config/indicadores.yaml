@@ -235,12 +235,14 @@ indicators:
     label: População quilombola e indígena (% da população)
     short: Pop. quilombola e indígena
     unit: pct
-    direction: neutral
+    direction: higher_is_worse
     group: contexto
     source: ibge_censo2022
-    formula: (Pessoas quilombolas + pessoas indígenas residentes) ÷ população total × 100.
+    formula: (Pessoas quilombolas + pessoas de cor ou raça indígena) ÷ população total × 100.
     limitations:
       - Primeiro Censo a contar a população quilombola. Pode haver subcontagem em localidades de difícil acesso.
+      - Quilombolas e indígenas podem se sobrepor em poucos casos (pessoa que se declara das duas formas).
+      - No índice, indica presença de povos e comunidades tradicionais, historicamente mais excluídos do saneamento.
     map: false
 
   indice_prioridade:
@@ -259,3 +261,98 @@ indicators:
       - Dados faltantes reponderam os pesos; municípios com poucas dimensões ficam sinalizados.
     map: true
     palette: sequential
+
+  snis_sem_agua_pct:
+    label: População sem atendimento de água (SNIS)
+    short: Sem água (SNIS)
+    unit: pct
+    direction: higher_is_worse
+    group: servico
+    source: snis
+    formula: 100 − IN055 do último ano disponível.
+    limitations:
+      - Usado no índice só quando o Censo não está disponível para a UF (fallback declarado em pesos_indice.yaml).
+    map: false
+
+  snis_sem_esgoto_pct:
+    label: População sem atendimento de esgoto (SNIS)
+    short: Sem esgoto (SNIS)
+    unit: pct
+    direction: higher_is_worse
+    group: servico
+    source: snis
+    formula: 100 − IN056 do último ano disponível.
+    limitations:
+      - Município sem prestador de esgoto declarado fica sem dado, embora provavelmente não tenha rede. Isso favorece esses municípios no índice; por isso o Censo tem prioridade.
+    map: false
+
+  snis_coleta_esgoto_pct:
+    label: Esgoto coletado em relação à água consumida (SNIS IN015)
+    short: Coleta de esgoto
+    unit: pct
+    direction: higher_is_better
+    group: servico
+    source: snis
+    formula: Volume de esgoto coletado ÷ (volume de água consumido − volume exportado) × 100 (IN015).
+    limitations:
+      - Autodeclarado.
+    map: false
+
+  snis_consumo_lhabdia:
+    label: Consumo médio de água por habitante (SNIS IN022)
+    short: Consumo de água
+    unit: lhabdia
+    direction: neutral
+    group: servico
+    source: snis
+    formula: Volume de água consumido (menos o exportado) ÷ população atendida, em litros por habitante por dia (IN022).
+    limitations:
+      - Autodeclarado. Não mede quem não está ligado à rede.
+    map: false
+
+  ana_coleta_tratamento_pct:
+    label: População urbana com esgoto coletado e tratado (ANA, 2013)
+    short: Esgoto coletado e tratado (ANA)
+    unit: pct
+    direction: higher_is_better
+    group: servico
+    source: ana_atlas_esgotos
+    formula: Parcela da população urbana atendida por coleta com tratamento, segundo o Atlas Esgotos (ANA).
+    limitations:
+      - Referência 2013 e só população urbana. Útil como contexto histórico.
+    map: false
+
+  pop_quilombola:
+    label: Pessoas quilombolas (Censo 2022)
+    short: Pessoas quilombolas
+    unit: count
+    direction: neutral
+    group: contexto
+    source: ibge_censo2022
+    formula: Pessoas que se declararam quilombolas no Censo 2022, residentes no município.
+    limitations:
+      - Quando a fonte é o espelho, o valor é a soma de células por idade e sexo e as células sob sigilo vêm vazias. Nesse caso é exibido como "pelo menos".
+    map: false
+
+  pop_cor_indigena:
+    label: Pessoas de cor ou raça indígena (Censo 2022)
+    short: Cor ou raça indígena
+    unit: count
+    direction: neutral
+    group: contexto
+    source: ibge_censo2022
+    formula: Pessoas que declararam cor ou raça indígena no Censo 2022.
+    limitations:
+      - É menor que o total de "pessoas indígenas" divulgado pelo IBGE, que inclui quem se considera indígena em terras indígenas mesmo declarando outra cor ou raça.
+    map: false
+
+  semiarido:
+    label: Município do Semiárido
+    short: Semiárido
+    unit: bool
+    direction: neutral
+    group: contexto
+    source: sudene_semiarido
+    formula: Município incluído na delimitação oficial do Semiárido (Sudene, 2021–2022).
+    limitations: []
+    map: false

@@ -54,8 +54,7 @@ def stage(uf: config.UF, name: str, fn: Callable[[], SourceResult], status: dict
         if res.flags:
             meta.status_reason = json.dumps(res.flags, ensure_ascii=False)
         meta.write(path)
-        status[name] = {"status": "ok", "rows": int(len(res.data)), "url_kind": res.meta.url_kind,
-                        "url": res.meta.url}
+        status[name] = {"status": "ok", "rows": int(len(res.data)), "url_kind": res.meta.url_kind, "url": res.meta.url}
         log.info("[%s] %s: ok (%d linhas, %s)", uf.sigla, name, len(res.data), res.meta.url_kind)
     except Exception as exc:  # noqa: BLE001
         reason = f"{type(exc).__name__}: {exc}"
@@ -93,9 +92,15 @@ def run_sih(uf: config.UF, status: dict) -> None:
         (processed_dir(uf) / "sih_crosswalk_report.json").write_text(
             json.dumps({**report, "missing_files": missing, "years": years}, ensure_ascii=False, indent=2)
         )
-        fake = Fetched(Path(), sih.file_url(uf.sigla, last, 12), "official", "", pd.Timestamp.utcnow().isoformat(), False)
-        meta = make_meta("datasus_sih", fake, f"{years[0]}–{years[-1]} (ano de processamento)",
-                         f"escopo de residência: {len(scope)} UFs; arquivos ausentes: {len(missing)}")
+        fake = Fetched(
+            Path(), sih.file_url(uf.sigla, last, 12), "official", "", pd.Timestamp.utcnow().isoformat(), False
+        )
+        meta = make_meta(
+            "datasus_sih",
+            fake,
+            f"{years[0]}–{years[-1]} (ano de processamento)",
+            f"escopo de residência: {len(scope)} UFs; arquivos ausentes: {len(missing)}",
+        )
         return SourceResult(agg, meta)
 
     stage(uf, "sih_drsai", fn, status)
@@ -141,9 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if not args.only_build:
                 status = ingest(uf, skip_sih=args.skip_sih)
-                (processed_dir(uf) / "_ingest_status.json").write_text(
-                    json.dumps(status, ensure_ascii=False, indent=2)
-                )
+                (processed_dir(uf) / "_ingest_status.json").write_text(json.dumps(status, ensure_ascii=False, indent=2))
             checks.run_all(uf)
             build.build_uf(uf)
         except Exception:  # noqa: BLE001
