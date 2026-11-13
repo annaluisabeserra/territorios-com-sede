@@ -1,0 +1,8 @@
+# Pedidos de retirada de informação feitos por comunidades e organizações representativas (SPEC §7.5).
+# Basta acrescentar o identificador e rodar o build: a informação some das fichas, do mapa, dos downloads e do
+# assistente na próxima publicação. Registre cada pedido (data, quem pediu, canal) no controle interno do
+# Instituto, não aqui: este arquivo é público.
+# Limite: versões antigas continuam no histórico do git e em cópias já baixadas por terceiros (dito na página).
+terras_indigenas: []           # códigos FUNAI (campo codigo_funai), ex.: ["9301"]
+unidades_conservacao: []       # id do CNUC (campo id_cnuc)
+contagens_por_municipio: []    # código IBGE de 7 dígitos: oculta as contagens de povos e comunidades do município

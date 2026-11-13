@@ -12,8 +12,10 @@ export const GET: APIRoute = async ({ params }) => {
   const f = ficha(params.uf!, params.slug!);
   const h = f.health;
   const stats = [
-    { v: fmtPct(f.ind.snis_agua_pct), l: "da população atendida com água (SNIS)" },
-    { v: fmtPct(f.ind.snis_esgoto_tratado_pct), l: "com esgoto coletado e tratado (SNIS)" },
+    { v: fmtPct(f.ind.snis_agua_pct), l: `da população atendida com água (SNIS${f.ind_ano.snis_agua_pct ? ` ${f.ind_ano.snis_agua_pct}` : ""})` },
+    f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao
+      ? { v: "sem rede", l: "nenhum prestador de esgoto declarado ao SNIS" }
+      : { v: fmtPct(f.ind.snis_esgoto_tratado_pct), l: `com esgoto coletado e tratado (SNIS${f.ind_ano.snis_esgoto_tratado_pct ? ` ${f.ind_ano.snis_esgoto_tratado_pct}` : ""})` },
     h ? { v: fmtNumber(h.internacoes), l: "internações por ano por doenças ligadas à água" }
       : { v: THERMO_LABEL[f.thermometer.esgoto.status], l: "meta de esgoto de 2033" },
   ];

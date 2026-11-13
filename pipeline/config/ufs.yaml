@@ -13,6 +13,7 @@ ufs:
     census2022_population: 14141626
     active: true
     slug: ba
+    preposicao: da
   CE:
     code: "23"
     name: Ceará
@@ -21,3 +22,4 @@ ufs:
     census2022_population: 8794957
     active: true
     slug: ce
+    preposicao: do

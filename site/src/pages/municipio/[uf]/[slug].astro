@@ -40,6 +40,11 @@ const desc = f.resumo.slice(0, 2).join(" ");
 const calcUrl = `/calculadora?uf=${uf}&m=${slug}`;
 const shareText = encodeURIComponent(`Seu território tem sede? Veja os dados de ${f.nome}: `);
 const pageUrl = `${Astro.site?.toString().replace(/\/$/, "")}/municipio/${uf}/${slug}`;
+// Fases da FUNAI em linguagem simples (o termo oficial continua visível no GeoJSON e nos downloads)
+const FASE: Record<string, string> = {
+  "Encaminhada RI": "encaminhada como reserva indígena", "Em Estudo": "em estudo", "Delimitada": "delimitada",
+  "Declarada": "declarada", "Homologada": "homologada", "Regularizada": "regularizada",
+};
 const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.index.dimensions).map(([k, v]) => [k, v.label]));
 ---
 <Base title={title} description={desc} ogImage={`/og/${uf}/${slug}.png`}
@@ -160,6 +165,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <div class="grid grid-2">
         <div class="card">
           <h3>Povos e comunidades no Censo 2022</h3>
+          {c.retirado_a_pedido && <p class="tag">Informações retiradas a pedido da comunidade</p>}
           <dl class="kv">
             <dt>Pessoas quilombolas</dt>
             <dd>{c.pop_quilombola === null ? <span class="nodata">sem dado</span> : c.pop_quilombola_lower_bound ? <>pelo menos <strong>{fmtNumber(c.pop_quilombola)}</strong></> : <strong>{fmtNumber(c.pop_quilombola)}</strong>}</dd>
@@ -177,7 +183,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
         <div class="card">
           <h3>Terras indígenas</h3>
           {c.terras_indigenas.length ? (
-            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>Terra Indígena {t.nome}</strong>{t.ufs && t.ufs !== f.uf && <span class="small"> ({t.ufs})</span>}<br /><span class="small">Situação oficial: <strong>{t.fase ?? "não informada"}</strong>{t.fase && ["Em Estudo", "Delimitada", "Declarada"].includes(t.fase) && " (demarcação em andamento; pode ser revisão dos limites de outra terra da lista)"}{t.modalidade && ` · ${t.modalidade}`}. {t.etnia && `Povos: ${t.etnia}.`}{t.data_ref && ` Dados de ${t.data_ref.slice(6, 8)}/${t.data_ref.slice(4, 6)}/${t.data_ref.slice(0, 4)}.`}</span></li>)}</ul>
+            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>{t.modalidade === "Reserva Indígena" ? "Reserva Indígena" : "Terra Indígena"} {t.nome}</strong>{t.ufs && t.ufs !== f.uf && <span class="small"> ({t.ufs})</span>}<br /><span class="small">Situação oficial: <strong>{FASE[t.fase ?? ""] ?? t.fase ?? "não informada"}</strong>{t.fase && ["Em Estudo", "Delimitada", "Declarada"].includes(t.fase) && " (demarcação em andamento; pode ser revisão dos limites de outra terra da lista)"}{t.modalidade && t.modalidade !== "Reserva Indígena" && ` · ${t.modalidade}`}. {t.etnia && `Povos: ${t.etnia}.`}{t.data_ref && ` Dados de ${t.data_ref.slice(6, 8)}/${t.data_ref.slice(4, 6)}/${t.data_ref.slice(0, 4)}.`}</span></li>)}</ul>
           ) : <p class="muted">Nenhuma terra indígena com área relevante dentro do município, segundo a FUNAI.</p>}
           {c.ucs_uso_sustentavel && c.ucs_uso_sustentavel.length > 0 && (
             <>

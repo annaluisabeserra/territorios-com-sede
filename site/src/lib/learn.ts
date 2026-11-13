@@ -11,8 +11,10 @@ export function track(type: LearnEvent, data: Record<string, string | number>): 
   if (!endpoint || typeof navigator === "undefined") return;
   try {
     const body = JSON.stringify({ type, data, path: location.pathname });
-    if (navigator.sendBeacon) navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
-    else fetch(endpoint, { method: "POST", body, keepalive: true, headers: { "Content-Type": "application/json" } });
+    // text/plain: tipo "simples", sem preflight de CORS (o Worker lê o corpo como texto e faz o parse)
+    if (!navigator.sendBeacon?.(endpoint, new Blob([body], { type: "text/plain" }))) {
+      fetch(endpoint, { method: "POST", body, keepalive: true, headers: { "Content-Type": "text/plain" } });
+    }
   } catch {
     /* aprendizado é opcional: nunca quebrar a página */
   }

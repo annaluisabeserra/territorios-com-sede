@@ -5,7 +5,7 @@
  *   POST /assistant  assistente de dados, só se ASSISTANT_ENABLED = "true"
  */
 import { answer } from "./assistant";
-import { cleanKey, month } from "./privacy";
+import { cleanKey, K_ANONYMITY, month } from "./privacy";
 
 export interface Env {
   DB: D1Database;
@@ -13,7 +13,21 @@ export interface Env {
   REPORT_TOKEN?: string;
   ASSISTANT_ENABLED?: string;
   ASSISTANT_MODEL?: string;
+  ASSISTANT_DAILY_LIMIT?: string;
   ANTHROPIC_API_KEY?: string;
+}
+
+/** Teto rígido de uso do assistente (custo): global por dia e por minuto, sem registrar quem perguntou. */
+async function allowAssistant(env: Env): Promise<boolean> {
+  const now = new Date();
+  const day = `d:${now.toISOString().slice(0, 10)}`;
+  const minute = `m:${now.toISOString().slice(0, 16)}`;
+  const daily = Number(env.ASSISTANT_DAILY_LIMIT ?? "200");
+  const row = await env.DB.prepare(
+    "INSERT INTO uso_assistente (janela, total) VALUES (?1, 1), (?2, 1) ON CONFLICT(janela) DO UPDATE SET total = total + 1 RETURNING janela, total",
+  ).bind(day, minute).all<{ janela: string; total: number }>();
+  const get = (k: string) => row.results.find((r) => r.janela === k)?.total ?? 0;
+  return get(day) <= daily && get(minute) <= 10;
 }
 
 const cors = (env: Env) => ({
@@ -45,12 +59,21 @@ export default {
       if (!env.REPORT_TOKEN || req.headers.get("Authorization") !== `Bearer ${env.REPORT_TOKEN}`) return new Response("não autorizado", { status: 401 });
       const d = new Date(); d.setUTCMonth(d.getUTCMonth() - 1);
       const mes = url.searchParams.get("mes") ?? month(d);
-      const { results } = await env.DB.prepare("SELECT tipo, chave, total FROM eventos WHERE mes = ?1 ORDER BY total DESC LIMIT 300").bind(mes).all();
+      // Só termos com pelo menos K ocorrências (nunca buscas únicas) e no máximo 100 por tipo.
+      const { results } = await env.DB.prepare(
+        `SELECT tipo, chave, total FROM (
+           SELECT tipo, chave, total, ROW_NUMBER() OVER (PARTITION BY tipo ORDER BY total DESC) AS pos
+           FROM eventos WHERE mes = ?1 AND total >= ?2
+         ) WHERE pos <= 100 ORDER BY tipo, total DESC`,
+      ).bind(mes, K_ANONYMITY).all();
       return Response.json({ mes, eventos: results });
     }
 
     if (url.pathname === "/assistant" && req.method === "POST") {
       if (env.ASSISTANT_ENABLED !== "true" || !env.ANTHROPIC_API_KEY) return Response.json({ enabled: false }, { status: 503, headers: cors(env) });
+      if (!(await allowAssistant(env))) {
+        return Response.json({ text: "O assistente atingiu o limite de uso por agora. Tente mais tarde." }, { status: 429, headers: cors(env) });
+      }
       const { pergunta } = (await req.json().catch(() => ({}))) as { pergunta?: string };
       if (!pergunta || pergunta.length < 3) return Response.json({ erro: "pergunta vazia" }, { status: 400, headers: cors(env) });
       try {

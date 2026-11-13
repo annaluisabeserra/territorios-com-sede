@@ -453,8 +453,8 @@ def ucs_by_municipality(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoData
         t[["uc_id", "uc_area", "geometry"]], m[["cod_ibge7", "geometry"]], how="intersection", keep_geom_type=True
     )
     inter["a"] = inter.geometry.area
-    m_area = m.set_index("cod_ibge7").geometry.area
-    inter = inter[(inter["a"] >= 0.01 * inter["uc_area"]) | (inter["a"] >= 0.005 * inter["cod_ibge7"].map(m_area))]
+    # UCs (inclusive marinhas, quase toda área no mar): basta 1 km² de interseção com o município (revisão M6)
+    inter = inter[(inter["a"] >= 1e6) | (inter["a"] >= 0.01 * inter["uc_area"])]
     out: dict[str, list[dict]] = {}
     for _, r in inter.iterrows():
         uc = t.loc[r["uc_id"]]
@@ -471,6 +471,40 @@ def ucs_by_municipality(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoData
         ["id_cnuc", "nome", "categoria", "esfera", "ano_criacao", "geometry"]
     ]
     return out, keep
+
+
+COMMUNITY_COLS = [
+    "pop_quilombola",
+    "pop_quilombola_em_territorio",
+    "pop_cor_indigena",
+    "pop_indigena",
+    "pct_pop_quilombola_indigena",
+    "quilombola_pct_celulas_sigilo",
+]
+
+
+def apply_withdrawals(tab: pd.DataFrame, tis_mun: dict, tis_geo, ucs_mun: dict, ucs_geo, cfg: dict):
+    """Aplica os pedidos de retirada (retiradas.yaml) a todas as saídas. Devolve as estruturas filtradas."""
+    ti_out = {str(c) for c in cfg.get("terras_indigenas") or []}
+    uc_out = {str(c) for c in cfg.get("unidades_conservacao") or []}
+    mun_out = {str(c) for c in cfg.get("contagens_por_municipio") or []}
+    if ti_out:
+        tis_mun = {k: [t for t in v if str(t.get("codigo_funai")) not in ti_out] for k, v in tis_mun.items()}
+        if tis_geo is not None and "codigo_funai" in tis_geo:
+            tis_geo = tis_geo[~tis_geo["codigo_funai"].astype(str).isin(ti_out)]
+    if uc_out:
+        ucs_mun = {k: [u for u in v if str(u.get("id_cnuc")) not in uc_out] for k, v in ucs_mun.items()}
+        if ucs_geo is not None:
+            ucs_geo = ucs_geo[~ucs_geo["id_cnuc"].astype(str).isin(uc_out)]
+    if mun_out:
+        idx = tab.index.isin(mun_out)
+        for c in COMMUNITY_COLS:
+            if c in tab:
+                tab.loc[idx, c] = float("nan")
+        for c in mun_out:
+            tis_mun.pop(c, None)
+            ucs_mun.pop(c, None)
+    return tab, tis_mun, tis_geo, ucs_mun, ucs_geo, mun_out
 
 
 def neighbors(inp: Inputs) -> dict[str, list[str]]:
@@ -538,6 +572,9 @@ def build_uf(uf: config.UF) -> None:
     nbrs = neighbors(inp)
     com_by_mun, tis_geo = communities(inp)
     ucs_mun, ucs_geo = ucs_by_municipality(inp)
+    tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, withdrawn = apply_withdrawals(
+        tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, config.load("retiradas")
+    )
     br = national_medians()
     indicators_cfg = config.load("indicadores")["indicators"]
     calc_cfg = config.load("calculadora")
@@ -621,7 +658,14 @@ def build_uf(uf: config.UF) -> None:
 
     generated = datetime.now(UTC).isoformat(timespec="seconds")
     resumo = {
-        "uf": {"sigla": uf.sigla, "nome": uf.name, "code": uf.code, "slug": uf.slug, "region": uf.region},
+        "uf": {
+            "sigla": uf.sigla,
+            "nome": uf.name,
+            "code": uf.code,
+            "slug": uf.slug,
+            "region": uf.region,
+            "preposicao": uf.preposicao,
+        },
         "generated_at": generated,
         "pipeline_version": config.PIPELINE_VERSION,
         "sources": status,
@@ -725,6 +769,7 @@ def build_uf(uf: config.UF) -> None:
             "slug": row["slug"],
             "uf": uf.sigla,
             "uf_nome": uf.name,
+            "uf_preposicao": uf.preposicao,
             "regiao_imediata": row["regiao_imediata"],
             "regiao_intermediaria": row["regiao_intermediaria"],
             "semiarido": row["semiarido"],
@@ -759,6 +804,7 @@ def build_uf(uf: config.UF) -> None:
                 "pop_quilombola_lower_bound": ctx["flags"].get("pop_quilombola_lower_bound", False),
                 "pop_cor_indigena": ind.get("pop_cor_indigena"),
                 "pop_indigena": ind.get("pop_indigena"),
+                "retirado_a_pedido": code in withdrawn,
                 "quilombola_pct_celulas_sigilo": row.get("quilombola_pct_celulas_sigilo"),
                 "fonte_censo": "IBGE, Censo Demográfico 2022 (data de referência 01/08/2022)",
                 "fonte_tis": "FUNAI, terras indígenas (polígonos oficiais); limites simplificados para a web",

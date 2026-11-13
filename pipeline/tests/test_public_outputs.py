@@ -95,3 +95,20 @@ def test_national_index_keeps_all_active_ufs_after_single_uf_run():
     idx = json.loads((config.PUBLIC_DIR / "index.json").read_text())
     expected = {u.sigla for u in config.ufs() if (config.PUBLIC_DIR / u.slug / "resumo.json").exists()}
     assert {u["sigla"] for u in idx["ufs"]} == expected
+
+
+def test_withdrawals_remove_information_everywhere():
+    import geopandas as gpd
+    import pandas as pd
+    from shapely.geometry import Point
+
+    tab = pd.DataFrame({"pop_quilombola": [10.0, 20.0], "pop_cor_indigena": [5.0, 6.0]}, index=["2900108", "2900207"])
+    tis_mun = {"2900108": [{"codigo_funai": "9301", "nome": "A"}, {"codigo_funai": "1", "nome": "B"}]}
+    tis_geo = gpd.GeoDataFrame({"codigo_funai": ["9301", "1"]}, geometry=[Point(0, 0).buffer(1), Point(5, 5).buffer(1)])
+    ucs_mun = {"2900207": [{"id_cnuc": "0001", "nome": "R"}]}
+    ucs_geo = gpd.GeoDataFrame({"id_cnuc": ["0001"]}, geometry=[Point(9, 9).buffer(1)])
+    cfg = {"terras_indigenas": ["9301"], "unidades_conservacao": ["0001"], "contagens_por_municipio": ["2900207"]}
+    tab, tm, tg, um, ug, out = build.apply_withdrawals(tab, tis_mun, tis_geo, ucs_mun, ucs_geo, cfg)
+    assert [t["nome"] for t in tm["2900108"]] == ["B"] and list(tg["codigo_funai"]) == ["1"]
+    assert ug.empty and "2900207" not in um
+    assert pd.isna(tab.loc["2900207", "pop_quilombola"]) and tab.loc["2900108", "pop_quilombola"] == 10.0

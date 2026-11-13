@@ -8,7 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 SITE_ORIGIN = "https://territorios.institutosdw.org"
 ASSISTANT_ENABLED = "false"           # assistente desligado por padrão
-ASSISTANT_MODEL = "claude-opus-5-5"   # modelo padrão; troque por outro (ex.: claude-haiku-5-5) para reduzir custo
+ASSISTANT_MODEL = "claude-opus-5-5"   # modelo padrão; a escolha de um modelo mais barato (ex.: claude-haiku-5-5) é da equipe
+ASSISTANT_DAILY_LIMIT = "200"         # teto rígido de perguntas por dia (e 10 por minuto), para limitar custo
 
 [[d1_databases]]
 binding = "DB"

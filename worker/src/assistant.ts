@@ -79,10 +79,10 @@ async function runTool(env: AssistantEnv, name: string, input: any): Promise<str
 export async function answer(env: AssistantEnv, question: string): Promise<{ text: string; refused?: boolean }> {
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: question.slice(0, 1000) }];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     const response = await client.beta.messages.create({
       model: env.ASSISTANT_MODEL || "claude-opus-5-5",
-      max_tokens: 16000,
+      max_tokens: 2048, // respostas curtas; limita o custo por pergunta
       system: SYSTEM,
       tools: TOOLS,
       output_config: { effort: "low" },

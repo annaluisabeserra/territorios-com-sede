@@ -12,7 +12,7 @@ summary: "Os estudantes relacionam a falta de esgoto tratado com doenças e calc
 - Entender a diferença entre esgoto coletado e esgoto tratado.
 - Usar uma calculadora com premissas e interpretar uma estimativa (não uma previsão).
 
-**Habilidades da BNCC relacionadas:** EF07CI09, EF07CI10 (Ciências: saúde e saneamento); EM13CNT207 (Ciências da Natureza); EM13MAT104 (Matemática: taxas e índices).
+**Habilidades da BNCC relacionadas:** EF07CI09 (Ciências: indicadores de saúde e saneamento); EM13CNT310 (Ciências da Natureza: saneamento e serviços básicos na saúde); EM13MAT104 (Matemática: taxas e índices).
 
 ## Passo a passo
 

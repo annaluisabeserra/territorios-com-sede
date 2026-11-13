@@ -34,6 +34,7 @@ class UF:
     census2022_population: int
     slug: str
     active: bool
+    preposicao: str = "de"  # "da Bahia", "do Ceará": usado em textos
 
 
 def ufs(active_only: bool = True) -> list[UF]:

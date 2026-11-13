@@ -4,4 +4,8 @@ order: 23
 category: "Sobre a plataforma"
 ---
 
-Não. Não usamos cookies nem identificamos visitantes. Se o módulo de aprendizado estiver ligado, ele registra apenas, de forma anônima e agregada, buscas que não deram resultado e cenários usados na calculadora, para melhorar a plataforma. Nenhum endereço IP é guardado.
+Não usamos cookies nem identificamos visitantes. Se o módulo de aprendizado estiver ligado, ele conta, de forma anônima e agregada por mês, buscas que não deram resultado, perguntas guiadas montadas e cenários usados na calculadora. Números longos (como CPF, telefone ou CEP) são mascarados, nenhum endereço IP é guardado e só termos repetidos por várias pessoas aparecem nos relatórios.
+
+**Não digite dados pessoais** (nome, CPF, telefone, endereço) na busca ou no assistente.
+
+Se o assistente de IA estiver ligado, o texto da sua pergunta é enviado à Anthropic, empresa nos Estados Unidos que fornece o modelo de linguagem, apenas para gerar a resposta. Por isso, use o assistente só para perguntas sobre os dados da plataforma.

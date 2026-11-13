@@ -7,6 +7,7 @@ import Base from "../layouts/Base.astro";
     <form role="search" id="f" action="/busca" method="get">
       <label for="q">Município, comunidade, indicador ou pergunta</label>
       <div class="row"><input id="q" name="q" type="search" autocomplete="off" autofocus /><button class="btn" type="submit">Buscar</button></div>
+      <p class="xsmall muted">Não digite dados pessoais (nome, CPF, telefone). <a href="/faq#privacidade">Privacidade</a></p>
       <p class="xsmall muted" id="cep" hidden>Busca por CEP ainda não disponível: não encontramos uma base aberta e estável que relacione CEP a município sem chave de acesso. Digite o nome do município.</p>
     </form>
     <p id="status" class="small" role="status" aria-live="polite"></p>

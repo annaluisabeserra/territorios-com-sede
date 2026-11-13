@@ -21,20 +21,20 @@ const ritmo: Record<string, string> = { atingida: "já chegou lá", no_ritmo: "e
     <div class="top">
       <div>
         <h1>A água e o esgoto em {f.nome}</h1>
-        <p class="lead">{f.nome} fica no estado {f.uf === "BA" ? "da" : "do"} {f.uf_nome} e tem <strong>{fmtNumber(f.ind.populacao)} moradores</strong> (Censo 2022).</p>
+        <p class="lead">{f.nome} fica no estado {(f as any).uf_preposicao ?? "de"} {f.uf_nome} e tem <strong>{fmtNumber(f.ind.populacao)} moradores</strong> (Censo 2022).</p>
       </div>
       <div class="loc"><Locator uf={uf} cod={f.cod} nome={f.nome} /></div>
     </div>
     <section class="box">
       <h2><span aria-hidden="true">💧</span> Água</h2>
       {agua !== null ? (
-        <p>A companhia de água diz que atende <strong>{fmtPct(agua)}</strong> da população.{semAgua !== null && semAgua > 1 && <> Isso quer dizer que {frac ? <strong>{frac} moradores</strong> : <strong>{fmtPct(semAgua)} dos moradores</strong>} não recebem água da rede e dependem de poço, cisterna, carro-pipa ou rio.</>}</p>
+        <p>A companhia de água diz que atende <strong>{fmtPct(agua)}</strong> da população (dado de {f.ind_ano.snis_agua_pct}).{semAgua !== null && semAgua > 1 && <> Isso quer dizer que {frac ? <strong>{frac} moradores</strong> : <strong>{fmtPct(semAgua)} dos moradores</strong>} não recebem água da rede e dependem de poço, cisterna, carro-pipa ou rio.</>}</p>
       ) : <p>Não há dado recente sobre o atendimento de água em {f.nome}. Isso também é uma informação: por que será que ninguém informou?</p>}
     </section>
     <section class="box">
       <h2><span aria-hidden="true">🚽</span> Esgoto</h2>
       {esg !== null ? (
-        <p>A rede de esgoto chega a <strong>{fmtPct(esg)}</strong> da população.{trat !== null && <> Mas coletar não é tratar: só <strong>{fmtPct(trat)}</strong> da população tem o esgoto coletado <em>e</em> tratado. O resto vai para rios, valas ou fossas.</>}</p>
+        <p>A rede de esgoto chega a <strong>{fmtPct(esg)}</strong> da população (dado de {f.ind_ano.snis_esgoto_pct}).{trat !== null && <> Mas coletar não é tratar: só <strong>{fmtPct(trat)}</strong> da população tem o esgoto coletado <em>e</em> tratado. O resto vai para fossas (algumas adequadas, outras não), valas ou rios.</>}</p>
       ) : f.esgoto_sem_declaracao ? <p>Nenhuma empresa informou ter rede de esgoto em {f.nome}. Em geral, isso significa que as casas usam fossas ou que o esgoto corre a céu aberto.</p> : <p>Não há dado recente sobre o esgoto em {f.nome}.</p>}
     </section>
     <section class="box">
@@ -54,7 +54,7 @@ const ritmo: Record<string, string> = { atingida: "já chegou lá", no_ritmo: "e
         <li>O que você e sua turma poderiam fazer para cuidar da água no seu bairro?</li>
       </ol>
     </section>
-    <p class="source">Fontes: IBGE (Censo 2022) e SNIS (Ministério das Cidades), dados de {f.ind_ano.snis_agua_pct ?? "anos recentes"}. Plataforma Territórios com Sede, do Instituto SDW. Mais dados em territorios.institutosdw.org/municipio/{uf}/{slug}</p>
+    <p class="source">Fontes: IBGE (Censo 2022) e SNIS (Ministério das Cidades), com o ano de cada dado indicado ao lado do número. Plataforma Territórios com Sede, do Instituto SDW. Mais dados em territorios.institutosdw.org/municipio/{uf}/{slug}</p>
     <p class="no-print"><button class="btn" onclick="window.print()">Imprimir esta página</button> <a class="btn secondary" href={`/municipio/${uf}/${slug}`}>Ver a ficha completa</a></p>
   </article>
 </Base>

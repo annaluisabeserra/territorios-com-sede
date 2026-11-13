@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
   <title>Editar conteúdo · Territórios com Sede</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://unpkg.com 'unsafe-eval'; object-src 'none'; base-uri 'self'" />
 </head>
 <body>
   <!-- Decap CMS (software livre). Edita FAQ e roteiros da escola direto no repositório (ver HANDOFF.md). -->
-  <script src="https://unpkg.com/decap-cms@3.17.1/dist/decap-cms.js"></script>
+  <!-- Integridade conferida contra o pacote do npm (decap-cms@3.17.1): se o arquivo mudar, o navegador recusa. -->
+  <script src="https://unpkg.com/decap-cms@3.17.1/dist/decap-cms.js" integrity="sha384-d2pbrhjc5asvSK35gKkrgRIk0Wq+2CQynWnXtSsYWQawXCgBXhcAK737jBAKXT4T" crossorigin="anonymous"></script>
 </body>
 </html>

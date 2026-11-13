@@ -15,6 +15,13 @@ from pipeline.sources.catalog import SourceResult, fetch_one, make_meta, spec, t
 from pipeline.sources.http import SourceURL
 
 
+def fix_prepositions(name: str) -> str:
+    """O espelho capitaliza preposições ("Reserva Extrativista Da Baia De Iguapé"). Só a caixa é corrigida."""
+    import re
+
+    return re.sub(r"(?<=\s)(Da|De|Do|Das|Dos|E)(?=\s)", lambda m: m.group(1).lower(), str(name))
+
+
 def uso_sustentavel(uf: UF, uf_shape: gpd.GeoDataFrame) -> SourceResult:
     cats = set(spec("ucs_uso_sustentavel")["categories"])
 
@@ -43,6 +50,7 @@ def uso_sustentavel(uf: UF, uf_shape: gpd.GeoDataFrame) -> SourceResult:
         shape = uf_shape.to_crs(4326).union_all()
         g = g[g.intersects(shape)].reset_index(drop=True)
         g["ano_criacao"] = g["ano_criacao"].astype("Int64").astype(str).replace("<NA>", None)
+        g["nome"] = g["nome"].map(fix_prepositions)
         return SourceResult(g, make_meta("ucs_uso_sustentavel", f, "cadastro vigente na data do espelho", src.note))
 
     return try_chain("ucs_uso_sustentavel", uf, {"mirror": mirror})

@@ -5,7 +5,7 @@ const by = (t) => r.eventos.filter((e) => e.tipo === t).slice(0, 25);
 const table = (rows) => rows.length ? ["| Ocorrências | Detalhe |", "|---:|---|", ...rows.map((e) => `| ${e.total} | \`${e.chave}\` |`)].join("\n") : "_Nenhum registro._";
 console.log(`# Relatório de aprendizado: ${r.mes}
 
-Dados anônimos e agregados. **Nada aqui é publicado automaticamente**: marque o que deve virar mudança e abra um PR.
+Dados anônimos e agregados: só aparecem termos registrados 5 vezes ou mais no mês, e números de 3 dígitos ou mais são mascarados (#). **Nada aqui é publicado no site automaticamente**: marque o que deve virar mudança e abra um PR. Se algum termo parecer dado pessoal, apague-o desta Issue.
 
 ## Buscas sem resultado (termos que a busca deveria entender)
 ${table(by("search_no_result"))}

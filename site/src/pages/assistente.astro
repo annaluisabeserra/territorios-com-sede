@@ -12,6 +12,7 @@ const enabled = import.meta.env.PUBLIC_ASSISTANT_ENABLED === "true";
         <form id="chat" class="card">
           <label for="q">Sua pergunta</label>
           <textarea id="q" rows="3" maxlength="1000" placeholder="Ex.: Como está o esgoto em Juazeiro?"></textarea>
+          <p class="xsmall muted">Não digite dados pessoais. A pergunta é enviada à Anthropic (EUA) só para gerar a resposta. <a href="/faq#privacidade">Saiba mais</a></p>
           <button class="btn" type="submit">Perguntar</button>
         </form>
         <div id="log" aria-live="polite"></div>

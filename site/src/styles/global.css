@@ -60,4 +60,5 @@ details > summary { cursor: pointer; font-weight: 700; }
   body { background: white; font-size: 11pt; }
   .card { box-shadow: none; break-inside: avoid; }
   a { color: inherit; }
+  .roteiro a[href^="/"]::after, .aluno a[href^="/"]::after { content: " (territorios.institutosdw.org" attr(href) ")"; font-size: 0.85em; }
 }

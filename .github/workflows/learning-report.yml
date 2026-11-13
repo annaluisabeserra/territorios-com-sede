@@ -11,6 +11,7 @@ permissions:
 jobs:
   report:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ vars.LEARNING_REPORT_URL != '' }}
     steps:
       - uses: actions/checkout@v4
@@ -25,4 +26,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node worker/scripts/report-to-markdown.mjs report.json > report.md
-          gh issue create --title "Relatório mensal de aprendizado ($(date -u +%Y-%m))" --body-file report.md --label aprendizado || gh issue create --title "Relatório mensal de aprendizado ($(date -u +%Y-%m))" --body-file report.md
+          MES=$(jq -r .mes report.json)
+          gh issue create --title "Relatório mensal de aprendizado ($MES)" --body-file report.md --label aprendizado || gh issue create --title "Relatório mensal de aprendizado ($MES)" --body-file report.md
