@@ -1,0 +1,64 @@
+---
+// Série histórica em SVG com linha da meta e tabela alternativa (acessível sem JavaScript).
+import { fmtPct } from "../lib/format";
+
+interface Props {
+  series: { label: string; points: [number, number][]; color: string; dashed?: boolean }[];
+  target?: { value: number; label: string };
+  title: string;
+  unit?: "pct";
+  source: string;
+}
+const { series, target, title, source } = Astro.props;
+const all = series.flatMap((s) => s.points);
+const W = 640, H = 240, P = { l: 44, r: 16, t: 16, b: 32 };
+const years = all.map((p) => p[0]);
+const x0 = Math.min(...years, 2033 - 12), x1 = 2033;
+const yMax = 100, yMin = 0;
+const sx = (x: number) => P.l + ((x - x0) / (x1 - x0)) * (W - P.l - P.r);
+const sy = (y: number) => P.t + (1 - (y - yMin) / (yMax - yMin)) * (H - P.t - P.b);
+const ticks = [0, 25, 50, 75, 100];
+const xticks = [] as number[];
+for (let y = Math.ceil(x0 / 5) * 5; y <= x1; y += 5) xticks.push(y);
+if (!xticks.includes(2033)) xticks.push(2033);
+const has = all.length > 0;
+const tableYears = [...new Set(years)].sort();
+---
+<figure class="lc">
+  <figcaption>{title}</figcaption>
+  {has ? (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}. Dados na tabela a seguir.`}>
+      {ticks.map((t) => (<g><line x1={P.l} x2={W - P.r} y1={sy(t)} y2={sy(t)} stroke="#e6dfd2" /><text x={P.l - 6} y={sy(t) + 4} text-anchor="end" class="ax">{t}%</text></g>))}
+      {xticks.map((t) => (<text x={sx(t)} y={H - 10} text-anchor="middle" class="ax">{t}</text>))}
+      {target && (<g><line x1={P.l} x2={W - P.r} y1={sy(target.value)} y2={sy(target.value)} stroke="#a3401a" stroke-dasharray="6 4" stroke-width="1.5" /><text x={W - P.r} y={sy(target.value) - 6} text-anchor="end" class="tg">{target.label}</text></g>)}
+      {series.map((s) => s.points.length > 0 && (
+        <g>
+          <polyline fill="none" stroke={s.color} stroke-width="3" stroke-dasharray={s.dashed ? "5 4" : undefined} points={s.points.map(([x, y]) => `${sx(x)},${sy(y)}`).join(" ")} />
+          {s.points.map(([x, y]) => <circle cx={sx(x)} cy={sy(y)} r="3.5" fill={s.color} />)}
+        </g>
+      ))}
+    </svg>
+  ) : <p class="nodata">Sem série histórica disponível.</p>}
+  <div class="legend small">
+    {series.map((s) => <span><i style={`background:${s.color}`}></i>{s.label}</span>)}
+  </div>
+  {has && (
+    <details class="small">
+      <summary>Ver os dados em tabela</summary>
+      <div class="table-scroll"><table>
+        <thead><tr><th scope="col">Ano</th>{series.map((s) => <th scope="col" class="num">{s.label}</th>)}</tr></thead>
+        <tbody>{tableYears.map((y) => (<tr><th scope="row">{y}</th>{series.map((s) => { const p = s.points.find((q) => q[0] === y); return <td class="num">{p ? fmtPct(p[1]) : "sem dado"}</td>; })}</tr>))}</tbody>
+      </table></div>
+    </details>
+  )}
+  <p class="source">Fonte: {source}</p>
+</figure>
+<style>
+  .lc { margin: 0; }
+  figcaption { font-weight: 700; margin-bottom: var(--s-2); }
+  svg { width: 100%; height: auto; display: block; }
+  .ax { font-size: 12px; fill: var(--c-ink-muted); font-family: var(--font-body); }
+  .tg { font-size: 12px; fill: var(--c-alert); font-weight: 700; font-family: var(--font-body); }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-2) 0; }
+  .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+</style>

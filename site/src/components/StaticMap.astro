@@ -1,0 +1,34 @@
+---
+// Mapa coroplético estático (SVG). Decorativo para leitores de tela: a informação está na tabela/legenda ao lado.
+import { shapes } from "../lib/svgmap";
+import { classOf, NODATA, quantileBreaks } from "../lib/indicators";
+import type { Num } from "../lib/types";
+
+interface Props {
+  uf: string;
+  values: Record<string, Num>;
+  palette: string[];
+  highlight?: string;
+  categorical?: Record<string, string>; // cod → cor (substitui a escala)
+  label: string;
+  class?: string;
+}
+const { uf, values, palette, highlight, categorical, label } = Astro.props;
+const { paths, viewBox } = shapes(uf);
+const breaks = quantileBreaks(Object.values(values), palette.length);
+const fill = (cod: string) => {
+  if (categorical) return categorical[cod] ?? NODATA;
+  const c = classOf(values[cod] ?? null, breaks);
+  return c === null ? NODATA : palette[Math.min(c, palette.length - 1)];
+};
+const hl = paths.find((p) => p.cod === highlight);
+---
+<svg viewBox={viewBox} class:list={["smap", Astro.props.class]} role="img" aria-label={label} preserveAspectRatio="xMidYMid meet">
+  <g stroke="#fff" stroke-width="0.6" stroke-linejoin="round">
+    {paths.map((p) => <path d={p.d} fill={fill(p.cod)} />)}
+  </g>
+  {hl && <path d={hl.d} fill="none" stroke="#13212c" stroke-width="3" />}
+</svg>
+<style>
+  .smap { display: block; width: 100%; height: auto; }
+</style>

@@ -1,0 +1,22 @@
+---
+import { shapes } from "../lib/svgmap";
+interface Props { uf: string; cod: string; nome: string }
+const { uf, cod, nome } = Astro.props;
+const { paths, viewBox } = shapes(uf);
+const p = paths.find((x) => x.cod === cod);
+// Centro aproximado (caixa envolvente) para um anel de destaque: municípios pequenos somem no mapa.
+let cx = 0, cy = 0;
+if (p) {
+  const nums = p.d.replace(/[MLZ]/g, " ").trim().split(/\s+/).map(Number);
+  const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+  cx = (Math.min(...xs) + Math.max(...xs)) / 2; cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+}
+---
+<div class="loc">
+  <img src={`/mapa-base/${uf}.svg`} alt="" width="320" height="320" loading="lazy" decoding="async" />
+  <svg viewBox={viewBox} role="img" aria-label={`Localização de ${nome} no estado`}>{p && <><path d={p.d} fill="#0e5c7d" stroke="#13212c" stroke-width="2" /><circle cx={cx} cy={cy} r="28" fill="none" stroke="#a3401a" stroke-width="5" /></>}</svg>
+</div>
+<style>
+  .loc { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; }
+  .loc img, .loc svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+</style>

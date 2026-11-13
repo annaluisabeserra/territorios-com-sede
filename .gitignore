@@ -19,3 +19,4 @@ data/raw/
 .dev.vars
 worker/.wrangler/
 data/public/
+public/data/

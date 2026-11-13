@@ -31,6 +31,15 @@ from pipeline.transform.cid import core_groups
 log = logging.getLogger(__name__)
 SNIS_SERIES = ["snis_agua_pct", "snis_esgoto_pct", "snis_tratamento_pct", "snis_perdas_pct", "snis_coleta_esgoto_pct"]
 DIVERGENCE_PP = 15.0
+# Nome legível das etapas (quando a fonte está indisponível, o .meta.json não traz o nome)
+SOURCE_NAMES = {
+    "censo_agua": "IBGE — Censo 2022, abastecimento de água",
+    "censo_esgoto": "IBGE — Censo 2022, esgotamento sanitário",
+    "sih_drsai": "DATASUS — SIH/SUS, internações por DRSAI",
+    "censo_quilombola": "IBGE — Censo 2022, pessoas quilombolas",
+    "censo_raca": "IBGE — Censo 2022, cor ou raça",
+    "terras_indigenas": "FUNAI — Terras indígenas",
+}
 
 
 # --------------------------------------------------------------------------- utilidades
@@ -89,7 +98,7 @@ class Inputs:
             out[name] = {
                 "status": m.get("status"),
                 "status_reason": (m.get("status_reason") or "")[:300],
-                "name": src.get("name"),
+                "name": src.get("name") or SOURCE_NAMES.get(name, name),
                 "url": src.get("url"),
                 "url_kind": src.get("url_kind"),
                 "reference_period": src.get("reference_period"),

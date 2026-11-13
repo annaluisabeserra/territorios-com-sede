@@ -1,0 +1,44 @@
+---
+import { fmtPct, fmtNumber } from "../lib/format";
+import { THERMO_CLASS, THERMO_LABEL } from "../lib/indicators";
+import type { Thermometer } from "../lib/types";
+
+interface Props { t: Thermometer; title: string }
+const { t, title } = Astro.props;
+const cur = t.current ?? 0;
+const statusText: Record<string, string> = {
+  atingida: "A meta já foi alcançada.",
+  no_ritmo: t.projected_year ? `Mantido o ritmo, a meta seria alcançada por volta de ${t.projected_year}.` : "",
+  atrasado: t.projected_year ? `No ritmo atual, a meta só seria alcançada por volta de ${t.projected_year}, depois de 2033.` : "No ritmo atual, a meta não seria alcançada: o indicador está parado ou caindo.",
+  sem_dados: t.current !== null ? `Há só ${t.n_points} ano(s) de dados, o mínimo para projetar são 3.` : "O município não informou este dado ao SNIS.",
+};
+const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
+  t.projected_year_low && t.projected_year_high ? `Faixa provável: ${t.projected_year_low} a ${t.projected_year_high}.`
+  : t.projected_year_low ? `Faixa provável: a partir de ${t.projected_year_low}; no cenário pessimista, a meta não é alcançada.` : ""
+) : "";
+---
+<div class="thermo">
+  <div class="head">
+    <h3>{title}</h3>
+    <span class:list={["tag", THERMO_CLASS[t.status]]}>{THERMO_LABEL[t.status]}</span>
+  </div>
+  <div class="bar" role="img" aria-label={`${title}: ${t.current !== null ? fmtPct(t.current) : "sem dado"} hoje, meta de ${fmtNumber(t.target)}%`}>
+    <div class="fill" style={`width:${Math.min(100, cur)}%`}></div>
+    <div class="target" style={`left:${t.target}%`}><span>meta {fmtNumber(t.target)}%</span></div>
+  </div>
+  <p class="big">{t.current !== null ? fmtPct(t.current) : <span class="nodata">sem dado</span>} {t.current_year && <span class="small muted">em {t.current_year}</span>}</p>
+  {t.gap !== null && t.gap > 0 && <p class="small">Faltam <strong>{fmtNumber(t.gap, 1)} pontos percentuais</strong> até a meta.</p>}
+  <p class="small">{statusText[t.status]} {range}</p>
+  {t.slope !== null && <p class="xsmall muted">Tendência: {t.slope >= 0 ? "+" : ""}{fmtNumber(t.slope, 2)} ponto(s) por ano, calculada sobre {t.n_points} anos ({t.years[0]}–{t.years[t.years.length - 1]}). Projeção linear e indicativa.</p>}
+</div>
+<style>
+  .thermo { display: grid; gap: var(--s-2); }
+  .head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+  .head h3 { margin: 0; }
+  .bar { position: relative; height: 18px; background: var(--c-sand-100); border-radius: 999px; margin: var(--s-5) 0 var(--s-2); }
+  .fill { height: 100%; background: linear-gradient(90deg, var(--c-water-500), var(--c-water-700)); border-radius: 999px; }
+  .target { position: absolute; top: -8px; bottom: -8px; width: 3px; background: var(--c-alert); }
+  .target span { position: absolute; bottom: 100%; transform: translateX(-50%); white-space: nowrap; font-size: var(--fs-xs); font-weight: 700; color: var(--c-alert); }
+  .big { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 750; margin: 0; }
+  p { margin: 0; }
+</style>

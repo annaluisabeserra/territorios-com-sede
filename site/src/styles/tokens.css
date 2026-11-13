@@ -1,0 +1,53 @@
+/* Tokens de design — Territórios com Sede. Arquivo único de cores, tipografia e espaçamento (SPEC §8). */
+:root {
+  /* Água */
+  --c-water-950: #062a3b;
+  --c-water-900: #0a3a52;
+  --c-water-700: #0e5c7d;
+  --c-water-500: #1a85a3;
+  --c-water-300: #7cc3d4;
+  --c-water-100: #e2f1f5;
+  /* Terra e superfícies */
+  --c-sand-50: #fbf8f2;
+  --c-sand-100: #f4eee3;
+  --c-sand-300: #e3d8c4;
+  --c-ink: #13212c;
+  --c-ink-soft: #3f505e; /* contraste 8,5:1 sobre sand-50 */
+  --c-ink-muted: #5b6b78; /* 5,6:1 */
+  --c-line: #d8d0c0;
+  --c-white: #ffffff;
+  /* Estados */
+  --c-alert: #a3401a; /* terracota, 6,1:1 */
+  --c-alert-bg: #fbe9e1;
+  --c-ok: #22663f;
+  --c-ok-bg: #e3f3e8;
+  --c-warn: #7a5300;
+  --c-warn-bg: #fdf2d6;
+  --c-nodata: #c9c4ba;
+  --c-focus: #e0a100;
+
+  /* Paletas dos mapas (ColorBrewer, seguras para daltônicos), 5 classes */
+  --pal-good-1: #f0f9e8; --pal-good-2: #bae4bc; --pal-good-3: #7bccc4; --pal-good-4: #43a2ca; --pal-good-5: #0868ac;
+  --pal-bad-1: #fef0d9; --pal-bad-2: #fdcc8a; --pal-bad-3: #fc8d59; --pal-bad-4: #e34a33; --pal-bad-5: #b30000;
+
+  /* Tipografia */
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --fs-2xl: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+  --fs-3xl: clamp(2.3rem, 1.6rem + 3.4vw, 4.2rem);
+  --lh-tight: 1.15;
+  --lh-body: 1.6;
+
+  /* Espaçamento (escala de 4 px) */
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem;
+  --radius: 10px;
+  --radius-lg: 18px;
+  --shadow: 0 1px 2px rgb(19 33 44 / 8%), 0 4px 16px rgb(19 33 44 / 6%);
+  --maxw: 72rem;
+  --maxw-text: 42rem;
+}

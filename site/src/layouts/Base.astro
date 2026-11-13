@@ -1,0 +1,134 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+  jsonLd?: Record<string, unknown>;
+  wide?: boolean;
+}
+const { title, description = "Dados de água, esgoto e saúde de cada município, em linguagem simples. Ver, calcular e agir.", ogImage, canonical, jsonLd } = Astro.props;
+const site = Astro.site?.toString().replace(/\/$/, "") ?? "";
+const url = canonical ?? `${site}${Astro.url.pathname}`;
+const image = ogImage ? `${site}${ogImage}` : `${site}/og/default.png`;
+const fullTitle = title === "Territórios com Sede" ? title : `${title} · Territórios com Sede`;
+const beacon = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
+const nav = [
+  { href: "/mapa", label: "Mapa" },
+  { href: "/calculadora", label: "Calculadora" },
+  { href: "/perguntas", label: "Perguntas" },
+  { href: "/indice", label: "Prioridades" },
+  { href: "/escola", label: "Escola" },
+  { href: "/dados", label: "Dados abertos" },
+  { href: "/sobre", label: "Sobre" },
+];
+const path = Astro.url.pathname;
+---
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={url} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0a3a52" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Territórios com Sede" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site">
+      <div class="wrap bar">
+        <a href="/" class="brand" aria-label="Territórios com Sede, página inicial">
+          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2C16 2 6 13.5 6 20a10 10 0 0 0 20 0C26 13.5 16 2 16 2Z" fill="#1a85a3"/><path d="M11 21a5 5 0 0 0 5 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+          <span>Territórios <em>com Sede</em></span>
+        </a>
+        <form action="/busca" method="get" role="search" class="hsearch">
+          <label for="hq" class="visually-hidden">Buscar município, comunidade ou indicador</label>
+          <input id="hq" name="q" type="search" placeholder="Buscar município…" autocomplete="off" />
+          <button type="submit" aria-label="Buscar"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+        </form>
+        <nav aria-label="Principal" class="dnav">
+          <ul>{nav.map((n) => <li><a href={n.href} aria-current={path.startsWith(n.href) ? "page" : undefined}>{n.label}</a></li>)}</ul>
+        </nav>
+        <details class="menu">
+          <summary aria-label="Abrir menu">Menu</summary>
+          <nav aria-label="Principal (celular)">
+            <ul>
+              {nav.map((n) => (
+                <li><a href={n.href} aria-current={path.startsWith(n.href) ? "page" : undefined}>{n.label}</a></li>
+              ))}
+            </ul>
+          </nav>
+        </details>
+      </div>
+    </header>
+    <main id="conteudo" tabindex="-1">
+      <slot />
+    </main>
+    <footer class="site">
+      <div class="wrap foot">
+        <div>
+          <p class="mission">“Que ninguém adoeça por causa da água que bebe.”</p>
+          <p class="small">Uma iniciativa do <a href="https://institutosdw.org">Instituto SDW</a>. Dados públicos, metodologia aberta, código livre.</p>
+        </div>
+        <ul class="small links">
+          <li><a href="/metodologia">Metodologia</a></li>
+          <li><a href="/faq">Perguntas frequentes</a></li>
+          <li><a href="/povos-e-comunidades">Povos e comunidades tradicionais</a></li>
+          <li><a href="/dados">Dados abertos</a></li>
+          <li><a href="/sobre#corrigir">Corrigir um dado</a></li>
+        </ul>
+      </div>
+    </footer>
+    {beacon && <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: beacon })}></script>}
+  </body>
+</html>
+<style>
+  .skip { position: absolute; left: -999px; top: 0; background: var(--c-ink); color: #fff; padding: var(--s-3) var(--s-4); z-index: 100; }
+  .skip:focus { left: var(--s-2); top: var(--s-2); }
+  header.site { background: var(--c-water-950); color: #fff; position: sticky; top: 0; z-index: 50; }
+  .bar { display: flex; align-items: center; gap: var(--s-3); min-height: 60px; flex-wrap: wrap; padding-top: var(--s-2); padding-bottom: var(--s-2); }
+  .brand { display: inline-flex; align-items: center; gap: var(--s-2); color: #fff; text-decoration: none; font-family: var(--font-display); font-weight: 750; font-size: 1.15rem; margin-right: auto; }
+  .brand em { font-style: normal; color: var(--c-water-300); }
+  .hsearch { display: flex; order: 3; width: 100%; }
+  .hsearch input { flex: 1; min-width: 0; padding: 0.55rem 0.9rem; border-radius: 999px 0 0 999px; border: 0; min-height: 44px; }
+  .hsearch button { border: 0; background: var(--c-water-500); color: #fff; padding: 0 0.9rem; border-radius: 0 999px 999px 0; min-width: 48px; cursor: pointer; }
+  .menu summary { list-style: none; color: #fff; font-weight: 700; padding: 0.55rem 0.9rem; border: 2px solid var(--c-water-300); border-radius: 999px; min-height: 44px; display: flex; align-items: center; }
+  .menu summary::-webkit-details-marker { display: none; }
+  .menu nav ul { list-style: none; margin: 0; padding: 0; }
+  .menu[open] nav { position: absolute; right: var(--s-4); left: var(--s-4); top: 100%; background: var(--c-water-950); padding: var(--s-3); border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--shadow); }
+  .menu nav a { display: block; color: #fff; padding: var(--s-3); text-decoration: none; font-weight: 700; border-radius: 8px; }
+  .menu nav a:hover, .menu nav a[aria-current="page"] { background: var(--c-water-900); }
+  .dnav { display: none; }
+  .dnav ul { list-style: none; display: flex; gap: var(--s-1); margin: 0; padding: 0; }
+  .dnav a { display: block; color: #fff; padding: var(--s-2) var(--s-3); text-decoration: none; font-weight: 700; font-size: var(--fs-sm); border-radius: 8px; }
+  .dnav a:hover, .dnav a[aria-current="page"] { background: var(--c-water-900); }
+  @media (min-width: 1080px) {
+    .hsearch { order: 0; width: auto; max-width: 13rem; }
+    .menu { display: none; }
+    .dnav { display: block; }
+  }
+  main { min-height: 60vh; }
+  main:focus { outline: none; }
+  footer.site { background: var(--c-water-950); color: #dfeef3; margin-top: var(--s-8); padding: var(--s-7) 0; }
+  footer.site a { color: #fff; }
+  .foot { display: grid; gap: var(--s-5); }
+  @media (min-width: 720px) { .foot { grid-template-columns: 2fr 1fr; } }
+  .mission { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 650; color: #fff; }
+  .links { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); }
+</style>

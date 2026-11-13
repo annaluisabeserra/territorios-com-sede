@@ -1,6 +1,93 @@
 ---
+import Base from "../layouts/Base.astro";
+import StaticMap from "../components/StaticMap.astro";
+import { DEFAULT_UF, resumo, ufs } from "../lib/data";
+import { fmtBRLShort, fmtNumber } from "../lib/format";
+import { THERMO_COLORS, THERMO_LABEL } from "../lib/indicators";
+
+const R = resumo(DEFAULT_UF);
+const t = R.totals;
+const n = R.municipios.length;
+// Três números de impacto: os primeiros disponíveis, nesta ordem de prioridade.
+const candidates = [
+  t.pessoas_sem_esgoto_censo != null && { value: fmtNumber(t.pessoas_sem_esgoto_censo), text: "pessoas sem esgoto adequado", src: "IBGE, Censo 2022" },
+  t.drsai_valor_anual != null && { value: fmtBRLShort(t.drsai_valor_anual), text: "por ano pagos pelo SUS em internações por doenças ligadas ao saneamento", src: `DATASUS, SIH/SUS, ${R.health.period_label}` },
+  { value: `${t.esgoto_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de esgoto de 2033", src: `SNIS, tendência até ${R.snis_year}` },
+  { value: `${t.esgoto_sem_dados} de ${n}`, text: "municípios sem dados suficientes de esgoto no SNIS: a sede que não aparece nas estatísticas", src: `SNIS, até ${R.snis_year}` },
+  { value: `${t.agua_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de água de 2033", src: `SNIS, tendência até ${R.snis_year}` },
+].filter(Boolean).slice(0, 3) as { value: string; text: string; src: string }[];
+const thermoColors = Object.fromEntries(R.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
+const counts = Object.keys(THERMO_LABEL).map((k) => ({ k, label: THERMO_LABEL[k], n: R.municipios.filter((m) => m.thermo.esgoto === k).length }));
+const list = ufs();
 ---
-<html lang="pt-BR">
-  <head><meta charset="utf-8" /><title>Territórios com Sede</title></head>
-  <body><h1>Territórios com Sede</h1></body>
-</html>
+<Base title="Territórios com Sede">
+  <section class="hero">
+    <div class="wrap hero-in">
+      <div class="copy">
+        <p class="eyebrow">Observatório de água e saneamento</p>
+        <h1>No Brasil, a sede tem endereço. E quase sempre ele está fora das estatísticas.</h1>
+        <p class="lead">Juntamos dados públicos de água, esgoto e saúde de cada município e traduzimos em perguntas simples: como está o meu território, quanto custa não ter saneamento e onde agir primeiro.</p>
+        <form action="/busca" method="get" role="search" class="bigsearch">
+          <label for="q">Digite seu município, comunidade ou indicador</label>
+          <div><input id="q" name="q" type="search" placeholder="Ex.: Juazeiro, Feira de Santana, esgoto…" required /><button class="btn" type="submit">Buscar</button></div>
+        </form>
+      </div>
+      <figure class="map">
+        <a href="/mapa" aria-label="Abrir o mapa interativo da Bahia">
+          <StaticMap uf={DEFAULT_UF} values={{}} palette={[]} categorical={thermoColors} label="Mapa da Bahia: situação de cada município em relação à meta de esgoto de 2033" />
+        </a>
+        <figcaption class="small">
+          <strong>Meta de esgoto 2033 na {R.uf.nome}</strong>
+          <ul class="legend">{counts.map((c) => <li><i style={`background:${THERMO_COLORS[c.k]}`}></i>{c.label}: {c.n}</li>)}</ul>
+          <span class="source">Fonte: SNIS (IN056), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a></span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="wrap numbers" aria-label="Números da Bahia">
+    {candidates.map((c) => (<div class="card"><p class="n">{c.value}</p><p>{c.text}</p><p class="source">{c.src}</p></div>))}
+  </section>
+
+  <section class="wrap section verbs">
+    <h2>Três verbos para mudar o mapa</h2>
+    <div class="grid grid-3">
+      <a class="card verb" href="/mapa"><span class="eyebrow">Ver</span><h3>A situação de cada município e das comunidades dentro dele</h3><p>Mapa, ficha completa e comparação com os vizinhos, sempre com a fonte de cada número.</p></a>
+      <a class="card verb" href="/calculadora"><span class="eyebrow">Calcular</span><h3>Quanto o território economizaria sem doenças ligadas à água</h3><p>A falta de saneamento já custa caro, só que em forma de doença. A calculadora mostra quanto.</p></a>
+      <a class="card verb" href="/indice"><span class="eyebrow">Agir</span><h3>Onde o investimento gera mais impacto</h3><p>Índice de prioridade com pesos que você ajusta e tecnologias sociais indicadas para cada perfil.</p></a>
+    </div>
+  </section>
+
+  <section class="wrap section why">
+    <div class="text">
+      <h2>Por que agora</h2>
+      <p>Faltam 7 anos para 2033, prazo do Marco Legal do Saneamento: 99% da população com água potável e 90% com coleta e tratamento de esgoto. O Censo 2022 contou a população quilombola pela primeira vez. E, ao longo de 2027, governos estaduais e federal elaboram os planos plurianuais de 2028 a 2031.</p>
+      <p>Os dados existem, mas estão espalhados em dezenas de sistemas e numa linguagem que não serve nem a quem decide nem a quem sofre. Esta plataforma junta tudo, mostra de onde vem cada número e diz com clareza quando um dado não existe.</p>
+      <p><a href="/sobre">Conheça o projeto</a> · <a href="/perguntas">Faça uma pergunta aos dados</a> · <a href="/escola">Leve para a sala de aula</a></p>
+    </div>
+  </section>
+  {list.length > 1 && (
+    <section class="wrap section"><h2>Estados disponíveis</h2><ul class="ufs">{list.map((u) => <li><a href={`/mapa?uf=${u.slug}`}>{u.name}</a></li>)}</ul></section>
+  )}
+</Base>
+<style>
+  .hero { background: radial-gradient(1200px 500px at 80% 0%, var(--c-water-100), transparent), var(--c-sand-50); padding: var(--s-7) 0 var(--s-6); }
+  .hero-in { display: grid; gap: var(--s-6); align-items: center; }
+  @media (min-width: 900px) { .hero-in { grid-template-columns: 1.1fr 1fr; } }
+  h1 { font-size: var(--fs-3xl); font-weight: 800; color: var(--c-water-950); }
+  .lead { font-size: var(--fs-lg); color: var(--c-ink-soft); max-width: 36rem; }
+  .bigsearch label { display: block; font-weight: 700; margin-bottom: var(--s-2); }
+  .bigsearch div { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+  .bigsearch input { flex: 1 1 14rem; padding: 0.8rem 1rem; border: 2px solid var(--c-water-700); border-radius: 999px; min-height: 48px; background: #fff; }
+  .map { margin: 0; }
+  .map a { display: block; }
+  .legend { list-style: none; padding: 0; margin: var(--s-2) 0; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .numbers { display: grid; gap: var(--s-4); margin-top: calc(-1 * var(--s-4)); }
+  @media (min-width: 720px) { .numbers { grid-template-columns: repeat(3, 1fr); } }
+  .numbers .n { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--c-water-900); margin: 0 0 var(--s-2); line-height: 1.05; }
+  .verb { text-decoration: none; color: inherit; transition: transform .15s; }
+  .verb:hover { transform: translateY(-2px); border-color: var(--c-water-500); }
+  .verb h3 { color: var(--c-water-950); }
+  .ufs { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+</style>

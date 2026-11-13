@@ -1,0 +1,238 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Locator from "../../../components/Locator.astro";
+import LineChart from "../../../components/LineChart.astro";
+import ThermometerCard from "../../../components/Thermometer.astro";
+import { ficha, indicators, resumo, ufs } from "../../../lib/data";
+import { fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
+import { fmtValue, SOURCE_LABEL } from "../../../lib/indicators";
+import type { Ficha } from "../../../lib/types";
+
+export function getStaticPaths() {
+  return ufs().flatMap((u) =>
+    resumo(u.slug).municipios.map((m) => ({ params: { uf: u.slug, slug: m.slug } })),
+  );
+}
+const { uf, slug } = Astro.params as { uf: string; slug: string };
+const f: Ficha = ficha(uf, slug);
+const R = resumo(uf);
+const IND = indicators();
+const src = R.sources;
+const snisYear = R.snis_year;
+const stats = R.stats;
+const ref = (k: string) => (src[k]?.status === "unavailable" ? null : src[k]);
+const mirrorNote = (k: string) => (src[k]?.url_kind === "mirror" ? " (cópia pública do dado oficial)" : "");
+const srcLine = (k: string, label: string) => {
+  const s = src[k];
+  if (!s || s.status === "unavailable") return `${label}: fonte indisponível nesta atualização`;
+  return `${label}, ${s.reference_period}${mirrorNote(k)}${s.status === "stale" ? " · desatualizado" : ""}`;
+};
+const rows = [
+  ["censo_agua_rede_pct", "censo_agua"], ["censo_esgoto_adequado_pct", "censo_esgoto"], ["censo_lixo_coletado_pct", "censo_lixo"],
+  ["snis_agua_pct", "snis"], ["snis_esgoto_pct", "snis"], ["snis_tratamento_pct", "snis"], ["snis_perdas_pct", "snis"],
+  ["snis_consumo_lhabdia", "snis"], ["drsai_taxa_10mil", "sih_drsai"], ["drsai_custo_per_capita", "sih_drsai"],
+] as const;
+const nbVals = f.neighbors.map((n) => ({ ...n, m: R.municipios.find((x) => x.cod === n.cod)! }));
+const h = f.health;
+const c = f.communities;
+const title = `${f.nome} (${f.uf}): água, esgoto e saúde`;
+const desc = f.resumo.slice(0, 2).join(" ");
+const calcUrl = `/calculadora?uf=${uf}&m=${slug}`;
+const shareText = encodeURIComponent(`Seu território tem sede? Veja os dados de ${f.nome}: `);
+const pageUrl = `${Astro.site?.toString().replace(/\/$/, "")}/municipio/${uf}/${slug}`;
+const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.index.dimensions).map(([k, v]) => [k, v.label]));
+---
+<Base title={title} description={desc} ogImage={`/og/${uf}/${slug}.png`}
+  jsonLd={{ "@context": "https://schema.org", "@type": "Dataset", name: `Saneamento e saúde em ${f.nome}/${f.uf}`, description: desc,
+    url: pageUrl, license: "https://creativecommons.org/licenses/by/4.0/", creator: { "@type": "Organization", name: "Instituto SDW" },
+    spatialCoverage: { "@type": "Place", name: `${f.nome}, ${f.uf_nome}, Brasil` } }}>
+  <div class="hero">
+    <div class="wrap hero-in">
+      <div>
+        <nav aria-label="Trilha" class="crumbs small"><a href="/">Início</a> › <a href={`/mapa?uf=${uf}`}>{f.uf_nome}</a> › <span aria-current="page">{f.nome}</span></nav>
+        <h1>{f.nome} <span class="uf">{f.uf}</span></h1>
+        <p class="meta small">{f.regiao_intermediaria} · {fmtNumber(f.ind.populacao)} moradores {f.semiarido && <span class="tag warn">Semiárido</span>}</p>
+        <div class="resumo">{f.resumo.map((p) => <p>{p}</p>)}</div>
+        <div class="actions no-print">
+          <a class="btn" href={calcUrl}>Calcular a economia</a>
+          <a class="btn secondary" href={`/escola/${uf}/${slug}`}>Versão para a escola</a>
+        </div>
+      </div>
+      <div class="locator"><Locator uf={uf} cod={f.cod} nome={f.nome} /></div>
+    </div>
+  </div>
+
+  <div class="wrap layout">
+    <nav class="toc no-print small" aria-label="Nesta página">
+      <a href="#indicadores">Indicadores</a><a href="#meta2033">Meta 2033</a><a href="#saude">Saúde e custo</a>
+      <a href="#comunidades">Comunidades</a><a href="#prioridade">Prioridade</a><a href="#agir">Agir</a><a href="#fontes">Fontes</a>
+    </nav>
+
+    <section id="indicadores" class="section">
+      <h2>Como está o saneamento</h2>
+      <div class="table-scroll card flat">
+        <table>
+          <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana da {f.uf_nome} e do Brasil</caption>
+          <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">{f.nome}</th><th scope="col" class="num">Mediana {f.uf}</th><th scope="col" class="num">Mediana Brasil</th><th scope="col">Fonte</th></tr></thead>
+          <tbody>
+            {rows.map(([k, s]) => {
+              const d = IND[k]; const st = stats[k];
+              return (
+                <tr>
+                  <th scope="row">{d?.short ?? k}<br /><span class="xsmall muted">{d?.direction === "higher_is_better" ? "quanto maior, melhor" : d?.direction === "higher_is_worse" ? "quanto menor, melhor" : ""}</span></th>
+                  <td class="num"><strong>{fmtValue(d, f.ind[k])}</strong>{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}</td>
+                  <td class="num">{fmtValue(d, st?.median_uf)}</td>
+                  <td class="num">{fmtValue(d, st?.median_br)}</td>
+                  <td class="xsmall">{ref(s) ? `${SOURCE_LABEL[d?.source ?? ""] ?? d?.source}, ${src[s].reference_period}` : "fonte indisponível nesta atualização"}</td>
+                </tr>);
+            })}
+          </tbody>
+        </table>
+      </div>
+      {Object.entries(f.divergence).filter(([, v]) => v.flag).map(([svc, v]) => (
+        <div class="callout">
+          <strong>Os números de {svc === "agua" ? "água" : "esgoto"} não batem, e isso é informação.</strong>
+          <p>O prestador de serviço declara {fmtPct(v.snis)} ao SNIS; o Censo, que pergunta em cada casa, encontrou {fmtPct(v.censo)}. Diferença de {fmtNumber(Math.abs(v.diff_pp), 1)} pontos. O SNIS é autodeclarado e mede quem a rede alcança; o Censo mede o que o morador usa. <a href="/faq#snis-censo">Por que isso acontece?</a></p>
+        </div>
+      ))}
+      <div class="grid grid-2" style="margin-top:var(--s-5)">
+        <div class="card">
+          <LineChart title="Atendimento de água e esgoto ao longo do tempo" target={{ value: 90, label: "meta de esgoto 2033: 90%" }}
+            series={[{ label: "Água (IN055)", points: f.series.snis_agua_pct ?? [], color: "#0868ac" }, { label: "Esgoto (IN056)", points: f.series.snis_esgoto_pct ?? [], color: "#b8461d" }]}
+            source={srcLine("snis", "SNIS")} />
+        </div>
+        <div class="card">
+          <h3>Vizinhos</h3>
+          {nbVals.length ? (
+            <div class="table-scroll"><table>
+              <caption class="visually-hidden">Comparação com municípios vizinhos</caption>
+              <thead><tr><th scope="col">Município</th><th scope="col" class="num">Água (SNIS)</th><th scope="col" class="num">Esgoto (SNIS)</th></tr></thead>
+              <tbody>
+                <tr class="self"><th scope="row">{f.nome}</th><td class="num">{fmtPct(f.ind.snis_agua_pct)}</td><td class="num">{fmtPct(f.ind.snis_esgoto_pct)}</td></tr>
+                {nbVals.map((n) => <tr><th scope="row"><a href={`/municipio/${uf}/${n.slug}`}>{n.nome}</a></th><td class="num">{fmtPct(n.m.ind.snis_agua_pct)}</td><td class="num">{fmtPct(n.m.ind.snis_esgoto_pct)}</td></tr>)}
+              </tbody>
+            </table></div>
+          ) : <p class="nodata">Sem vizinhos na mesma UF.</p>}
+          <p class="source">Fonte: {srcLine("snis", "SNIS")}. Vizinhos: municípios que fazem divisa (malha IBGE 2022).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="meta2033" class="section">
+      <h2>Termômetro 2033</h2>
+      <p class="text">O Marco Legal do Saneamento (Lei 14.026/2020) definiu que, até 2033, 99% da população deve ter água potável e 90% deve ter coleta e tratamento de esgoto. Medimos a distância com os dados do SNIS e projetamos a tendência dos últimos anos.</p>
+      <div class="grid grid-2">
+        <div class="card"><ThermometerCard t={f.thermometer.agua} title="Água: meta de 99%" /></div>
+        <div class="card"><ThermometerCard t={f.thermometer.esgoto} title="Esgoto: meta de 90%" /></div>
+      </div>
+      <p class="source">Fonte: {srcLine("snis", "SNIS")}. O indicador de esgoto (IN056) mede coleta; a meta também exige tratamento, então o termômetro é otimista. <a href="/metodologia#termometro">Como calculamos</a>.</p>
+    </section>
+
+    <section id="saude" class="section">
+      <h2>Saúde e o custo de não ter saneamento</h2>
+      {h ? (
+        <div class="grid grid-3">
+          <div class="card stat"><p class="n">{fmtNumber(h.internacoes)}</p><p>internações por ano no SUS por doenças ligadas à água e ao esgoto</p></div>
+          <div class="card stat"><p class="n">{fmtBRLShort(h.valor)}</p><p>pagos pelo SUS por ano nessas internações</p></div>
+          <div class="card stat"><p class="n">{fmtNumber(h.taxa_10mil, 1)}</p><p>internações por 10 mil habitantes (mediana {f.uf}: {fmtNumber(stats.drsai_taxa_10mil?.median_uf, 1)})</p></div>
+        </div>
+      ) : (
+        <div class="card pending">
+          <p><strong>Os dados de internações ainda não foram processados nesta versão.</strong></p>
+          <p class="small">Eles vêm do SIH/SUS (DATASUS) e são atualizados pelo pipeline automático. Quando estiverem disponíveis, esta seção mostrará quantas pessoas são internadas por ano por doenças como diarreia, hepatite A e leptospirose, quanto isso custa ao SUS e quanto o município economizaria com saneamento.</p>
+        </div>
+      )}
+      <p class="source">Fonte: {srcLine("sih_drsai", "DATASUS, SIH/SUS")}{h && `, ${h.period}`}. Doenças relacionadas ao saneamento ambiental inadequado (DRSAI), núcleo conservador. <a href="/metodologia#drsai">Quais doenças entram</a>.</p>
+      <p><a class="btn secondary no-print" href={calcUrl}>Abrir a calculadora com os dados de {f.nome}</a></p>
+    </section>
+
+    <section id="comunidades" class="section">
+      <h2>Comunidades e territórios</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Povos e comunidades no Censo 2022</h3>
+          <dl class="kv">
+            <dt>Pessoas quilombolas</dt>
+            <dd>{c.pop_quilombola === null ? <span class="nodata">sem dado</span> : c.pop_quilombola_lower_bound ? <>pelo menos <strong>{fmtNumber(c.pop_quilombola)}</strong></> : <strong>{fmtNumber(c.pop_quilombola)}</strong>}</dd>
+            <dt>Pessoas de cor ou raça indígena</dt>
+            <dd>{c.pop_cor_indigena === null ? <span class="nodata">sem dado</span> : <strong>{fmtNumber(c.pop_cor_indigena)}</strong>}</dd>
+          </dl>
+          {c.pop_quilombola_lower_bound && <p class="xsmall muted">“Pelo menos”: a cópia pública usada soma faixas de idade e sexo, e o IBGE oculta faixas muito pequenas para proteger a privacidade. O total oficial pode ser maior.</p>}
+          <p class="source">Fonte: {srcLine("censo_quilombola", "IBGE, Censo 2022")}.</p>
+        </div>
+        <div class="card">
+          <h3>Terras indígenas</h3>
+          {c.terras_indigenas.length ? (
+            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>{t.nome ?? "Terra indígena (nome não informado na fonte)"}</strong>{t.etnia && ` · ${t.etnia}`}<br /><span class="small">Situação: {t.fase ?? "não informada"}{t.modalidade && ` · ${t.modalidade}`}</span></li>)}</ul>
+          ) : <p class="muted">Nenhuma terra indígena com área relevante dentro do município, segundo a FUNAI.</p>}
+          <p class="source">Fonte: {srcLine("terras_indigenas", "FUNAI")}. Mostramos só o território oficial, nunca a localização de aldeias. <a href="/povos-e-comunidades">Nossos princípios e como pedir correção</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="prioridade" class="section">
+      <h2>Posição no índice de prioridade</h2>
+      {f.index.score !== null ? (
+        <p class="text">{f.nome} está em <strong>{f.index.rank}º lugar</strong> entre {f.index.n_ranked} municípios da {f.uf_nome} (1º = maior prioridade), com nota {fmtNumber(f.index.score)} de 100.</p>
+      ) : (
+        <p class="text">O índice ainda não pôde ser calculado para a {f.uf_nome}: ele precisa de pelo menos {R.index.min_dimensions_for_rank} das 5 dimensões, e nesta atualização há dados para {R.index.dims_available.length} ({R.index.dims_available.map((d) => dimLabel[d]).join(", ")}). Faltam: {R.index.dims_missing.map((d) => dimLabel[d]).join(", ")}.</p>
+      )}
+      <div class="dims">
+        {Object.entries(f.index.dims).map(([d, v]) => (
+          <div class="dim"><span class="small">{dimLabel[d]}</span><div class="dbar" role="img" aria-label={`${dimLabel[d]}: ${v === null ? "sem dado" : fmtNumber(v) + " de 100"}`}>{v !== null && <div style={`width:${v}%`}></div>}</div><span class="small num">{v === null ? "sem dado" : fmtNumber(v)}</span></div>
+        ))}
+      </div>
+      <p class="xsmall muted">Cada barra é o percentil dentro da UF: 100 = pior situação entre os municípios. <a href="/indice">Ajuste os pesos e veja o ranking</a>.</p>
+    </section>
+
+    <section id="agir" class="section">
+      <h2>Agir: soluções que combinam com este território</h2>
+      <div class="grid grid-2">
+        {f.suggestions.map((s) => (<div class="card"><h3>{s.title}</h3><p class="small">{s.why}</p></div>))}
+      </div>
+      <p class="small">Quer levar uma dessas soluções para {f.nome}? Fale com o Instituto SDW: <a href={`mailto:${f.suggestions[0]?.contact}`}>{f.suggestions[0]?.contact}</a>. As sugestões seguem regras simples e públicas, descritas na <a href="/metodologia#agir">metodologia</a>.</p>
+    </section>
+
+    <section id="fontes" class="section">
+      <h2>Fontes, dados e compartilhamento</h2>
+      <ul class="small">
+        {Object.entries(src).map(([k, s]) => (<li><strong>{s.name ?? k}</strong>: {s.status === "unavailable" ? "indisponível nesta atualização" : `${s.reference_period}${s.url_kind === "mirror" ? ", via cópia pública rastreável" : ""}${s.status === "stale" ? " (desatualizado)" : ""}`}</li>))}
+      </ul>
+      <div class="actions no-print">
+        <a class="btn secondary" href={`/data/${uf}/dados/municipios/${slug}.csv`} download>Baixar dados (CSV)</a>
+        <a class="btn secondary" href={`/data/${uf}/municipios/${slug}.json`} download>Baixar dados (JSON)</a>
+        <a class="btn secondary" href={`https://wa.me/?text=${shareText}${encodeURIComponent(pageUrl)}`}>Compartilhar no WhatsApp</a>
+        <a class="btn secondary" href={`/og/${uf}/${slug}.png`}>Card para redes sociais</a>
+      </div>
+      <p class="xsmall muted">Gerado em {new Date(f.generated_at).toLocaleDateString("pt-BR")}. Viu algo errado? <a href="/sobre#corrigir">Corrija um dado</a>.</p>
+    </section>
+  </div>
+</Base>
+<style>
+  .hero { background: linear-gradient(180deg, var(--c-water-100), var(--c-sand-50)); padding: var(--s-6) 0 var(--s-5); }
+  .hero-in { display: grid; gap: var(--s-5); align-items: center; }
+  @media (min-width: 860px) { .hero-in { grid-template-columns: 3fr 2fr; } }
+  .crumbs { margin-bottom: var(--s-2); }
+  .uf { font-size: 0.5em; color: var(--c-ink-muted); font-weight: 600; }
+  .resumo p { font-size: var(--fs-lg); max-width: 40rem; margin-bottom: var(--s-3); }
+  .actions { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-4); }
+  .locator { max-width: 320px; justify-self: center; width: 100%; }
+  .toc { display: flex; gap: var(--s-3); overflow-x: auto; padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); position: sticky; top: 60px; background: var(--c-sand-50); z-index: 5; white-space: nowrap; }
+  @media (max-width: 979px) { .toc { top: 112px; } }
+  .section { padding: var(--s-6) 0; border-bottom: 1px solid var(--c-line); scroll-margin-top: 140px; }
+  .flat { padding: 0; box-shadow: none; }
+  .callout { border-left: 4px solid var(--c-warn); background: var(--c-warn-bg); padding: var(--s-4); border-radius: 0 var(--radius) var(--radius) 0; margin-top: var(--s-4); }
+  .callout p { margin: var(--s-2) 0 0; }
+  tr.self { background: var(--c-water-100); }
+  .stat .n { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--c-water-900); margin: 0; }
+  .pending { border-style: dashed; background: var(--c-sand-100); box-shadow: none; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: var(--s-2) var(--s-4); margin: 0 0 var(--s-3); }
+  .kv dd { margin: 0; text-align: right; }
+  .tis { padding-left: var(--s-4); }
+  .tis li { margin-bottom: var(--s-2); }
+  .dims { display: grid; gap: var(--s-2); max-width: 40rem; margin: var(--s-4) 0; }
+  .dim { display: grid; grid-template-columns: 11rem 1fr 4.5rem; gap: var(--s-3); align-items: center; }
+  .dbar { height: 12px; background: var(--c-sand-100); border-radius: 999px; overflow: hidden; }
+  .dbar div { height: 100%; background: var(--c-alert); }
+  .num { text-align: right; }
+</style>
