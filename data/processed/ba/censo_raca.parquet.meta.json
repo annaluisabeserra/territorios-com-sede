@@ -1,0 +1,21 @@
+{
+  "output": "censo_raca.parquet",
+  "uf": "BA",
+  "sources": [
+    {
+      "source_id": "censo_raca",
+      "name": "IBGE — Censo 2022, população por cor ou raça",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_raca/populacao_grupo_idade_sexo_raca_bdpro.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-13T19:02:15+00:00",
+      "sha256": "01febab4e2a5c089276f0d5a29ed65b7e3a1c96fb3850734e3bc5f7acb097c18",
+      "license": "Dados públicos IBGE",
+      "notes": "Base dos Dados a partir do SIDRA"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T19:02:16+00:00"
+}

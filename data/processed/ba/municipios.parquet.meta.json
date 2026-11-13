@@ -1,0 +1,21 @@
+{
+  "output": "municipios.parquet",
+  "uf": "BA",
+  "sources": [
+    {
+      "source_id": "ibge_municipios",
+      "name": "IBGE — Localidades (lista de municípios)",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "vigente",
+      "fetched_at": "2026-11-13T19:01:50+00:00",
+      "sha256": "15d90a189a7a58bdf21b33821af61e0fa23adc6e0d9f4dac8807119a935f27ac",
+      "license": "Dados públicos IBGE (uso livre com citação)",
+      "notes": "Diretório de municípios da Base dos Dados (construído a partir da DTB/IBGE)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T19:01:50+00:00"
+}

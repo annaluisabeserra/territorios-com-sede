@@ -76,9 +76,7 @@ def fetch(
     for src in urls:
         for attempt in range(1, retries + 1):
             try:
-                with requests.get(
-                    src.url, timeout=timeout, stream=True, headers={"User-Agent": USER_AGENT}
-                ) as r:
+                with requests.get(src.url, timeout=timeout, stream=True, headers={"User-Agent": USER_AGENT}) as r:
                     r.raise_for_status()
                     tmp = target.with_name(target.name + ".part")
                     with open(tmp, "wb") as fh:
@@ -88,9 +86,7 @@ def fetch(
                 digest = sha256_file(target)
                 now = datetime.now(UTC).isoformat(timespec="seconds")
                 sidecar.write_text(
-                    json.dumps(
-                        {"url": src.url, "kind": src.kind, "sha256": digest, "fetched_at": now}, indent=2
-                    )
+                    json.dumps({"url": src.url, "kind": src.kind, "sha256": digest, "fetched_at": now}, indent=2)
                 )
                 log.info("baixado %s (%s)", src.url, src.kind)
                 return Fetched(target, src.url, src.kind, digest, now, False)

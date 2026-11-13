@@ -1,0 +1,136 @@
+# Cadeia de URLs por fonte (ADR-002). A primeira que responder é usada; o .meta.json registra qual.
+# {uf_code} = código IBGE da UF (ex.: 29); {uf} = sigla (ex.: BA).
+# kind: official (órgão produtor) | mirror (cópia pública rastreável do dado oficial).
+# Base dos Dados (basedosdados.org): bucket público GCS, tabelas tratadas a partir das fontes oficiais.
+# geobr (Ipea): malhas oficiais do IBGE e de outros órgãos convertidas para GeoParquet.
+
+ibge_municipios:
+  name: IBGE — Localidades (lista de municípios)
+  license: Dados públicos IBGE (uso livre com citação)
+  urls:
+    - { kind: official, url: "https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf_code}/municipios" }
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz"
+      note: Diretório de municípios da Base dos Dados (construído a partir da DTB/IBGE)
+
+ibge_malhas:
+  name: IBGE — Malha municipal 2022
+  license: Dados públicos IBGE
+  urls:
+    - kind: official
+      url: "https://servicodados.ibge.gov.br/api/v3/malhas/estados/{uf_code}?formato=application/vnd.geo+json&qualidade=intermediaria&intrarregiao=municipio"
+    - kind: mirror
+      url: "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/municipalities_2022_simplified.parquet"
+      note: geobr v2.0.0 (Ipea), malha municipal IBGE 2022 simplificada
+
+ibge_semiarido:
+  name: SUDENE/IBGE — Delimitação do Semiárido 2022
+  license: Dados públicos
+  urls:
+    - kind: mirror
+      url: "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/semiarid_2022_simplified.parquet"
+      note: geobr v2.0.0 (Ipea). Lista oficial de municípios do Semiárido (Resolução Condel/Sudene)
+
+sidra_catalog:
+  name: IBGE — Catálogo de agregados (API SIDRA v3)
+  urls:
+    - { kind: official, url: "https://servicodados.ibge.gov.br/api/v3/agregados" }
+
+censo_populacao:
+  name: IBGE — Censo 2022, população residente
+  license: Dados públicos IBGE
+  sidra: { keywords: ["população residente"], variable_keywords: ["população residente"] }
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_idade_sexo/populacao_idade_sexo_bdpro.csv.gz"
+      note: Base dos Dados a partir da tabela SIDRA 9514 (população por sexo e idade)
+
+censo_quilombola:
+  name: IBGE — Censo 2022, pessoas quilombolas
+  license: Dados públicos IBGE
+  sidra: { table_hint: 9578, keywords: ["quilombola"], variable_keywords: ["quilombola"] }
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_quilombola/populacao_grupo_idade_sexo_quilombola.csv.gz"
+      note: Base dos Dados. Soma de células por idade e sexo; células sob sigilo vêm vazias (total levemente subestimado)
+
+censo_raca:
+  name: IBGE — Censo 2022, população por cor ou raça
+  license: Dados públicos IBGE
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_raca/populacao_grupo_idade_sexo_raca_bdpro.csv.gz"
+      note: Base dos Dados a partir do SIDRA
+
+censo_lixo:
+  name: IBGE — Censo 2022, destino do lixo (moradores)
+  license: Dados públicos IBGE
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/caracteristica_domicilio_grupo_idade_raca_destino_lixo/caracteristica_domicilio_grupo_idade_raca_destino_lixo_bdpro.csv.gz"
+      note: Base dos Dados a partir do SIDRA
+
+censo_agua:
+  name: IBGE — Censo 2022, forma principal de abastecimento de água (moradores)
+  license: Dados públicos IBGE
+  sidra:
+    keywords: ["abastecimento de água"]
+    variable_keywords: ["moradores"]
+    classification_keywords: ["abastecimento de água"]
+    numerator: ["rede geral"]
+  urls: []   # só oficial via catálogo SIDRA (não há espelho conhecido)
+
+censo_esgoto:
+  name: IBGE — Censo 2022, tipo de esgotamento sanitário (moradores)
+  license: Dados públicos IBGE
+  sidra:
+    keywords: ["esgotamento sanitário"]
+    variable_keywords: ["moradores"]
+    classification_keywords: ["esgotamento sanitário"]
+    numerator: ["rede geral", "fossa séptica"]
+  urls: []
+
+snis:
+  name: SNIS — Série histórica, informações e indicadores municipais de água e esgoto
+  license: Dados públicos (Ministério das Cidades)
+  official_reference: "https://app4.cidades.gov.br/serieHistorica/ (consulta interativa, sem API estável)"
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_mdr_snis/municipio_agua_esgoto/municipio_agua_esgoto.csv.gz"
+      note: Base dos Dados, tabela br_mdr_snis.municipio_agua_esgoto (anos de referência 1995–2022)
+
+ana_atlas_esgotos:
+  name: ANA — Atlas Esgotos (2013)
+  license: Dados públicos ANA
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ana_atlas_esgotos/municipio/municipio.csv.gz"
+      note: Base dos Dados a partir do Atlas Esgotos (ANA, 2017; referência 2013)
+
+datasus_sih:
+  name: DATASUS — SIH/SUS, AIH reduzida (RD)
+  license: Dados públicos Ministério da Saúde
+  # Arquivos por UF do estabelecimento e mês de processamento. Para contar por residência, o pipeline
+  # lê os arquivos de todas as UFs listadas em residence_scope e filtra MUNIC_RES.
+  url_template: "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/RD{uf}{yy}{mm}.dbc"
+  residence_scope: all_ufs
+  years: 5
+
+ipca:
+  name: IBGE — IPCA (número-índice mensal)
+  license: Dados públicos
+  urls:
+    - { kind: official, url: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json" }
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_ipca/mes_brasil/mes_brasil.csv.gz"
+      note: Base dos Dados (IBGE). Série termina em 07/2024
+
+funai_terras_indigenas:
+  name: FUNAI — Terras indígenas (polígonos)
+  license: Dados públicos FUNAI
+  urls:
+    - kind: official
+      url: "https://geoserver.funai.gov.br/geoserver/Funai/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=Funai:tis_poligonais&outputFormat=application/json"
+    - kind: mirror
+      url: "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet"
+      note: geobr v2.0.0 (Ipea) a partir da FUNAI, 2024

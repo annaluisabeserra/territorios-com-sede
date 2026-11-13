@@ -51,9 +51,7 @@ def compute(service: str, series: dict[int, float | None]) -> Thermometer:
     pts = pts[-MAX_POINTS:]
     years = [y for y, _ in pts]
     if not pts:
-        return Thermometer(
-            service, target, "sem_dados", None, None, None, None, None, None, None, None, None, 0, []
-        )
+        return Thermometer(service, target, "sem_dados", None, None, None, None, None, None, None, None, None, 0, [])
     cur_year, cur = pts[-1]
     cur = min(cur, 100.0)
     gap = max(0.0, target - cur)
@@ -112,6 +110,4 @@ def compute(service: str, series: dict[int, float | None]) -> Thermometer:
     proj_opt = _year_to_reach(fitted_now, cur_year, hi, target)
     proj_pes = _year_to_reach(fitted_now, cur_year, lo, target)
     status = "no_ritmo" if proj is not None and proj <= TARGET_YEAR else "atrasado"
-    return Thermometer(
-        service, target, status, cur, cur_year, gap, slope, lo, hi, proj, proj_opt, proj_pes, n, years
-    )
+    return Thermometer(service, target, status, cur, cur_year, gap, slope, lo, hi, proj, proj_opt, proj_pes, n, years)

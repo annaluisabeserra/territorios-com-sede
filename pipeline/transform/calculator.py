@@ -100,9 +100,7 @@ def components(b: Baseline, p: Params) -> tuple[dict[str, float], list[str]]:
     return comp, missing
 
 
-def present_value(
-    annual: float, horizon: int, rate: float, drop_off: float = 0.0, adjust: float = 1.0
-) -> float:
+def present_value(annual: float, horizon: int, rate: float, drop_off: float = 0.0, adjust: float = 1.0) -> float:
     """Σ_{t=1..H} annual × adjust × (1 − drop_off)^(t−1) / (1 + rate)^t, com fatores iterativos."""
     total = 0.0
     disc = 1.0

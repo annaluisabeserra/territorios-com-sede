@@ -1,0 +1,21 @@
+{
+  "output": "censo_lixo.parquet",
+  "uf": "BA",
+  "sources": [
+    {
+      "source_id": "censo_lixo",
+      "name": "IBGE — Censo 2022, destino do lixo (moradores)",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/caracteristica_domicilio_grupo_idade_raca_destino_lixo/caracteristica_domicilio_grupo_idade_raca_destino_lixo_bdpro.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-13T19:02:09+00:00",
+      "sha256": "ab074ae9e3c6f4163d69f750676dc845d5c120c24d71bbf7374436b40fba91e6",
+      "license": "Dados públicos IBGE",
+      "notes": "Base dos Dados a partir do SIDRA"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T19:02:11+00:00"
+}

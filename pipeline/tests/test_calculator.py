@@ -75,9 +75,7 @@ def test_monotonic_in_reduction(cost, days, r1, r2, h):
 
 @given(money, st.integers(1, 30), st.floats(0, 0.5))
 def test_zero_reduction_gives_zero(cost, h, rate):
-    r = calculate(
-        Baseline(cost, 10.0, 5.0, 40.0), Params(reduction_pct=0, horizon_years=h, discount_rate=rate)
-    )
+    r = calculate(Baseline(cost, 10.0, 5.0, 40.0), Params(reduction_pct=0, horizon_years=h, discount_rate=rate))
     assert r.pv_saving == 0.0 and r.annual_saving == 0.0
 
 

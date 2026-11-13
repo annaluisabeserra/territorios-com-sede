@@ -15,9 +15,7 @@ import math
 from collections.abc import Mapping
 
 
-def percentile_ranks(
-    values: Mapping[str, float | None], higher_is_worse: bool = True
-) -> dict[str, float | None]:
+def percentile_ranks(values: Mapping[str, float | None], higher_is_worse: bool = True) -> dict[str, float | None]:
     """Percentil (0–100) com empates pela média dos postos. Ausentes continuam ausentes."""
     present = [(k, v) for k, v in values.items() if v is not None and not math.isnan(v)]
     out: dict[str, float | None] = {k: None for k in values}

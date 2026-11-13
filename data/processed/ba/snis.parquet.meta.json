@@ -1,0 +1,21 @@
+{
+  "output": "snis.parquet",
+  "uf": "BA",
+  "sources": [
+    {
+      "source_id": "snis",
+      "name": "SNIS — Série histórica, informações e indicadores municipais de água e esgoto",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_mdr_snis/municipio_agua_esgoto/municipio_agua_esgoto.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "1995–2022",
+      "fetched_at": "2026-11-13T19:02:18+00:00",
+      "sha256": "2a5490870c2bdd2ededfd824a338238a82d38450bb2d96fc76cb67ac084ae2cb",
+      "license": "Dados públicos (Ministério das Cidades)",
+      "notes": "Base dos Dados, tabela br_mdr_snis.municipio_agua_esgoto (anos de referência 1995–2022); valores acima de 100% limitados a 100 (ver flags)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "{\"snis_tratamento_pct_capped\": 16, \"snis_tratamento_coletado_pct_capped\": 14, \"snis_coleta_esgoto_pct_capped\": 30, \"snis_esgoto_pct_capped\": 0, \"snis_agua_pct_capped\": 0}",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T19:02:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "output": "sih_drsai.parquet",
+  "uf": "BA",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "ImportError: cannot import name 'read_dbc' from 'pyreaddbc' (/home/user/territorios-com-sede/.venv/lib/python3.13/site-packages/pyreaddbc/__init__.py)",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T19:02:34+00:00"
+}
