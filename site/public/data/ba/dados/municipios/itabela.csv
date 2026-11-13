@@ -1,7 +1,7 @@
 ,valor
 nome,Itabela
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Eunápolis - Porto Seguro
 semiarido,False
 populacao,28165
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,88.41126820755724
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,404.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,1.4344044026273743
 snis_agua_pct,85.5
 snis_esgoto_pct,3.26
 snis_esgoto_tratado_pct,3.26

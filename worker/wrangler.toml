@@ -1,0 +1,18 @@
+# Worker opcional de aprendizado com o uso e assistente (SPEC §6.14 e §6.15). Plano gratuito do Cloudflare.
+# O site funciona 100% sem ele. Ver HANDOFF.md, "Ativar o Worker".
+name = "territorios-com-sede"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+SITE_ORIGIN = "https://territorios.institutosdw.org"
+ASSISTANT_ENABLED = "false"           # assistente desligado por padrão
+ASSISTANT_MODEL = "claude-opus-5-5"   # modelo padrão; troque por outro (ex.: claude-haiku-5-5) para reduzir custo
+
+[[d1_databases]]
+binding = "DB"
+database_name = "territorios-aprendizado"
+database_id = "PREENCHER_DEPOIS_DE_CRIAR"   # wrangler d1 create territorios-aprendizado
+
+# Segredos (nunca no repositório): wrangler secret put REPORT_TOKEN / ANTHROPIC_API_KEY

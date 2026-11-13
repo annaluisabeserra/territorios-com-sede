@@ -73,3 +73,16 @@ def test_suppressed_counts_are_null_not_zero(built):
     vals = [m["ind"].get("pop_quilombola") for m in resumo["municipios"]]
     # sigilo total vira None; o espelho não deve produzir zeros artificiais em massa
     assert sum(1 for v in vals if v == 0) < 5
+
+
+def test_no_broken_tokens_in_public_text(built):
+    """Regressão da revisão M4: 'None', 'nan' e '¿' nunca podem aparecer em texto público."""
+    import re
+
+    bad = re.compile(r"\bNone\b|\bnan\b|¿", re.IGNORECASE)
+    d = config.PUBLIC_DIR / built.slug / "municipios"
+    for p in d.glob("*.json"):
+        f = json.loads(p.read_text())
+        text = " ".join(f["resumo"]) + f["regiao_intermediaria"] + f["regiao_imediata"]
+        text += " ".join(s["why"] for s in f["suggestions"])
+        assert not bad.search(text), (p.name, bad.search(text).group(0))

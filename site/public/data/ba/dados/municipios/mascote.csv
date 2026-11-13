@@ -1,7 +1,7 @@
 ,valor
 nome,Mascote
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Camacan
 semiarido,False
 populacao,13544
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,85.8103117151721
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,139.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,1.0262847017129355
 snis_agua_pct,79.22
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

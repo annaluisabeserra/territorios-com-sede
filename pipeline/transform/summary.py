@@ -6,7 +6,12 @@ from collections.abc import Mapping
 
 
 def num(v: float, digits: int = 0) -> str:
-    s = f"{v:,.{digits}f}"
+    """Arredondamento "meio para cima", igual ao Intl.NumberFormat do site (99,85 → 99,9 nos dois lados)."""
+    from decimal import ROUND_HALF_UP, Decimal
+
+    q = Decimal(1).scaleb(-digits)
+    d = Decimal(repr(float(v))).quantize(q, rounding=ROUND_HALF_UP)
+    s = f"{d:,.{digits}f}"
     return s.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
@@ -56,14 +61,28 @@ def municipal_summary(
         frac = one_in(sem)
         lead = f"{frac.capitalize()} moradores" if frac else f"{pct(sem)} dos moradores"
         parts.append(f"{lead} não têm esgoto adequado (Censo 2022).")
-    elif has("snis_esgoto_pct"):
-        txt = (
-            f"O prestador de serviço declara atender {pct(ind['snis_esgoto_pct'])} da população com rede de coleta "
-            f"de esgoto (SNIS {years.get('snis_esgoto_pct')})."
-        )
-        if has("snis_esgoto_tratado_pct"):
-            txt += f" Considerando o tratamento, {pct(ind['snis_esgoto_tratado_pct'])} da população tem esgoto coletado e tratado."
+    elif has("snis_esgoto_tratado_pct"):
+        # Abre pelo indicador da meta (coleta E tratamento); a coleta vem como contexto (revisão M4).
+        tr, col = ind["snis_esgoto_tratado_pct"], ind.get("snis_esgoto_pct")
+        y = years.get("snis_esgoto_tratado_pct") or years.get("snis_esgoto_pct")
+        txt = f"{pct(tr)} da população tem o esgoto coletado e tratado (SNIS {y})."
+        if col is not None and col == col and col - tr >= 5:
+            if tr < 0.05:
+                txt += (
+                    f" A rede coleta o esgoto de {pct(col)} da população, mas nada é tratado: tudo volta para "
+                    "rios e para o solo."
+                )
+            else:
+                txt += (
+                    f" A rede coleta o esgoto de {pct(col)} da população, mas parte do que é coletado não recebe "
+                    "tratamento antes de voltar para rios e para o solo."
+                )
         parts.append(txt)
+    elif has("snis_esgoto_pct"):
+        parts.append(
+            f"O prestador de serviço declara atender {pct(ind['snis_esgoto_pct'])} da população com rede de "
+            f"coleta de esgoto (SNIS {years.get('snis_esgoto_pct')}), mas não informou quanto é tratado."
+        )
     elif extra.get("esgoto_sem_declaracao"):
         parts.append(
             "Nenhum prestador declarou atendimento de esgoto por rede ao SNIS nos últimos anos, o que em geral "

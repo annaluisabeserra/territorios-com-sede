@@ -1,0 +1,20 @@
+name: Pedido de correção ou retirada (comunidades)
+description: Para comunidades, lideranças e organizações representativas. Se preferir sigilo, escreva para contato@institutosdw.org.
+title: "[Retirada] "
+labels: ["comunidades", "prioridade"]
+body:
+  - type: markdown
+    attributes:
+      value: "Este formulário é público. Para pedidos sigilosos use o e-mail contato@institutosdw.org. Não é preciso justificar o pedido."
+  - type: input
+    id: territorio
+    attributes: { label: Território ou comunidade, placeholder: "Nome do território e município" }
+    validations: { required: true }
+  - type: dropdown
+    id: tipo
+    attributes: { label: O que você quer, options: ["Retirar a informação", "Corrigir a informação", "Mudar o nome ou a forma como aparecemos"] }
+    validations: { required: true }
+  - type: textarea
+    id: detalhe
+    attributes: { label: Detalhes, description: "O que deve ser retirado ou corrigido." }
+    validations: { required: true }

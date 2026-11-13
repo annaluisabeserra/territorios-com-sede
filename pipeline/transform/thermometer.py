@@ -6,7 +6,7 @@ Regras (revisão M2):
 - só entram pontos de uma janela recente: [ano_ref − 7, ano_ref], onde ano_ref é o último ano do SNIS na UF;
 - o último ponto do município precisa ser de ano_ref − 2 ou mais recente; senão, "sem dados suficientes";
 - regressão linear (mínimos quadrados) sobre 3 a 8 pontos;
-- "meta atingida" exige os dois últimos anos disponíveis (consecutivos) acima da meta;
+- "meta atingida" quando o último dado recente está na meta; se só o último ano está acima, fica sinalizado;
 - a projeção parte do último valor observado, no ano em que foi observado, e nunca cai antes de ano_ref + 1;
   a faixa (otimista/pessimista) é a "faixa da tendência": usa o IC da inclinação, não é um intervalo de previsão;
 - se o limite inferior do IC 95% da inclinação for ≤ 0, a projeção é marcada como incerta.
@@ -93,7 +93,11 @@ def compute(service: str, series: dict[int, float | None], ref_year: int | None 
         return _empty(service, target, f"último dado é de {last_year}", last_val, last_year, 0, [])
     years = [y for y, _ in pts]
     cur_year, cur = pts[-1]
-    if len(pts) >= 2 and pts[-1][1] >= target and pts[-2][1] >= target and pts[-1][0] - pts[-2][0] == 1:
+    if cur >= target:
+        # Último dado recente já na meta (revisão M4: não rotular como "sem dados" quem já chegou lá).
+        # Com um único ano acima da meta, sinaliza que a confirmação depende dos próximos anos.
+        confirmed = len(pts) >= 2 and pts[-2][1] >= target
+        reason = "" if confirmed else "atingida no último ano informado; falta confirmar nos próximos anos"
         return Thermometer(
             service,
             target,
@@ -109,6 +113,8 @@ def compute(service: str, series: dict[int, float | None], ref_year: int | None 
             cur_year,
             len(pts),
             years,
+            not confirmed,
+            reason,
         )
     if len(pts) < MIN_POINTS:
         return _empty(service, target, f"só {len(pts)} ano(s) recentes", cur, cur_year, len(pts), years)

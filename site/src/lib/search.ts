@@ -12,7 +12,7 @@ export function buildIndex(docs: Doc[]): MiniSearch<Doc> {
     fields: ["title", "text", "sub"],
     storeFields: ["type", "title", "sub", "url"],
     processTerm: (t) => normalize(t),
-    searchOptions: { boost: { title: 4, sub: 1 }, prefix: true, fuzzy: 0.25, combineWith: "AND" },
+    searchOptions: { boost: { title: 4, sub: 1 }, prefix: true, fuzzy: 0.2, combineWith: "AND" },
   });
   ms.addAll(docs);
   return ms;

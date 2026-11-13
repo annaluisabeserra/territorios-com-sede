@@ -1,6 +1,6 @@
 # Relatório de validação
 
-Gerado em 13/11/2026 19:59 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
+Gerado em 13/11/2026 20:14 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
 
 Este relatório complementa as checagens automáticas (que derrubam o pipeline) com checagens de plausibilidade que exigem leitura humana. Itens marcados **pendente** dependem de fontes que não puderam ser lidas no ambiente de construção (ver `docs/DATA_SOURCES.md`).
 
@@ -30,6 +30,7 @@ Este relatório complementa as checagens automáticas (que derrubam o pipeline) 
 | sih_drsai | unavailable | – | – | ImportError: cannot import name 'read_dbc' from 'pyreaddbc' (/home/user/territorios-com-sede/.venv/lib/python3.13/site-p |
 | snis | ok | espelho | 1995–2022 | {"snis_perdas_pct_invalid_to_null": 60, "snis_agua_pct_capped": 0, "snis_agua_pct_absurd_to_null": 0, "snis_coleta_esgot |
 | terras_indigenas | ok | espelho | vigente na data de coleta |  |
+| ucs_uso_sustentavel | ok | espelho | cadastro vigente na data do espelho |  |
 
 ### 2. Checagens automáticas (SPEC §9)
 
@@ -85,7 +86,7 @@ Consistência interna do SNIS (IN055 × população atendida ÷ população do C
 
 ### 6. Termômetro 2033
 
-- Água (IN055, meta 99%): atrasado: 336; no_ritmo: 56; atingida: 15; sem_dados: 10
+- Água (IN055, meta 99%): atrasado: 336; no_ritmo: 49; atingida: 25; sem_dados: 7
 - Esgoto coletado e tratado (IN056 × IN016, meta 90%): sem_dados: 237; atrasado: 170; no_ritmo: 10
 
 ### 7. Índice de prioridade: revisão do topo e da base
@@ -95,25 +96,25 @@ O índice oficial não ranqueia nesta versão: há 2 de 5 dimensões (acesso, vu
 | Posição | Município | Nota exploratória | Sem água (SNIS) | Sem esgoto (SNIS) | % quilombola + indígena |
 |---|---|---|---|---|---|
 | 1 | Maraú | 99 | 81,4 | sem dado | 31,1 |
-| 2 | Caetanos | 98 | 75,9 | sem dado | sem dado |
-| 3 | Baianópolis | 97 | 73,1 | sem dado | sem dado |
-| 4 | Brejolândia | 97 | 72,8 | sem dado | sem dado |
-| 5 | Guajeru | 96 | 72,4 | sem dado | sem dado |
-| 6 | São Miguel das Matas | 93 | 67,8 | sem dado | sem dado |
-| 7 | Jucuruçu | 93 | 67,7 | sem dado | sem dado |
-| 8 | Banzaê | 93 | 65,8 | 93,0 | 29,1 |
-| 9 | Oliveira dos Brejinhos | 93 | 67,4 | sem dado | sem dado |
-| 10 | Muquém de São Francisco | 92 | 57,3 | 94,2 | 25,7 |
-| 406 | Barrocas | 10 | 0,0 | sem dado | 0,7 |
-| 407 | Macarani | 9 | 11,2 | 11,2 | 0,1 |
-| 408 | Ibicaraí | 9 | 2,8 | sem dado | sem dado |
-| 409 | Dom Macedo Costa | 5 | 0,2 | sem dado | sem dado |
-| 410 | Feira da Mata | 5 | 0,2 | sem dado | sem dado |
-| 411 | Valente | 4 | 0,2 | sem dado | 0,1 |
-| 412 | Itapetinga | 2 | 0,0 | 2,9 | sem dado |
-| 413 | Tanquinho | 1 | 0,0 | sem dado | 0,1 |
-| 414 | Itajuípe | 0 | 0,0 | 0,0 | sem dado |
-| 415 | Saubara | 0 | 0,0 | sem dado | 0,0 |
+| 2 | Banzaê | 93 | 65,8 | 93,0 | 29,1 |
+| 3 | Bom Jesus da Serra | 92 | 70,7 | sem dado | 11,4 |
+| 4 | Muquém de São Francisco | 92 | 57,3 | 94,2 | 25,7 |
+| 5 | Boninal | 91 | 58,9 | sem dado | 22,6 |
+| 6 | Santanópolis | 90 | 58,7 | sem dado | 19,4 |
+| 7 | Itaguaçu da Bahia | 90 | 59,5 | sem dado | 16,3 |
+| 8 | Tremedal | 90 | 74,6 | sem dado | 6,3 |
+| 9 | Biritinga | 90 | 67,9 | sem dado | 8,7 |
+| 10 | Anagé | 89 | 81,0 | sem dado | 4,9 |
+| 408 | Itapetinga | 15 | 0,0 | 2,9 | 0,5 |
+| 409 | São José do Jacuípe | 15 | 15,4 | sem dado | 0,0 |
+| 410 | Macarani | 14 | 11,2 | 11,2 | 0,1 |
+| 411 | Nova Fátima | 14 | 12,6 | sem dado | 0,0 |
+| 412 | Itajuípe | 12 | 0,0 | 0,0 | 0,3 |
+| 413 | Valente | 9 | 0,2 | sem dado | 0,1 |
+| 414 | Sebastião Laranjeiras | 6 | 3,9 | sem dado | 0,0 |
+| 415 | Tanquinho | 6 | 0,0 | sem dado | 0,1 |
+| 416 | Coribe | 5 | sem dado | sem dado | 0,0 |
+| 417 | Saubara | 2 | 0,0 | sem dado | 0,0 |
 
 **Leitura (revisão manual):** o topo exploratório é dominado pela falta de rede de água (57% a 81% da população fora da rede); onde há dado de povos tradicionais (Maraú, Banzaê, Muquém de São Francisco) ele reforça a posição. A base reúne municípios com rede de água quase universal. O mecanismo responde na direção esperada. Ressalvas: (1) sem saúde, clima e qualidade da água, este ranking não serve para priorizar; (2) o percentual quilombola + indígena fica sem dado onde o espelho do Censo tem sigilo total, então a dimensão vulnerabilidade pesa pouco até a tabela oficial do SIDRA entrar; (3) o esgoto do SNIS falta em muitos municípios pequenos (provável ausência de rede), o que os favorece; o Censo corrige isso.
 

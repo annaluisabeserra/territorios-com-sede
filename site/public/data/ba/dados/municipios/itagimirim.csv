@@ -1,7 +1,7 @@
 ,valor
 nome,Itagimirim
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Eunápolis - Porto Seguro
 semiarido,False
 populacao,6347
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,86.22271433090795
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,55.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.8665511265164645
 snis_agua_pct,77.97
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

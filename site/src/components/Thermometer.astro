@@ -6,15 +6,16 @@ import type { Thermometer } from "../lib/types";
 interface Props { t: Thermometer; title: string }
 const { t, title } = Astro.props;
 const cur = t.current ?? 0;
+const plausible = (y: number | null) => y !== null && y <= 2100;
 const statusText: Record<string, string> = {
-  atingida: "A meta já foi alcançada.",
+  atingida: t.uncertain ? "A meta foi alcançada no último ano informado; falta confirmar nos próximos anos." : "A meta já foi alcançada.",
   no_ritmo: t.projected_year ? `Mantido o ritmo, a meta seria alcançada por volta de ${t.projected_year}.` : "",
-  atrasado: t.projected_year ? `No ritmo atual, a meta só seria alcançada por volta de ${t.projected_year}, depois de 2033.` : "No ritmo atual, a meta não seria alcançada: o indicador está parado ou caindo.",
+  atrasado: plausible(t.projected_year) ? `No ritmo atual, a meta só seria alcançada por volta de ${t.projected_year}, depois de 2033.` : "No ritmo atual, a meta não seria alcançada: o indicador está parado, caindo ou subindo devagar demais.",
   sem_dados: t.reason ? `Não dá para projetar: ${t.reason}.` : "O município não informou este dado ao SNIS.",
 };
-const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
-  t.projected_year_low && t.projected_year_high ? `Faixa provável: ${t.projected_year_low} a ${t.projected_year_high}.`
-  : t.projected_year_low ? `Faixa provável: a partir de ${t.projected_year_low}; no cenário pessimista, a meta não é alcançada.` : ""
+const range = t.status !== "atingida" && t.status !== "sem_dados" && (t.slope ?? 0) > 0 && plausible(t.projected_year) ? (
+  t.projected_year_low && plausible(t.projected_year_high) ? `Faixa da tendência: ${t.projected_year_low} a ${t.projected_year_high}.`
+  : t.projected_year_low ? `Faixa da tendência: a partir de ${t.projected_year_low}; no cenário mais lento, a meta não é alcançada.` : ""
 ) : "";
 ---
 <div class="thermo">
@@ -22,7 +23,7 @@ const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
     <h3>{title}</h3>
     <span class:list={["tag", THERMO_CLASS[t.status]]}>{THERMO_LABEL[t.status]}{t.uncertain && " (projeção incerta)"}</span>
   </div>
-  <div class="bar" role="img" aria-label={`${title}: ${t.current !== null ? fmtPct(t.current) : "sem dado"} hoje, meta de ${fmtNumber(t.target)}%`}>
+  <div class="bar" role="img" aria-label={`${title}: ${t.current !== null ? `${fmtPct(t.current)} em ${t.current_year}` : "sem dado"}, meta de ${fmtNumber(t.target)}%`}>
     <div class="fill" style={`width:${Math.min(100, cur)}%`}></div>
     <div class="target" style={`left:${t.target}%`}><span>meta {fmtNumber(t.target)}%</span></div>
   </div>
@@ -30,7 +31,7 @@ const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
   {t.gap !== null && t.gap > 0 && <p class="small">Faltam <strong>{fmtNumber(t.gap, 1)} pontos percentuais</strong> até a meta.</p>}
   <p class="small">{statusText[t.status]} {range}</p>
   {t.uncertain && <p class="xsmall"><strong>Projeção incerta:</strong> os dados oscilam muito, e a tendência pode ser de estagnação.</p>}
-  {t.slope !== null && <p class="xsmall muted">Tendência: {t.slope >= 0 ? "+" : ""}{fmtNumber(t.slope, 2)} ponto(s) por ano, calculada sobre {t.n_points} anos ({t.years[0]}–{t.years[t.years.length - 1]}). Projeção linear e indicativa.</p>}
+  {t.slope !== null && <p class="xsmall muted">Tendência: {t.slope >= 0 ? "+" : ""}{fmtNumber(t.slope, 1)} {Math.abs(t.slope) >= 0.95 && Math.abs(t.slope) < 1.05 ? "ponto percentual" : "pontos percentuais"} por ano, calculada com os dados de {t.years[0]} a {t.years[t.years.length - 1]}. É uma projeção simples, só para orientar.</p>}
 </div>
 <style>
   .thermo { display: grid; gap: var(--s-2); }

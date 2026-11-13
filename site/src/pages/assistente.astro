@@ -1,0 +1,41 @@
+---
+import Base from "../layouts/Base.astro";
+const enabled = import.meta.env.PUBLIC_ASSISTANT_ENABLED === "true";
+---
+<Base title="Assistente" description="Pergunte em linguagem natural sobre os dados da plataforma.">
+  <section class="wrap section text">
+    <p class="eyebrow">Experimental</p>
+    <h1>Assistente de dados</h1>
+    {enabled ? (
+      <>
+        <p>Faça uma pergunta sobre água, esgoto e saúde nos municípios. O assistente responde <strong>só com os dados desta plataforma</strong>, citando a fonte, e diz quando não sabe. Ele pode errar: confira sempre na ficha do município.</p>
+        <form id="chat" class="card">
+          <label for="q">Sua pergunta</label>
+          <textarea id="q" rows="3" maxlength="1000" placeholder="Ex.: Como está o esgoto em Juazeiro?"></textarea>
+          <button class="btn" type="submit">Perguntar</button>
+        </form>
+        <div id="log" aria-live="polite"></div>
+      </>
+    ) : (
+      <p class="card">O assistente está <strong>desligado</strong> nesta versão. Enquanto isso, use a <a href="/busca">busca</a> e as <a href="/perguntas">perguntas guiadas</a>, que respondem com os mesmos dados.</p>
+    )}
+  </section>
+</Base>
+<script>
+  import { getProvider } from "../lib/assistant/provider";
+  const form = document.getElementById("chat");
+  if (form) {
+    const p = getProvider();
+    const log = document.getElementById("log")!;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = (document.getElementById("q") as HTMLTextAreaElement).value.trim();
+      if (!q) return;
+      const item = document.createElement("div"); item.className = "card"; item.innerHTML = `<p><strong>Você:</strong> ${q.replace(/</g, "&lt;")}</p><p class="muted">Consultando os dados…</p>`;
+      log.prepend(item);
+      const a = await p.ask(q);
+      item.lastElementChild!.textContent = a.text;
+    });
+  }
+</script>
+<style>textarea { width: 100%; padding: .7rem; border-radius: 8px; border: 1px solid var(--c-ink-muted); font: inherit; margin: var(--s-2) 0; } label { font-weight: 700; } #log :global(.card) { margin-top: var(--s-3); }</style>

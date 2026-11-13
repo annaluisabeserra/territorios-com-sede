@@ -1,0 +1,22 @@
+name: Corrigir um dado
+description: Encontrou um número errado, desatualizado ou sem fonte?
+title: "[Correção] "
+labels: ["correção de dado"]
+body:
+  - type: markdown
+    attributes:
+      value: "Obrigado por ajudar. Não inclua dados pessoais (nome, CPF, endereço, telefone)."
+  - type: input
+    id: municipio
+    attributes: { label: Município e estado, placeholder: "Ex.: Juazeiro (BA)" }
+    validations: { required: true }
+  - type: input
+    id: pagina
+    attributes: { label: Endereço da página, placeholder: "https://territorios.institutosdw.org/municipio/ba/juazeiro" }
+  - type: textarea
+    id: problema
+    attributes: { label: O que parece errado?, description: "Qual número, onde aparece e por que você acha que está errado." }
+    validations: { required: true }
+  - type: textarea
+    id: fonte
+    attributes: { label: Fonte correta (se souber), description: "Link ou documento oficial." }

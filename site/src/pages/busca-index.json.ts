@@ -1,7 +1,7 @@
 // Índice de busca gerado no build: municípios (todas as UFs), indicadores, FAQ e páginas.
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
-import { indicators, resumo, ufs } from "../lib/data";
+import { indicators, readJson, resumo, ufs } from "../lib/data";
 
 const PAGES = [
   { t: "Mapa interativo", u: "/mapa", k: "mapa camadas esgoto água coberturas" },
@@ -20,6 +20,16 @@ export const GET: APIRoute = async () => {
   for (const u of ufs()) {
     for (const m of resumo(u.slug).municipios) {
       docs.push({ id: `m-${m.cod}`, type: "Município", title: m.nome, sub: `${u.sigla} · ${m.ri ?? ""}`, url: `/municipio/${u.slug}/${m.slug}`, text: `${m.rim ?? ""} ${m.ri ?? ""}` });
+    }
+  }
+  // Terras indígenas e reservas extrativistas: nome do território (nível de território, nunca aldeia)
+  for (const u of ufs()) {
+    for (const [file, label] of [["terras_indigenas.geojson", "Terra indígena"], ["ucs_uso_sustentavel.geojson", "Reserva"]] as const) {
+      const gj = readJson<any>(u.slug, file);
+      (gj?.features ?? []).forEach((ft: any, i: number) => {
+        const p = ft.properties ?? {};
+        docs.push({ id: `t-${u.slug}-${label}-${i}`, type: label, title: p.nome, sub: `${u.sigla} · ${p.fase ?? p.categoria ?? ""}`, url: `/mapa?uf=${u.slug}`, text: p.etnia ?? "" });
+      });
     }
   }
   for (const [k, d] of Object.entries(indicators())) {

@@ -5,6 +5,7 @@ import { REPO_URL } from "../lib/site";
 
 const list = ufs().map((u) => ({ ...u, r: resumo(u.slug) }));
 const IND = indicators();
+const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", rate_10k: "por 10 mil hab.", brl: "R$", brl_pc: "R$ por habitante", index: "0 a 100", days: "dias", lhabdia: "litros/hab./dia", bool: "sim/não", years: "anos" };
 ---
 <Base title="Dados abertos" description="Baixe os dados por estado e por município, com dicionário, licença e citação.">
   <section class="wrap section">
@@ -33,7 +34,7 @@ const IND = indicators();
       <thead><tr><th scope="col">Coluna</th><th scope="col">Descrição</th><th scope="col">Unidade</th></tr></thead>
       <tbody>
         <tr><th scope="row"><code>cod_ibge7</code></th><td>Código IBGE do município (7 dígitos)</td><td>texto</td></tr>
-        {Object.entries(IND).map(([k, d]) => <tr><th scope="row"><code>{k}</code></th><td>{d.label}. <a href={`/metodologia#ind-${k}`}>Fórmula e limitações</a></td><td>{d.unit}</td></tr>)}
+        {Object.entries(IND).map(([k, d]) => <tr><th scope="row"><code>{k}</code></th><td>{d.label}. <a href={`/metodologia#ind-${k}`}>Fórmula e limitações</a></td><td>{UNITS[d.unit] ?? d.unit}</td></tr>)}
         <tr><th scope="row"><code>indice_rank</code></th><td>Posição no índice de prioridade da UF (1 = maior prioridade); vazio quando o índice não é publicado</td><td>posição</td></tr>
       </tbody>
     </table></div>
@@ -50,7 +51,7 @@ const IND = indicators();
     <p class="small">Cópias públicas: Base dos Dados (CC BY 4.0) e geobr/Ipea (MIT), que redistribuem dados oficiais do IBGE, do Ministério das Cidades, da ANA, da Sudene e da FUNAI. Detalhes em <a href={`${REPO_URL}/blob/main/docs/DATA_SOURCES.md`}>DATA_SOURCES.md</a>.</p>
 
     <h2>Como citar</h2>
-    <blockquote>Instituto SDW. <em>Territórios com Sede: observatório de água e saneamento</em>. Dados de {list.map((u) => u.name).join(", ")}, versão de {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")}. Disponível em: https://territorios.institutosdw.org/dados. Licença CC BY 4.0.</blockquote>
+    <blockquote>Instituto SDW. <em>Territórios com Sede: observatório de água e saneamento</em>. Dados {list.map((u) => (u.sigla === "BA" ? "da Bahia" : u.sigla === "CE" ? "do Ceará" : `de ${u.name}`)).join(", ")}, versão de {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")}. Disponível em: https://territorios.institutosdw.org/dados. Licença CC BY 4.0.</blockquote>
 
     <h2>Histórico de mudanças</h2>
     <p class="small">Cada atualização mensal gera um registro público no <a href={`${REPO_URL}/commits/main/data/processed`}>histórico do repositório</a>, com o que mudou em cada base. A primeira versão pública foi gerada em {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")} (pipeline {list[0].r.pipeline_version}).</p>

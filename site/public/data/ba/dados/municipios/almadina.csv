@@ -1,15 +1,15 @@
 ,valor
 nome,Almadina
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
-regiao_imediata,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
+regiao_imediata,Ilhéus - Itabuna
 semiarido,False
 populacao,5218
 censo_lixo_coletado_pct,86.02687140115162
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,14.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.2683020314296665
 snis_agua_pct,79.78
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

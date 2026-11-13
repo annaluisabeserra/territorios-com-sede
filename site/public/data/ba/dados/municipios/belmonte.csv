@@ -1,7 +1,7 @@
 ,valor
 nome,Belmonte
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Eunápolis - Porto Seguro
 semiarido,False
 populacao,20121
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,82.29280941458063
 ana_coleta_tratamento_pct,69.0
 pop_quilombola,
 pop_cor_indigena,273.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,1.3567914119576563
 snis_agua_pct,73.98
 snis_esgoto_pct,57.64
 snis_esgoto_tratado_pct,57.64

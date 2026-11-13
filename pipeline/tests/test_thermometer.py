@@ -1,10 +1,11 @@
 from pipeline.transform.thermometer import compute
 
 
-def test_reached_needs_two_consecutive_years():
-    assert compute("agua", {2021: 99.2, 2022: 99.5}).status == "atingida"
-    t = compute("agua", {2018: 95.0, 2019: 96.0, 2020: 97.0, 2021: 98.0, 2022: 99.5})
-    assert t.status == "no_ritmo" and t.projected_year == 2023  # só o último ano acima: ainda não "atingida"
+def test_reached_and_flag_when_single_year():
+    t = compute("agua", {2021: 99.2, 2022: 99.5})
+    assert t.status == "atingida" and not t.uncertain
+    t = compute("agua", {2022: 99.85})  # caso Abaíra: um só ano, já na meta
+    assert t.status == "atingida" and t.uncertain and "confirmar" in t.reason
 
 
 def test_not_enough_points():

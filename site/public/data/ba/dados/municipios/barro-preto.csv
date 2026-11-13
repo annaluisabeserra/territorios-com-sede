@@ -1,15 +1,15 @@
 ,valor
 nome,Barro Preto
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
-regiao_imediata,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
+regiao_imediata,Ilhéus - Itabuna
 semiarido,False
 populacao,5833
 censo_lixo_coletado_pct,80.16458083319047
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,51.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.8743356763243613
 snis_agua_pct,
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

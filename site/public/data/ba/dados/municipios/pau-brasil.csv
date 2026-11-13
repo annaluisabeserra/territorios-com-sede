@@ -1,7 +1,7 @@
 ,valor
 nome,Pau Brasil
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Camacan
 semiarido,False
 populacao,9370
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,67.7353852730576
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,2603.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,27.78014941302028
 snis_agua_pct,67.82
 snis_esgoto_pct,42.25
 snis_esgoto_tratado_pct,0.0

@@ -107,7 +107,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <div class="grid grid-2" style="margin-top:var(--s-5)">
         <div class="card">
           <LineChart title="Atendimento de água e esgoto ao longo do tempo" target={{ value: 90, label: "meta de esgoto 2033: 90%" }}
-            series={[{ label: "Água (IN055)", points: f.series.snis_agua_pct ?? [], color: "#0868ac" }, { label: "Esgoto (IN056)", points: f.series.snis_esgoto_pct ?? [], color: "#b8461d" }]}
+            series={[{ label: "Água", points: f.series.snis_agua_pct ?? [], color: "#0868ac" }, { label: "Esgoto coletado", points: f.series.snis_esgoto_pct ?? [], color: "#b8461d", dashed: true }, { label: "Esgoto coletado e tratado", points: f.series.snis_esgoto_tratado_pct ?? [], color: "#7a3a12" }]}
             source={srcLine("snis", "SNIS")} />
         </div>
         <div class="card">
@@ -148,7 +148,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       ) : (
         <div class="card pending">
           <p><strong>Os dados de internações ainda não foram processados nesta versão.</strong></p>
-          <p class="small">Eles vêm do SIH/SUS (DATASUS) e são atualizados pelo pipeline automático. Quando estiverem disponíveis, esta seção mostrará quantas pessoas são internadas por ano por doenças como diarreia, hepatite A e leptospirose, quanto isso custa ao SUS e quanto o município economizaria com saneamento.</p>
+          <p class="small">Eles vêm do sistema de internações do SUS (SIH, DATASUS) e entram na nossa atualização mensal. Quando estiverem disponíveis, esta seção mostrará quantas pessoas são internadas por ano por doenças como diarreia, hepatite A e leptospirose, quanto isso custa ao SUS e quanto o município economizaria com saneamento.</p>
         </div>
       )}
       <p class="source">Fonte: {srcLine("sih_drsai", "DATASUS, SIH/SUS")}{h && `, ${h.period}`}. Doenças relacionadas ao saneamento ambiental inadequado (DRSAI), núcleo conservador. <a href="/metodologia#drsai">Quais doenças entram</a>.</p>
@@ -168,14 +168,23 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           </dl>
           {c.pop_quilombola_lower_bound && c.pop_quilombola !== null && <p class="xsmall muted">“Pelo menos”: a cópia pública usada soma faixas de idade e sexo, e o IBGE oculta faixas muito pequenas para proteger a privacidade ({fmtNumber(c.quilombola_pct_celulas_sigilo)}% das faixas deste município estão sob sigilo). O total oficial pode ser maior.</p>}
           {c.pop_quilombola === null && <p class="xsmall muted">“Sem dado”: todas as faixas de idade e sexo deste município estão sob sigilo na cópia pública usada, ou não há pessoas quilombolas recenseadas. Não é possível distinguir os dois casos.</p>}
-          <p class="xsmall muted">{c.nota_territorio} O status oficial de titulação (INCRA) e de certificação (Fundação Palmares) ainda não está integrado à plataforma.</p>
+          {c.pop_quilombola_em_territorio !== null && c.pop_quilombola_em_territorio > 0 && <p class="xsmall muted">Pelo menos {fmtNumber(c.pop_quilombola_em_territorio)} vivem em territórios quilombolas delimitados pelo IBGE.</p>}
+          {c.pop_quilombola_lower_bound && (c.quilombola_pct_celulas_sigilo ?? 0) > 50 && c.pop_quilombola !== null && <p class="tag warn">Dado parcial: {fmtNumber(c.quilombola_pct_celulas_sigilo)}% das faixas sob sigilo do IBGE</p>}
+          <p class="xsmall muted">O status oficial de titulação (INCRA) e de certificação (Fundação Palmares) ainda não está integrado à plataforma.</p>
           <p class="source">Fonte: {srcLine("censo_quilombola", "IBGE, Censo 2022")}.</p>
         </div>
         <div class="card">
           <h3>Terras indígenas</h3>
           {c.terras_indigenas.length ? (
-            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>Terra Indígena {t.nome}</strong>{t.ufs && t.ufs !== f.uf && <span class="small"> ({t.ufs})</span>}<br /><span class="small">Situação oficial: <strong>{t.fase ?? "não informada"}</strong>{t.modalidade && ` · ${t.modalidade}`}. Povos: {t.etnia ?? "consultar a FUNAI"}.{t.data_ref && ` Dados de ${t.data_ref.slice(6, 8)}/${t.data_ref.slice(4, 6)}/${t.data_ref.slice(0, 4)}.`}</span></li>)}</ul>
+            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>Terra Indígena {t.nome}</strong>{t.ufs && t.ufs !== f.uf && <span class="small"> ({t.ufs})</span>}<br /><span class="small">Situação oficial: <strong>{t.fase ?? "não informada"}</strong>{t.fase && ["Em Estudo", "Delimitada", "Declarada"].includes(t.fase) && " (demarcação em andamento; pode ser revisão dos limites de outra terra da lista)"}{t.modalidade && ` · ${t.modalidade}`}. {t.etnia && `Povos: ${t.etnia}.`}{t.data_ref && ` Dados de ${t.data_ref.slice(6, 8)}/${t.data_ref.slice(4, 6)}/${t.data_ref.slice(0, 4)}.`}</span></li>)}</ul>
           ) : <p class="muted">Nenhuma terra indígena com área relevante dentro do município, segundo a FUNAI.</p>}
+          {c.ucs_uso_sustentavel && c.ucs_uso_sustentavel.length > 0 && (
+            <>
+              <h3 class="sub">Reservas extrativistas e de desenvolvimento sustentável</h3>
+              <ul class="tis">{c.ucs_uso_sustentavel.map((u) => <li><strong>{u.nome}</strong><br /><span class="small">{u.categoria} ({u.esfera.toLowerCase()}){u.ano_criacao && `, criada em ${u.ano_criacao}`}. Unidades onde vivem e trabalham populações tradicionais extrativistas.</span></li>)}</ul>
+              <p class="source">Fonte: Cadastro Nacional de Unidades de Conservação (MMA), via geobr/Ipea.</p>
+            </>
+          )}
           <p class="source">Fonte: {c.fonte_tis}. Mostramos só o território oficial, nunca a localização de aldeias. <a href="/povos-e-comunidades">Nossos princípios e como pedir correção ou retirada</a>.</p>
         </div>
       </div>
@@ -240,6 +249,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .kv { display: grid; grid-template-columns: 1fr auto; gap: var(--s-2) var(--s-4); margin: 0 0 var(--s-3); }
   .kv dd { margin: 0; text-align: right; }
   .tis { padding-left: var(--s-4); }
+  .sub { font-size: var(--fs-md); margin-top: var(--s-4); }
   .tis li { margin-bottom: var(--s-2); }
   .dims { display: grid; gap: var(--s-2); max-width: 40rem; margin: var(--s-4) 0; }
   .dim { display: grid; grid-template-columns: 11rem 1fr 4.5rem; gap: var(--s-3); align-items: center; }

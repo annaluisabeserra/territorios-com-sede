@@ -23,7 +23,11 @@ th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px so
 th { font-weight: 700; background: var(--c-sand-100); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 button, input, select { font: inherit; }
-.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s-4); }
+.wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--s-4); padding-right: var(--s-4); }
+/* Reflow a 320 px (WCAG 1.4.10): itens de grid e flex podem encolher; textos longos quebram */
+.grid > *, .wrap > * { min-width: 0; }
+code, .url { overflow-wrap: anywhere; }
+select, input, textarea { max-width: 100%; }
 .text { max-width: var(--maxw-text); }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .muted { color: var(--c-ink-muted); }
@@ -46,7 +50,7 @@ button, input, select { font: inherit; }
 .tag.warn { background: var(--c-warn-bg); color: var(--c-warn); }
 .nodata { color: var(--c-ink-muted); font-style: italic; }
 .source { font-size: var(--fs-xs); color: var(--c-ink-muted); }
-.section { padding: var(--s-7) 0; }
+.section { padding-top: var(--s-7); padding-bottom: var(--s-7); }
 .eyebrow { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--c-water-700); margin: 0 0 var(--s-2); }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 details > summary { cursor: pointer; font-weight: 700; }

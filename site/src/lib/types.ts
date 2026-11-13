@@ -91,6 +91,7 @@ export interface Ficha {
   communities: {
     pop_quilombola: Num; pop_quilombola_em_territorio: Num; pop_quilombola_lower_bound: boolean; pop_cor_indigena: Num;
     quilombola_pct_celulas_sigilo: Num; fonte_censo: string; fonte_tis: string; nota_territorio: string;
+    ucs_uso_sustentavel?: { nome: string; categoria: string; esfera: string; ano_criacao: string | null; id_cnuc: string }[];
     terras_indigenas: { codigo_funai: string | null; ufs: string | null; data_ref: string | null; nome: string; etnia: string | null; fase: string | null; modalidade: string | null; area_ha_total: Num; pct_da_ti_no_municipio: number }[];
   };
   index: { score: Num; rank: Num; n_ranked: number; coverage: Num; dims: Record<string, Num>; components: Record<string, Num> };

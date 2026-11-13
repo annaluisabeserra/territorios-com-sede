@@ -21,7 +21,7 @@ import geopandas as gpd
 import pandas as pd
 
 from pipeline import config
-from pipeline.sources import ana, funai, ibge, ipca, sih, snis
+from pipeline.sources import ana, funai, ibge, ipca, sih, snis, ucs
 from pipeline.sources.catalog import SourceResult
 from pipeline.sources.meta import OutputMeta, read_meta
 from pipeline.transform.geo_keys import build_crosswalk
@@ -129,6 +129,7 @@ def ingest(uf: config.UF, skip_sih: bool = False) -> dict:
     stage(uf, "ipca", lambda: ipca.monthly_index(uf), status)
     malha = gpd.read_parquet(processed_dir(uf) / "malhas.parquet")
     stage(uf, "terras_indigenas", lambda: funai.terras_indigenas(uf, malha), status)
+    stage(uf, "ucs_uso_sustentavel", lambda: ucs.uso_sustentavel(uf, malha), status)
     if skip_sih:
         status["sih_drsai"] = {"status": "skipped"}
     else:

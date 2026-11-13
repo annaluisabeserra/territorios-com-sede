@@ -71,3 +71,11 @@ test("página da escola e FAQ com 20+ perguntas", async ({ page }) => {
   await page.goto("/faq");
   expect(await page.locator("details.q").count()).toBeGreaterThanOrEqual(20);
 });
+
+test("nenhuma ficha mostra 'None', 'nan' ou caractere corrompido", async ({ page }) => {
+  for (const m of ["abaira", "tanque-novo", "pau-brasil", "salvador"]) {
+    await page.goto(`/municipio/ba/${m}`);
+    const text = await page.locator("main").innerText();
+    expect(text).not.toMatch(/\bNone\b|\bnan%?|¿|undefined|∞/i);
+  }
+});

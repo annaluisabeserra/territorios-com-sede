@@ -13,9 +13,9 @@ const candidates = [
   t.pessoas_sem_esgoto_censo != null && { value: fmtNumber(t.pessoas_sem_esgoto_censo), text: "pessoas sem esgoto adequado", src: "IBGE, Censo 2022" },
   t.drsai_valor_anual != null && { value: fmtBRLShort(t.drsai_valor_anual), text: "por ano pagos pelo SUS em internações por doenças ligadas ao saneamento", src: `DATASUS, SIH/SUS, ${R.health.period_label}` },
   { value: `${t.esgoto_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de esgoto coletado e tratado de 2033", src: `SNIS, tendência até ${R.snis_year}` },
-  { value: `${t.esgoto_sem_dados} de ${n}`, text: "municípios sem dados suficientes de esgoto no SNIS: a sede que não aparece nas estatísticas", src: `SNIS, até ${R.snis_year}` },
+  t.esgoto_sem_dado_recente != null && { value: `${t.esgoto_sem_dado_recente} de ${n}`, text: `municípios sem nenhum dado recente de esgoto tratado no SNIS (${(R.snis_year ?? 0) - 2} a ${R.snis_year}): a sede que não aparece nas estatísticas`, src: `SNIS, ${(R.snis_year ?? 0) - 2}–${R.snis_year}`, href: "/perguntas?m=lista&i=populacao&r=todas&f=esgoto_sem_declaracao&o=desc&n=10&uf=ba" },
   { value: `${t.agua_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de água de 2033", src: `SNIS, tendência até ${R.snis_year}` },
-].filter(Boolean).slice(0, 3) as { value: string; text: string; src: string }[];
+].filter(Boolean).slice(0, 3) as { value: string; text: string; src: string; href?: string }[];
 const thermoColors = Object.fromEntries(R.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
 const counts = Object.keys(THERMO_LABEL).map((k) => ({ k, label: THERMO_LABEL[k], n: R.municipios.filter((m) => m.thermo.esgoto === k).length }));
 const list = ufs();
@@ -46,7 +46,7 @@ const list = ufs();
   </section>
 
   <section class="wrap numbers" aria-label="Números da Bahia">
-    {candidates.map((c) => (<div class="card"><p class="n">{c.value}</p><p>{c.text}</p><p class="source">{c.src}</p></div>))}
+    {candidates.map((c) => (<div class="card"><p class="n">{c.value}</p><p>{c.text}</p><p class="source">{c.src} · <a href={c.href ?? "/metodologia#termometro"}>{c.href ? "ver a lista" : "como calculamos"}</a></p></div>))}
   </section>
 
   <section class="wrap section verbs">

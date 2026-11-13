@@ -1,0 +1,38 @@
+# Decap CMS: edição de conteúdo pelo navegador, gravando no GitHub (cada edição vira um commit ou PR).
+# Autenticação: precisa de um provedor OAuth para o GitHub (ver HANDOFF.md, "Editar conteúdo").
+backend:
+  name: github
+  repo: institutosdw/territorios-com-sede   # ajustar quando o repositório for publicado
+  branch: main
+  # base_url: https://<seu-worker-oauth>.workers.dev   # provedor OAuth gratuito (Cloudflare Worker)
+publish_mode: editorial_workflow   # edições viram pull requests para revisão antes de publicar
+local_backend: true                # edição local: `npx decap-server` + `npm run dev`
+media_folder: site/public/uploads
+public_folder: /uploads
+locale: pt
+collections:
+  - name: faq
+    label: Perguntas frequentes
+    label_singular: Pergunta
+    folder: site/src/content/faq
+    create: true
+    slug: "{{slug}}"
+    identifier_field: question
+    fields:
+      - { label: Pergunta, name: question, widget: string }
+      - { label: Tema, name: category, widget: select, options: ["Sobre a plataforma", "Saúde", "Metas", "Dados", "Calculadora", "Prioridades", "Conceitos", "Comunidades", "Participação", "Agir"] }
+      - { label: Ordem, name: order, widget: number, value_type: int }
+      - { label: Resposta, name: body, widget: markdown }
+  - name: escola
+    label: Roteiros da escola
+    label_singular: Roteiro
+    folder: site/src/content/escola
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Título, name: title, widget: string }
+      - { label: Resumo, name: summary, widget: text }
+      - { label: Nível, name: level, widget: string }
+      - { label: Duração, name: duration, widget: string }
+      - { label: Ordem, name: order, widget: number, value_type: int }
+      - { label: Roteiro, name: body, widget: markdown }

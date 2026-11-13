@@ -1,7 +1,7 @@
 ,valor
 nome,Camacan
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Camacan
 semiarido,False
 populacao,22579
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,89.93070978058097
 ana_coleta_tratamento_pct,81.41000000000001
 pop_quilombola,
 pop_cor_indigena,949.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,4.2030205057797065
 snis_agua_pct,77.44
 snis_esgoto_pct,36.69
 snis_esgoto_tratado_pct,36.69

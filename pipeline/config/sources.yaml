@@ -147,3 +147,13 @@ palmares_certidoes:
   license: Dados públicos
   official_reference: "https://www.gov.br/palmares/pt-br/departamentos/protecao-preservacao-e-articulacao/certificacao-quilombola"
   urls: []   # planilha publicada em página institucional sem endereço estável
+
+ucs_uso_sustentavel:
+  name: MMA/ICMBio — Unidades de conservação de uso sustentável (RESEX e RDS)
+  license: Dados públicos (Cadastro Nacional de Unidades de Conservação)
+  categories: ["Reserva Extrativista", "Reserva de Desenvolvimento Sustentável"]
+  official_reference: "Cadastro Nacional de Unidades de Conservação (CNUC/MMA); sem arquivo de polígonos com endereço estável verificado"
+  urls:
+    - kind: mirror
+      url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_geobr_mapas/unidade_conservacao/unidade_conservacao.csv.gz"
+      note: Base dos Dados (geobr/Ipea a partir do CNUC/MMA), polígonos em WKT

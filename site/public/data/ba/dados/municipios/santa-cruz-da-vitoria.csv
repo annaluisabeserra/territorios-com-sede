@@ -1,15 +1,15 @@
 ,valor
 nome,Santa Cruz da Vitória
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
-regiao_imediata,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
+regiao_imediata,Ilhéus - Itabuna
 semiarido,False
 populacao,4681
 censo_lixo_coletado_pct,88.08858310040851
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,41.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.8758812219611195
 snis_agua_pct,75.9
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

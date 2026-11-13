@@ -1,15 +1,15 @@
 ,valor
 nome,Uruçuca
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
-regiao_imediata,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
+regiao_imediata,Ilhéus - Itabuna
 semiarido,False
 populacao,21420
 censo_lixo_coletado_pct,78.37508209025236
 ana_coleta_tratamento_pct,63.449999999999996
 pop_quilombola,
 pop_cor_indigena,90.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.42016806722689076
 snis_agua_pct,84.5
 snis_esgoto_pct,13.86
 snis_esgoto_tratado_pct,13.86

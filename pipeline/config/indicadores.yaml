@@ -245,6 +245,7 @@ indicators:
     limitations:
       - Primeiro Censo a contar a população quilombola. Pode haver subcontagem em localidades de difícil acesso.
       - Quilombolas e indígenas podem se sobrepor em poucos casos (pessoa que se declara das duas formas).
+      - Quando uma das partes está sob sigilo, usa-se a parte conhecida (valor mínimo).
       - No índice, indica presença de povos e comunidades tradicionais, historicamente mais excluídos do saneamento.
     map: false
 

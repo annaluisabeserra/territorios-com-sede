@@ -1,7 +1,7 @@
 ,valor
 nome,Jucuruçu
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Teixeira de Freitas
 semiarido,False
 populacao,9655
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,56.29798713426022
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,7.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.07250129466597618
 snis_agua_pct,32.28
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

@@ -51,3 +51,18 @@ def test_no_sewage_provider_triggers_decentralized_sanitation():
 def test_solar_mentions_energy_not_evaluated():
     r = suggestions({"snis_agua_pct": 50.0}, {})
     assert "energia não foi avaliado" in next(x for x in r if x["id"] == "unidade_autonoma_solar")["why"]
+
+
+def test_summary_leads_with_treated_and_never_prints_nan():
+    import math
+
+    ind = {"populacao": 1000, "snis_esgoto_pct": 99.85, "snis_esgoto_tratado_pct": 0.0, "snis_agua_pct": math.nan}
+    txt = " ".join(municipal_summary("X", ind, {}, {"years": {"snis_esgoto_tratado_pct": 2022}}))
+    assert txt.index("0,0% da população tem o esgoto coletado e tratado") < txt.index("99,9%")
+    assert "nan" not in txt.lower() and "None" not in txt
+
+
+def test_rounding_matches_site():
+    from pipeline.transform.summary import pct
+
+    assert pct(99.85) == "99,9%" and pct(2.25) == "2,3%"

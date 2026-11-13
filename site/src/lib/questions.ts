@@ -39,7 +39,8 @@ export function answer(all: ResumoMunicipio[], s: Spec): { rows: { m: ResumoMuni
   }
   const withV = ms.map((m) => ({ m, v: val(m) }));
   const present = withV.filter((r) => r.v !== null) as { m: ResumoMunicipio; v: number }[];
-  present.sort((a, b) => (s.order === "desc" ? b.v - a.v : a.v - b.v) || a.m.nome.localeCompare(b.m.nome, "pt-BR"));
+  // Empates (ex.: vários 100% autodeclarados): maior população primeiro, depois nome.
+  present.sort((a, b) => (s.order === "desc" ? b.v - a.v : a.v - b.v) || (b.m.ind.populacao ?? 0) - (a.m.ind.populacao ?? 0) || a.m.nome.localeCompare(b.m.nome, "pt-BR"));
   const rows = s.mode === "ranking" ? present.slice(0, s.n) : present;
   return { rows, withoutData: withV.length - present.length, universe: withV.length };
 }

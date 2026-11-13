@@ -94,7 +94,7 @@ class Inputs:
         m = self.meta(name)
         if not p.exists() or (m and m.get("status") == "unavailable"):
             return None
-        if name in {"malhas", "terras_indigenas"}:
+        if name in {"malhas", "terras_indigenas", "ucs_uso_sustentavel"}:
             return gpd.read_parquet(p)
         return pd.read_parquet(p)
 
@@ -227,10 +227,11 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
     if r is not None:
         base = base.join(r.set_index("cod_ibge7")[["pop_cor_indigena"]])
     if "pop_quilombola" in base and "pop_cor_indigena" in base:
-        # Sem fillna: se um dos dois é desconhecido, o percentual é desconhecido.
-        base["pct_pop_quilombola_indigena"] = (
-            (base["pop_quilombola"] + base["pop_cor_indigena"]) / base["populacao"] * 100
-        )
+        # Limite inferior com as partes conhecidas (revisão M4: a presença indígena não pode sumir porque a
+        # contagem quilombola está sob sigilo). Desconhecido só se as duas partes forem desconhecidas.
+        both_null = base["pop_quilombola"].isna() & base["pop_cor_indigena"].isna()
+        known = base["pop_quilombola"].fillna(0) + base["pop_cor_indigena"].fillna(0)
+        base["pct_pop_quilombola_indigena"] = (known / base["populacao"] * 100).where(~both_null)
     if q is not None:
         base = base.join(
             q.set_index("cod_ibge7")[["pct_cells_suppressed"]].rename(
@@ -433,6 +434,39 @@ def communities(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoDataFrame | 
     return by_mun, keep
 
 
+def ucs_by_municipality(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoDataFrame | None]:
+    u = inp.get("ucs_uso_sustentavel")
+    malha = inp.get("malhas")
+    if u is None or malha is None or u.empty:
+        return {}, None
+    m = malha.to_crs(5880)
+    t = u.to_crs(5880).reset_index(drop=True)
+    t["uc_id"] = t.index
+    t["uc_area"] = t.geometry.area
+    inter = gpd.overlay(
+        t[["uc_id", "uc_area", "geometry"]], m[["cod_ibge7", "geometry"]], how="intersection", keep_geom_type=True
+    )
+    inter["a"] = inter.geometry.area
+    m_area = m.set_index("cod_ibge7").geometry.area
+    inter = inter[(inter["a"] >= 0.01 * inter["uc_area"]) | (inter["a"] >= 0.005 * inter["cod_ibge7"].map(m_area))]
+    out: dict[str, list[dict]] = {}
+    for _, r in inter.iterrows():
+        uc = t.loc[r["uc_id"]]
+        out.setdefault(r["cod_ibge7"], []).append(
+            {
+                "nome": uc["nome"],
+                "categoria": uc["categoria"],
+                "esfera": uc["esfera"],
+                "ano_criacao": uc["ano_criacao"],
+                "id_cnuc": uc["id_cnuc"],
+            }
+        )
+    keep = t[t["uc_id"].isin(inter["uc_id"])].to_crs(4326)[
+        ["id_cnuc", "nome", "categoria", "esfera", "ano_criacao", "geometry"]
+    ]
+    return out, keep
+
+
 def neighbors(inp: Inputs) -> dict[str, list[str]]:
     g = inp.get("malhas").to_crs(5880)
     g["geometry"] = g.geometry.buffer(50)
@@ -497,6 +531,7 @@ def build_uf(uf: config.UF) -> None:
     sens = sensitivity(idx, idx_info)
     nbrs = neighbors(inp)
     com_by_mun, tis_geo = communities(inp)
+    ucs_mun, ucs_geo = ucs_by_municipality(inp)
     br = national_medians()
     indicators_cfg = config.load("indicadores")["indicators"]
     calc_cfg = config.load("calculadora")
@@ -563,9 +598,17 @@ def build_uf(uf: config.UF) -> None:
         "esgoto_atrasados": sum(1 for t in thermos.values() if t["esgoto"]["status"] == "atrasado"),
         "esgoto_no_ritmo": sum(1 for t in thermos.values() if t["esgoto"]["status"] in {"no_ritmo", "atingida"}),
         "esgoto_sem_dados": sum(1 for t in thermos.values() if t["esgoto"]["status"] == "sem_dados"),
+        # "Fora das estatísticas" = sem nenhum dado recente de esgoto tratado (não confundir com série curta)
+        "esgoto_sem_dado_recente": sum(
+            1
+            for t in thermos.values()
+            if t["esgoto"]["status"] == "sem_dados"
+            and (t["esgoto"]["reason"].startswith("último") or t["esgoto"]["reason"] == "sem dado no SNIS")
+        ),
         "semiarido": int(tab["semiarido"].sum()) if ctx.get("semiarido_available") else None,
         "pop_quilombola": tab["pop_quilombola"].sum(min_count=1) if "pop_quilombola" in tab else None,
         "terras_indigenas": int(len(tis_geo)) if tis_geo is not None else None,
+        "ucs_uso_sustentavel": int(len(ucs_geo)) if ucs_geo is not None else None,
     }
     if "snis_esgoto_pct" in tab and "snis_pop_atendida_esgoto" not in tab:
         pass
@@ -715,6 +758,7 @@ def build_uf(uf: config.UF) -> None:
                 "nota_territorio": "“Em território quilombola” se refere a territórios delimitados pelo IBGE no Censo; "
                 "zero ou vazio não significa ausência de território reivindicado.",
                 "terras_indigenas": com_by_mun.get(code, []),
+                "ucs_uso_sustentavel": ucs_mun.get(code, []),
             },
             "index": {
                 "score": row.get("indice_prioridade"),
@@ -739,6 +783,8 @@ def build_uf(uf: config.UF) -> None:
     malha.to_crs(4326).to_file(out_dir / "malha.geojson", driver="GeoJSON", COORDINATE_PRECISION=5)
     if tis_geo is not None:
         tis_geo.to_file(out_dir / "terras_indigenas.geojson", driver="GeoJSON", COORDINATE_PRECISION=5)
+    if ucs_geo is not None:
+        ucs_geo.to_file(out_dir / "ucs_uso_sustentavel.geojson", driver="GeoJSON", COORDINATE_PRECISION=5)
 
     write_downloads(uf, tab, ctx, out_dir, numeric)
     log.info("[%s] build ok: %d fichas, índice ranqueado: %d", uf.sigla, len(tab), idx_info["ranked"])

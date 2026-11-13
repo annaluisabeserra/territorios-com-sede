@@ -1,7 +1,7 @@
 ,valor
 nome,Vereda
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Teixeira de Freitas
 semiarido,False
 populacao,6003
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,75.5248250583139
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,3.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.04997501249375312
 snis_agua_pct,42.16
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

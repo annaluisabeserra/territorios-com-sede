@@ -1,15 +1,15 @@
 ,valor
 nome,Floresta Azul
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
-regiao_imediata,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
+regiao_imediata,Ilhéus - Itabuna
 semiarido,False
 populacao,11059
 censo_lixo_coletado_pct,75.26677518538615
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,37.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,0.3345691292160231
 snis_agua_pct,68.73
 snis_esgoto_pct,82.27
 snis_esgoto_tratado_pct,0.0

@@ -1,7 +1,7 @@
 ,valor
 nome,Jussari
 uf,BA
-regiao_intermediaria,Ilhéus ¿ Itabuna
+regiao_intermediaria,Ilhéus - Itabuna
 regiao_imediata,Camacan
 semiarido,False
 populacao,5888
@@ -9,7 +9,7 @@ censo_lixo_coletado_pct,85.90353260869566
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,
 pop_cor_indigena,81.0
-pct_pop_quilombola_indigena,
+pct_pop_quilombola_indigena,1.375679347826087
 snis_agua_pct,84.04
 snis_esgoto_pct,
 snis_esgoto_tratado_pct,

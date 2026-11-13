@@ -7,7 +7,7 @@ import Base from "../layouts/Base.astro";
     <form role="search" id="f" action="/busca" method="get">
       <label for="q">Município, comunidade, indicador ou pergunta</label>
       <div class="row"><input id="q" name="q" type="search" autocomplete="off" autofocus /><button class="btn" type="submit">Buscar</button></div>
-      <p class="xsmall muted">Busca por CEP ainda não disponível: não encontramos uma base aberta e estável que relacione CEP a município sem chave de acesso.</p>
+      <p class="xsmall muted" id="cep" hidden>Busca por CEP ainda não disponível: não encontramos uma base aberta e estável que relacione CEP a município sem chave de acesso. Digite o nome do município.</p>
     </form>
     <p id="status" class="small" role="status" aria-live="polite"></p>
     <ol id="results" class="results"></ol>
@@ -31,6 +31,7 @@ import Base from "../layouts/Base.astro";
   const ms = buildIndex(docs);
   function run(value: string, log = false) {
     const v = value.trim();
+    document.getElementById("cep")!.hidden = !/^\d[\d.-]{3,}$/.test(v);
     if (!v) { out.innerHTML = ""; status.textContent = ""; none.hidden = true; return; }
     const r = search(ms, v).slice(0, 30);
     status.textContent = r.length ? `${r.length} resultado(s) para “${v}”` : "";

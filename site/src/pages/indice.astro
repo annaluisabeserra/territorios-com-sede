@@ -27,11 +27,11 @@ const list = ufs();
           ))}
         </fieldset>
         <button type="button" class="btn secondary" id="reset">Voltar aos pesos padrão</button>
-        <p class="xsmall muted">Os pesos são normalizados para somar 100%. Para entrar no ranking, o município precisa ter dados de pelo menos {R.index.min_dimensions_for_rank} dimensões, incluindo {R.index.required_dimensions?.map((d: string) => dims[d]?.label.toLowerCase()).join(" e ")}.</p>
+        <p class="xsmall muted">Os pesos são normalizados para somar 100%. Para entrar no ranking, o município precisa ter dados de pelo menos {R.index.min_dimensions_for_rank} dimensões{(R.index.required_dimensions?.length ?? 0) > 0 && `, incluindo ${R.index.required_dimensions!.map((d: string) => dims[d]?.label.toLowerCase()).join(" e ")}`}.</p>
       </form>
       <div>
         <div id="state" class="card" aria-live="polite"></div>
-        <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table id="rank"><caption class="visually-hidden">Ranking de prioridade</caption><thead></thead><tbody></tbody></table></div>
+        <div class="table-scroll" id="rank-wrap" hidden tabindex="0" role="region" aria-label="Ranking de prioridade"><table id="rank"><caption class="visually-hidden">Ranking de prioridade</caption><thead></thead><tbody></tbody></table></div>
       </div>
     </div>
 
@@ -66,10 +66,11 @@ const list = ufs();
     const ranked = R.municipios.filter((m) => pos[m.cod] !== null).sort((a, b) => (pos[a.cod]! - pos[b.cod]!));
     const thead = $("rank").querySelector("thead")!, tbody = $("rank").querySelector("tbody")!;
     if (!ranked.length) {
-      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes ainda indisponíveis (internações do SUS, decretos de emergência e qualidade da água). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
-      thead.innerHTML = ""; tbody.innerHTML = ""; return;
+      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.sigla === "BA" ? "a Bahia" : R.uf.sigla === "CE" ? "o Ceará" : R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes ainda indisponíveis (internações do SUS, decretos de emergência e qualidade da água). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
+      thead.innerHTML = ""; tbody.innerHTML = ""; $("rank-wrap").hidden = true; return;
     }
     $("state").innerHTML = `<p>${ranked.length} municípios ranqueados.</p>`;
+    $("rank-wrap").hidden = false;
     thead.innerHTML = `<tr><th scope="col" class="num">Posição</th><th scope="col">Município</th><th scope="col" class="num">Nota</th>${Object.entries(R.index.dimensions).map(([, d]) => `<th scope="col" class="num">${d.label}</th>`).join("")}</tr>`;
     tbody.innerHTML = ranked.slice(0, 50).map((m) => `<tr><td class="num">${pos[m.cod]}</td><th scope="row"><a href="/municipio/${R.uf.slug}/${m.slug}">${m.nome}</a></th><td class="num">${fmtNumber(scores[m.cod], 0)}</td>${Object.keys(R.index.dimensions).map((d) => `<td class="num">${m.dims[d] === null ? "sem dado" : fmtNumber(m.dims[d], 0)}</td>`).join("")}</tr>`).join("");
   }
