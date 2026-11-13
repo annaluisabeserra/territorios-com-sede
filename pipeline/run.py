@@ -161,6 +161,9 @@ def main(argv: list[str] | None = None) -> int:
             log.error("[%s] pipeline falhou:\n%s", uf.sigla, traceback.format_exc())
     if failures == 0:
         build.build_national_index([asdict(u) for u in ufs])
+        from pipeline.validate import report
+
+        report.main()
     return 1 if failures else 0
 
 
