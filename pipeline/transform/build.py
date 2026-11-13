@@ -176,7 +176,12 @@ def health_tables(inp: Inputs, pop: pd.Series) -> tuple[pd.DataFrame | None, dic
     out["drsai_custo_per_capita"] = out["valor_real"] / pop
     for col in ("obitos", "obitos_vet"):
         out[col] = out[col].where(out[col] >= SMALL_CELL)  # suprimido: publicado como "menos de 5"
-    by_year = sih[sih["group"].isin(core)].groupby(["cod_ibge7", "year"])[["internacoes", "valor_real"]].sum()
+    by_year = (
+        sih[sih["group"].isin(core)].groupby(["cod_ibge7", "year"])[["internacoes", "valor_real"]].sum(min_count=1)
+    )
+    if years_missing_defl:  # ano com algum mês sem deflator: valor anual indisponível (nunca soma parcial)
+        miss = by_year.index.get_level_values("year").isin(years_missing_defl)
+        by_year.loc[miss, "valor_real"] = float("nan")
     by_group = sih.groupby(["cod_ibge7", "group"])[["internacoes", "valor_real"]].sum() / len(years)
     if years_missing_defl:
         by_group["valor_real"] = float("nan")
@@ -301,7 +306,9 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
     for code in tab.index:
         comp = {ind: pct_cols[ind][code] for ind in pct_cols}
         ds = pidx.dimension_scores(comp, dims)
-        score, coverage = pidx.weighted_index(ds, weights, cfg["min_dimensions_for_rank"])
+        score, coverage = pidx.weighted_index(
+            ds, weights, cfg["min_dimensions_for_rank"], tuple(cfg.get("required_dimensions", []))
+        )
         rows[code] = {
             "indice_prioridade": score,
             "indice_cobertura": coverage,
@@ -320,42 +327,49 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
         "dims_missing": [d for d in dims if not dims[d]],
         "fallbacks_used": used_fallbacks,
         "min_dimensions_for_rank": cfg["min_dimensions_for_rank"],
+        "required_dimensions": cfg.get("required_dimensions", []),
         "ranked": int(out["indice_prioridade"].notna().sum()),
     }
     return out, info
 
 
 def sensitivity(tab_idx: pd.DataFrame, info: dict) -> dict:
-    """Quanto o top N muda variando cada peso ±delta p.p. (os demais renormalizados)."""
+    """Quanto o top N muda variando cada peso ±delta p.p.
+
+    Revisão M3: só as dimensões disponíveis na UF entram (as ausentes não absorvem peso), o conjunto de
+    municípios elegíveis é fixo (definido com os pesos padrão) e empates são desempatados pelo código.
+    """
     cfg = config.load("pesos_indice")["sensitivity"]
     delta, n = cfg["delta_points"] / 100, cfg["top_n"]
-    base_w = info["weights"]
     dims = info["dims_available"]
-    min_dims = info["min_dimensions_for_rank"]
     if info["ranked"] == 0:
         return {"status": "sem_ranking", "reason": "dimensões insuficientes para ranquear", "scenarios": []}
+    eligible = [c for c in tab_idx.index if not pd.isna(tab_idx.loc[c, "indice_prioridade"])]
+    base_total = sum(info["weights"][d] for d in dims)
+    base_w = {d: info["weights"][d] / base_total for d in dims}
 
     def top(weights: dict) -> list[str]:
         scores = {}
-        for code, row in tab_idx.iterrows():
-            ds = {d: row.get(f"dim_{d}") for d in base_w}
-            ds = {d: (None if v is None or (isinstance(v, float) and math.isnan(v)) else v) for d, v in ds.items()}
-            s, _ = pidx.weighted_index(ds, weights, min_dims)
-            scores[code] = s
-        ranked = sorted((k for k, v in scores.items() if v is not None), key=lambda k: -scores[k])
-        return ranked[:n]
+        for code in eligible:
+            num = den = 0.0
+            for d in dims:
+                v = tab_idx.loc[code, f"dim_{d}"]
+                if not pd.isna(v):
+                    num += v * weights[d]
+                    den += weights[d]
+            scores[code] = num / den if den > 0 else 0.0
+        return sorted(scores, key=lambda k: (-scores[k], k))[:n]
 
     ref = top(base_w)
     scenarios = []
     for d in dims:
         for sign in (+1, -1):
             w = dict(base_w)
-            w[d] = max(0.0, w[d] + sign * delta)
-            others = [k for k in w if k != d]
-            rest = sum(base_w[k] for k in others)
-            target_rest = 1 - w[d]
-            for k in others:
-                w[k] = base_w[k] / rest * target_rest if rest > 0 else 0
+            w[d] = min(1.0, max(0.0, base_w[d] + sign * delta))
+            rest = 1 - base_w[d]
+            for k in dims:
+                if k != d:
+                    w[k] = base_w[k] / rest * (1 - w[d]) if rest > 0 else 0.0
             t = top(w)
             scenarios.append(
                 {

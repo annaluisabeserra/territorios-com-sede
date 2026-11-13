@@ -6,7 +6,7 @@
 4. Nunca imputar zero: componente ausente fica fora; município com menos de `min_dimensions_for_rank`
    dimensões é sinalizado e fica sem posição no ranking.
 
-`weighted_index` é replicado em TypeScript (pesos ajustáveis no navegador).
+`weighted_index` é replicado em TypeScript (site/src/lib/priority.ts), com paridade testada.
 """
 
 from __future__ import annotations
@@ -16,7 +16,12 @@ from collections.abc import Mapping
 
 
 def percentile_ranks(values: Mapping[str, float | None], higher_is_worse: bool = True) -> dict[str, float | None]:
-    """Percentil (0–100) com empates pela média dos postos. Ausentes continuam ausentes."""
+    """Percentil (0–100) = fração dos outros municípios em situação estritamente melhor.
+
+    Empates recebem o menor posto do grupo (função de distribuição empírica): assim, se 70% dos municípios
+    têm zero decretos, todos eles ficam com 0 ("melhor situação"), e não com ~35 como no posto médio.
+    Ausentes continuam ausentes.
+    """
     present = [(k, v) for k, v in values.items() if v is not None and not math.isnan(v)]
     out: dict[str, float | None] = {k: None for k in values}
     n = len(present)
@@ -25,17 +30,17 @@ def percentile_ranks(values: Mapping[str, float | None], higher_is_worse: bool =
     if n == 1:
         out[present[0][0]] = 50.0
         return out
-    ordered = sorted(present, key=lambda kv: kv[1])
-    i = 0
-    while i < n:
-        j = i
-        while j + 1 < n and ordered[j + 1][1] == ordered[i][1]:
-            j += 1
-        avg_rank = (i + j) / 2  # posto de base 0
-        pct = avg_rank / (n - 1) * 100
-        for k in range(i, j + 1):
-            out[ordered[k][0]] = pct if higher_is_worse else 100 - pct
-        i = j + 1
+    vals = sorted(v for _, v in present)
+    if not higher_is_worse:
+        vals = vals[::-1]
+    import bisect
+
+    for k, v in present:
+        if higher_is_worse:
+            better = bisect.bisect_left(vals, v)  # quantos têm valor estritamente menor (melhor)
+        else:
+            better = sum(1 for x in vals if x > v)  # quantos têm valor estritamente maior (melhor)
+        out[k] = better / (n - 1) * 100
     return out
 
 
@@ -51,9 +56,12 @@ def dimension_scores(
 
 
 def weighted_index(
-    dim_scores: Mapping[str, float | None], weights: Mapping[str, float], min_dims: int
+    dim_scores: Mapping[str, float | None],
+    weights: Mapping[str, float],
+    min_dims: int,
+    required: tuple[str, ...] = (),
 ) -> tuple[float | None, float]:
-    """Retorna (índice, cobertura de peso). Índice None se dimensões presentes < min_dims."""
+    """Retorna (índice, cobertura de peso). Índice None se dimensões presentes < min_dims ou falta obrigatória."""
     present = [(d, s) for d, s in dim_scores.items() if s is not None and weights.get(d, 0) > 0]
     total_w = 0.0
     for d, _ in present:
@@ -62,7 +70,8 @@ def weighted_index(
     for d in dim_scores:
         all_w = all_w + weights.get(d, 0.0)
     coverage = total_w / all_w if all_w > 0 else 0.0
-    if len(present) < min_dims or total_w <= 0:
+    names = {d for d, _ in present}
+    if len(present) < min_dims or total_w <= 0 or any(r not in names for r in required):
         return None, coverage
     acc = 0.0
     for d, s in present:
@@ -72,7 +81,7 @@ def weighted_index(
 
 def rank(scores: Mapping[str, float | None]) -> dict[str, int | None]:
     """Posição 1 = maior prioridade. Empates recebem a mesma posição (ranking de competição)."""
-    present = sorted(((k, v) for k, v in scores.items() if v is not None), key=lambda kv: -kv[1])
+    present = sorted(((k, v) for k, v in scores.items() if v is not None), key=lambda kv: (-kv[1], kv[0]))
     out: dict[str, int | None] = {k: None for k in scores}
     prev, pos = None, 0
     for i, (k, v) in enumerate(present, start=1):

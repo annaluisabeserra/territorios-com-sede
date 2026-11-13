@@ -1,6 +1,5 @@
 """Calculadora: casos feitos à mão e propriedades (SPEC §6.4, testes obrigatórios)."""
 
-import math
 
 import pytest
 from hypothesis import given
@@ -91,21 +90,39 @@ def test_pv_decreases_with_rate(annual, h, a, b):
     assert present_value(annual, h, hi) <= present_value(annual, h, lo) * (1 + 1e-12)
 
 
-def test_sensitivity_brackets_central_value():
-    p = Params(reduction_pct=50, horizon_years=10, discount_rate=0.085)
-    lo, hi = sensitivity(B, p, {"discount_rate": (0.04, 0.12)})
-    central = calculate(B, p).pv_saving
-    assert lo <= central <= hi
-    p2 = Params(investment=1e6, deadweight=0.1, attribution=0.8, drop_off=0.05)
-    lo2, hi2 = sensitivity(
-        B,
-        p2,
-        {
-            "discount_rate": (0.04, 0.12),
-            "deadweight": (0, 0.3),
-            "attribution": (0.5, 1.0),
-            "drop_off": (0, 0.15),
-        },
-    )
-    c2 = calculate(B, p2).sroi_pv
-    assert lo2 <= c2 <= hi2 and not math.isclose(lo2, hi2)
+def test_sensitivity_brackets_central_value_even_outside_ranges():
+    rg = {"discount_rate": (0.04, 0.12), "deadweight": (0, 0.3), "attribution": (0.5, 1.0), "drop_off": (0, 0.15)}
+    for rate in (0.0, 0.02, 0.085, 0.15, 0.3):
+        p = Params(reduction_pct=50, horizon_years=10, discount_rate=rate)
+        lo, hi = sensitivity(B, p, rg)["pv"]
+        assert lo <= calculate(B, p).pv_saving <= hi
+    p2 = Params(investment=1e6, deadweight=0.5, attribution=0.3, drop_off=0.3)
+    s = sensitivity(B, p2, rg)
+    c2 = calculate(B, p2)
+    assert s["sroi_pv"][0] <= c2.sroi_pv <= s["sroi_pv"][1]
+    assert s["pv"][0] <= c2.pv_saving <= s["pv"][1]
+
+
+def test_nan_is_missing_like_typescript():
+    r = calculate(Baseline(float("nan"), 100.0, None, 50.0), Params())
+    assert r.missing == ["hospital"] and r.annual_base == 5000.0
+
+
+def test_negative_inputs_are_rejected_as_missing():
+    r = calculate(Baseline(-1.0, 10.0, -3.0, 5.0), Params())
+    assert "hospital" in r.missing and r.school_days_avoided is None
+
+
+def test_deaths_use_discounted_annuity():
+    from pipeline.transform.calculator import annuity_factor
+
+    b = Baseline(None, None, None, 10.0, deaths=1.0, productive_years_lost=3.0)
+    r = calculate(b, Params(use_hospital=False, use_productivity=False, use_deaths=True, discount_rate=0.1))
+    assert r.components["deaths"] == pytest.approx(3650 * (1 / 1.1 + 1 / 1.21 + 1 / 1.331))
+    assert annuity_factor(30, 0.0) == 30.0
+
+
+@given(st.floats(1, 1e7), st.integers(1, 30), st.floats(0.001, 0.3))
+def test_pv_matches_closed_form_annuity(annual, h, i):
+    closed = annual * (1 - (1 + i) ** -h) / i
+    assert present_value(annual, h, i) == pytest.approx(closed, rel=1e-9)

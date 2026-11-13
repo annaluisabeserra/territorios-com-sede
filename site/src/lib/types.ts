@@ -62,6 +62,7 @@ export interface Thermometer {
   service: "agua" | "esgoto"; target: number; status: "atingida" | "no_ritmo" | "atrasado" | "sem_dados";
   current: Num; current_year: Num; gap: Num; slope: Num; slope_low: Num; slope_high: Num;
   projected_year: Num; projected_year_low: Num; projected_year_high: Num; n_points: number; years: number[];
+  uncertain: boolean; reason: string;
 }
 
 export interface Baseline {
@@ -74,6 +75,8 @@ export interface Ficha {
   resumo: string[];
   ind: Record<string, Num>;
   ind_ano: Record<string, Num>;
+  ind_antigo: Record<string, [number, number]>;
+  esgoto_sem_declaracao: boolean;
   series: Record<string, [number, number][]>;
   thermometer: { agua: Thermometer; esgoto: Thermometer };
   divergence: Record<string, { censo: number; snis: number; diff_pp: number; flag: boolean }>;
@@ -86,7 +89,8 @@ export interface Ficha {
   calculator: { baseline: Baseline; baseline_vectors: Baseline | null; defaults: { reduction_pct: number; horizon_years: number; discount_rate: number } };
   communities: {
     pop_quilombola: Num; pop_quilombola_em_territorio: Num; pop_quilombola_lower_bound: boolean; pop_cor_indigena: Num;
-    terras_indigenas: { nome: string; etnia: string | null; fase: string | null; modalidade: string | null; area_ha_total: Num; pct_da_ti_no_municipio: number }[];
+    quilombola_pct_celulas_sigilo: Num; fonte_censo: string; fonte_tis: string; nota_territorio: string;
+    terras_indigenas: { codigo_funai: string | null; ufs: string | null; data_ref: string | null; nome: string; etnia: string | null; fase: string | null; modalidade: string | null; area_ha_total: Num; pct_da_ti_no_municipio: number }[];
   };
   index: { score: Num; rank: Num; n_ranked: number; coverage: Num; dims: Record<string, Num>; components: Record<string, Num> };
   suggestions: { id: string; title: string; why: string; contact: string }[];

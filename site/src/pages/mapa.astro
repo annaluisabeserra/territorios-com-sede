@@ -1,0 +1,225 @@
+---
+import Base from "../layouts/Base.astro";
+import { indicators, ufs } from "../lib/data";
+
+const IND = indicators();
+const layers = [
+  ...Object.entries(IND).filter(([, d]) => d.map).map(([k, d]) => ({ id: k, label: d.short, kind: "ind" })),
+  { id: "thermo_agua", label: "Meta 2033: água", kind: "thermo" },
+  { id: "thermo_esgoto", label: "Meta 2033: esgoto coletado e tratado", kind: "thermo" },
+  { id: "semiarido", label: "Semiárido", kind: "cat" },
+];
+const list = ufs();
+---
+<Base title="Mapa" description="Mapa interativo de água, esgoto, saúde e comunidades de cada município.">
+  <link rel="preload" as="fetch" href="/data/ba/resumo.json" crossorigin="anonymous" slot="head" />
+  <section class="wrap mapwrap">
+    <div class="side">
+      <h1>Mapa</h1>
+      <div class="field">
+        <label for="uf">Estado</label>
+        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+      </div>
+      <div class="field">
+        <label for="layer">O que mostrar</label>
+        <select id="layer">{layers.map((l) => <option value={l.id} selected={l.id === "thermo_esgoto"}>{l.label}</option>)}</select>
+      </div>
+      <fieldset class="field">
+        <legend>Camadas de território</legend>
+        <label class="check"><input type="checkbox" id="tis" /> Terras indígenas (FUNAI)</label>
+        <label class="check"><input type="checkbox" id="basemap" /> Mapa de fundo (usa mais dados)</label>
+      </fieldset>
+      <div id="legend" class="legend" aria-live="polite"></div>
+      <p id="desc" class="small"></p>
+      <p id="source" class="source"></p>
+      <p class="xsmall muted">Territórios quilombolas (INCRA), assentamentos e unidades de conservação ainda não estão integrados. <a href="/dados#fontes">Ver o estado das fontes</a>.</p>
+    </div>
+    <div class="mapbox">
+      <div id="map" role="region" aria-label="Mapa interativo. A mesma informação está na tabela abaixo do mapa."></div>
+      <div id="tip" class="tip" hidden></div>
+      <noscript><p class="card">O mapa interativo precisa de JavaScript. A tabela abaixo traz os mesmos dados.</p></noscript>
+    </div>
+  </section>
+  <section class="wrap section">
+    <details class="tabled">
+    <summary><span id="table-title">Tabela do mapa</span> <span class="small muted">(todos os municípios, mesma informação do mapa)</span></summary>
+    <p class="small">Clique no título de uma coluna para ordenar.</p>
+    <div class="table-scroll card flat"><table id="tbl"><caption class="visually-hidden" id="tbl-cap"></caption><thead><tr><th scope="col"><button data-sort="nome">Município</button></th><th scope="col" class="num"><button data-sort="v">Valor</button></th><th scope="col">Região intermediária</th></tr></thead><tbody></tbody></table></div>
+    </details>
+  </section>
+</Base>
+<script>
+  import * as maplibregl from "maplibre-gl";
+  import "maplibre-gl/dist/maplibre-gl.css";
+  import { classOf, fmtValue, GOOD, BAD, NODATA, quantileBreaks, THERMO_COLORS, THERMO_LABEL, unitLabel } from "../lib/indicators";
+  import { fmtNumber } from "../lib/format";
+  import type { IndicatorDef, Resumo } from "../lib/types";
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const ufSel = $<HTMLSelectElement>("uf"), layerSel = $<HTMLSelectElement>("layer");
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("uf")) ufSel.value = qs.get("uf")!;
+  if (qs.get("c")) layerSel.value = qs.get("c")!;
+  let IND: Record<string, IndicatorDef> = {};
+  let R: Resumo;
+  let geo: any;
+  let sortKey = "v", sortDir = -1;
+
+  maplibregl.setWorkerUrl("/vendor/maplibre-gl-worker.mjs");
+  const map = new maplibregl.Map({
+    container: "map", style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef4f6" } }] },
+    center: [-41.7, -12.9], zoom: 5, attributionControl: { compact: true }, cooperativeGestures: true,
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+
+  function valueOf(m: Resumo["municipios"][number], layer: string): number | string | null {
+    if (layer === "thermo_agua") return m.thermo.agua;
+    if (layer === "thermo_esgoto") return m.thermo.esgoto;
+    if (layer === "semiarido") return m.semiarido === null ? null : m.semiarido ? "sim" : "nao";
+    if (layer === "indice_prioridade") return m.idx;
+    return m.ind[layer] ?? null;
+  }
+
+  function scale(layer: string) {
+    const vals = R.municipios.map((m) => valueOf(m, layer));
+    if (layer.startsWith("thermo")) return { color: (v: any) => THERMO_COLORS[v] ?? NODATA, legend: Object.keys(THERMO_LABEL).map((k) => ({ c: THERMO_COLORS[k], t: `${THERMO_LABEL[k]} (${vals.filter((v) => v === k).length})` })) };
+    if (layer === "semiarido") return { color: (v: any) => (v === "sim" ? "#c8873a" : v === "nao" ? "#e8e1d4" : NODATA), legend: [{ c: "#c8873a", t: "No Semiárido" }, { c: "#e8e1d4", t: "Fora do Semiárido" }] };
+    const def = IND[layer];
+    const pal = def.direction === "higher_is_better" ? GOOD : BAD;
+    const br = quantileBreaks(vals as (number | null)[], pal.length);
+    const color = (v: any) => { const c = classOf(v, br); return c === null ? NODATA : pal[Math.min(c, pal.length - 1)]; };
+    const edges = [Math.min(...(vals.filter((v) => v !== null) as number[])), ...br, Math.max(...(vals.filter((v) => v !== null) as number[]))];
+    const legend = pal.slice(0, br.length + 1).map((c, i) => ({ c, t: `${fmtValue(def, edges[i])} a ${fmtValue(def, edges[i + 1])}` }));
+    legend.push({ c: NODATA, t: `Sem dado (${vals.filter((v) => v === null).length})` });
+    return { color, legend };
+  }
+
+  function paint() {
+    const layer = layerSel.value;
+    const s = scale(layer);
+    const byCod = new Map(R.municipios.map((m) => [m.cod, m]));
+    for (const f of geo.features) {
+      const m = byCod.get(String(f.properties.cod_ibge7));
+      f.properties.fill = m ? s.color(valueOf(m, layer)) : NODATA;
+    }
+    (map.getSource("mun") as maplibregl.GeoJSONSource)?.setData(geo);
+    const def = IND[layer];
+    $("legend").innerHTML = `<p class="small"><strong>${layerSel.selectedOptions[0].text}</strong>${def ? ` <span class="muted">(${unitLabel(def)})</span>` : ""}</p><ul>${s.legend.map((l) => `<li><i style="background:${l.c}"></i>${l.t}</li>`).join("")}</ul>`;
+    const srcKey = def?.source === "snis" || layer.startsWith("thermo") ? "snis" : def?.source === "datasus_sih" ? "sih_drsai" : layer === "semiarido" ? "semiarido" : def?.source === "ibge_censo2022" ? "censo_lixo" : null;
+    const src = srcKey ? R.sources[srcKey] : null;
+    $("desc").textContent = def ? def.formula : layer.startsWith("thermo") ? "Situação de cada município em relação à meta de 2033 do Marco Legal do Saneamento, pela tendência do SNIS." : "Delimitação oficial do Semiárido (Sudene).";
+    $("source").textContent = src ? `Fonte: ${src.name}, ${src.reference_period ?? ""}${src.status === "unavailable" ? " (indisponível nesta atualização)" : ""}${src.url_kind === "mirror" ? " (cópia pública do dado oficial)" : ""}` : "";
+    renderTable();
+    history.replaceState(null, "", `?uf=${ufSel.value}&c=${layer}`);
+  }
+
+  function display(m: Resumo["municipios"][number], layer: string) {
+    const v = valueOf(m, layer);
+    if (layer.startsWith("thermo")) return THERMO_LABEL[v as string] ?? "sem dado";
+    if (layer === "semiarido") return v === "sim" ? "Sim" : v === "nao" ? "Não" : "sem dado";
+    return fmtValue(IND[layer], v as number | null);
+  }
+
+  function renderTable() {
+    const layer = layerSel.value;
+    const rows = [...R.municipios].sort((a, b) => {
+      if (sortKey === "nome") return a.nome.localeCompare(b.nome, "pt-BR") * sortDir;
+      const va = valueOf(a, layer), vb = valueOf(b, layer);
+      if (va === null) return 1; if (vb === null) return -1;
+      return (typeof va === "number" ? (va as number) - (vb as number) : String(va).localeCompare(String(vb))) * sortDir;
+    });
+    $("tbl-cap").textContent = `${layerSel.selectedOptions[0].text} por município, ${R.uf.nome}`;
+    $("table-title").textContent = `Tabela do mapa: ${layerSel.selectedOptions[0].text}`;
+    document.querySelectorAll<HTMLButtonElement>("#tbl th button").forEach((b) => b.parentElement!.setAttribute("aria-sort", b.dataset.sort === sortKey ? (sortDir > 0 ? "ascending" : "descending") : "none"));
+    $("tbl").querySelector("tbody")!.innerHTML = rows.map((m) => `<tr><th scope="row"><a href="/municipio/${R.uf.slug}/${m.slug}">${m.nome}</a></th><td class="num">${display(m, layer)}</td><td>${m.ri ?? ""}</td></tr>`).join("");
+  }
+
+  async function loadUF() {
+    const uf = ufSel.value;
+    const [r, g, ind] = await Promise.all([
+      fetch(`/data/${uf}/resumo.json`).then((x) => x.json()),
+      fetch(`/data/${uf}/mapa.geojson`).then((x) => x.json()),
+      Object.keys(IND).length ? Promise.resolve(IND) : fetch(`/data/indicadores.json`).then((x) => x.json()),
+    ]);
+    R = r; geo = g; IND = ind;
+    const add = () => {
+      if (map.getSource("mun")) (map.getSource("mun") as maplibregl.GeoJSONSource).setData(geo);
+      else {
+        map.addSource("mun", { type: "geojson", data: geo });
+        map.addLayer({ id: "mun-fill", type: "fill", source: "mun", paint: { "fill-color": ["get", "fill"], "fill-opacity": 0.92 } });
+        map.addLayer({ id: "mun-line", type: "line", source: "mun", paint: { "line-color": "#ffffff", "line-width": 0.5 } });
+        map.addLayer({ id: "mun-hover", type: "line", source: "mun", paint: { "line-color": "#13212c", "line-width": 2.5 }, filter: ["==", ["get", "cod_ibge7"], ""] });
+      }
+      const b = new maplibregl.LngLatBounds();
+      for (const f of geo.features) for (const poly of f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) for (const [x, y] of poly[0]) b.extend([x, y]);
+      map.fitBounds(b, { padding: 20, animate: false });
+      paint();
+    };
+    map.loaded() ? add() : map.once("load", add);
+  }
+
+  const tip = $("tip");
+  map.on("mousemove", "mun-fill", (e: maplibregl.MapLayerMouseEvent) => {
+    const f = e.features?.[0]; if (!f) return;
+    const m = R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (!m) return;
+    map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], f.properties!.cod_ibge7]);
+    map.getCanvas().style.cursor = "pointer";
+    tip.hidden = false;
+    tip.innerHTML = `<strong>${m.nome}</strong><br>${layerSel.selectedOptions[0].text}: ${display(m, layerSel.value)}<br><span class="xsmall">${$("source").textContent}</span><br><span class="xsmall">Clique para abrir a ficha</span>`;
+    tip.style.left = `${e.point.x + 12}px`; tip.style.top = `${e.point.y + 12}px`;
+  });
+  map.on("mouseleave", "mun-fill", () => { tip.hidden = true; map.getCanvas().style.cursor = ""; map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], ""]); });
+  map.on("click", "mun-fill", (e: maplibregl.MapLayerMouseEvent) => { const f = e.features?.[0]; const m = f && R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (m) location.href = `/municipio/${R.uf.slug}/${m.slug}`; });
+
+  $("tis").addEventListener("change", async (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    if (on && !map.getSource("tis")) {
+      map.addSource("tis", { type: "geojson", data: `/data/${ufSel.value}/terras_indigenas.geojson` });
+      map.addLayer({ id: "tis-fill", type: "fill", source: "tis", paint: { "fill-color": "#5b2a86", "fill-opacity": 0.25 } });
+      map.addLayer({ id: "tis-line", type: "line", source: "tis", paint: { "line-color": "#5b2a86", "line-width": 1.5, "line-dasharray": [2, 1] } });
+    }
+    for (const id of ["tis-fill", "tis-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+  });
+  map.on("click", "tis-fill", (e: maplibregl.MapLayerMouseEvent) => {
+    const p = e.features?.[0]?.properties; if (!p) return;
+    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<strong>Terra Indígena ${p.nome}</strong><br>Situação: ${p.fase ?? "não informada"}<br><span style="font-size:12px">Fonte: FUNAI (limites simplificados)</span>`).addTo(map);
+  });
+  // Mapa de fundo opcional: estilo vetorial gratuito e sem chave do OpenFreeMap (SPEC §4). Desligado por padrão
+  // para economizar dados em 3G. Nossas camadas são preservadas na troca de estilo.
+  const BLANK = map.getStyle();
+  $("basemap").addEventListener("change", (e) => {
+    const on = (e.target as HTMLInputElement).checked;
+    const keep = (prev: maplibregl.StyleSpecification, next: maplibregl.StyleSpecification): maplibregl.StyleSpecification => ({
+      ...next,
+      sources: { ...next.sources, ...Object.fromEntries(Object.entries(prev.sources).filter(([k]) => k === "mun" || k === "tis")) },
+      layers: [...next.layers.filter((l) => l.id !== "bg"), ...prev.layers.filter((l) => l.id.startsWith("mun") || l.id.startsWith("tis"))],
+    });
+    map.setStyle(on ? "https://tiles.openfreemap.org/styles/positron" : BLANK, { transformStyle: (prev, next) => (prev ? keep(prev, next) : next) });
+    map.once("styledata", () => { if (map.getLayer("mun-fill")) map.setPaintProperty("mun-fill", "fill-opacity", on ? 0.72 : 0.92); });
+  });
+  document.querySelectorAll<HTMLButtonElement>("#tbl th button").forEach((b) => b.addEventListener("click", () => {
+    if (sortKey === b.dataset.sort) sortDir *= -1; else { sortKey = b.dataset.sort!; sortDir = sortKey === "nome" ? 1 : -1; }
+    renderTable();
+  }));
+  layerSel.addEventListener("change", paint);
+  ufSel.addEventListener("change", loadUF);
+  loadUF();
+</script>
+<style>
+  .mapwrap { display: grid; gap: var(--s-4); padding-top: var(--s-5); }
+  @media (min-width: 900px) { .mapwrap { grid-template-columns: 20rem 1fr; } }
+  .side { display: grid; gap: var(--s-3); align-content: start; }
+  .field { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-1); }
+  .field label, .field legend { font-weight: 700; }
+  select { padding: 0.6rem; border: 1px solid var(--c-ink-muted); border-radius: 8px; min-height: 44px; background: #fff; }
+  .check { font-weight: 400 !important; display: flex; gap: var(--s-2); align-items: center; min-height: 32px; }
+  .check input { width: 20px; height: 20px; }
+  .mapbox { position: relative; }
+  #map { height: min(72vh, 680px); min-height: 380px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--c-line); }
+  .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--c-line); box-shadow: var(--shadow); padding: var(--s-2) var(--s-3); border-radius: 8px; font-size: var(--fs-sm); max-width: 260px; z-index: 2; }
+  .legend :global(ul) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); }
+  .legend :global(i) { display: inline-block; width: 16px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; border: 1px solid rgb(0 0 0 / 10%); }
+  #tbl button { background: none; border: 0; font-weight: 700; cursor: pointer; padding: 0; text-decoration: underline; color: inherit; min-height: 32px; }
+  .flat { padding: 0; box-shadow: none; }
+  .tabled summary { font-family: var(--font-display); font-size: var(--fs-lg); padding: var(--s-3) 0; min-height: 44px; }
+</style>

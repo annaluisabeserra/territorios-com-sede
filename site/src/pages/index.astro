@@ -12,7 +12,7 @@ const n = R.municipios.length;
 const candidates = [
   t.pessoas_sem_esgoto_censo != null && { value: fmtNumber(t.pessoas_sem_esgoto_censo), text: "pessoas sem esgoto adequado", src: "IBGE, Censo 2022" },
   t.drsai_valor_anual != null && { value: fmtBRLShort(t.drsai_valor_anual), text: "por ano pagos pelo SUS em internações por doenças ligadas ao saneamento", src: `DATASUS, SIH/SUS, ${R.health.period_label}` },
-  { value: `${t.esgoto_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de esgoto de 2033", src: `SNIS, tendência até ${R.snis_year}` },
+  { value: `${t.esgoto_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de esgoto coletado e tratado de 2033", src: `SNIS, tendência até ${R.snis_year}` },
   { value: `${t.esgoto_sem_dados} de ${n}`, text: "municípios sem dados suficientes de esgoto no SNIS: a sede que não aparece nas estatísticas", src: `SNIS, até ${R.snis_year}` },
   { value: `${t.agua_atrasados} de ${n}`, text: "municípios fora do ritmo da meta de água de 2033", src: `SNIS, tendência até ${R.snis_year}` },
 ].filter(Boolean).slice(0, 3) as { value: string; text: string; src: string }[];
@@ -37,9 +37,9 @@ const list = ufs();
           <StaticMap uf={DEFAULT_UF} values={{}} palette={[]} categorical={thermoColors} label="Mapa da Bahia: situação de cada município em relação à meta de esgoto de 2033" />
         </a>
         <figcaption class="small">
-          <strong>Meta de esgoto 2033 na {R.uf.nome}</strong>
+          <strong>Meta de esgoto 2033 na {R.uf.nome}: 90% com coleta e tratamento</strong>
           <ul class="legend">{counts.map((c) => <li><i style={`background:${THERMO_COLORS[c.k]}`}></i>{c.label}: {c.n}</li>)}</ul>
-          <span class="source">Fonte: SNIS (IN056), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a></span>
+          <span class="source">Esgoto coletado e tratado (SNIS IN056 × IN016), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a></span>
         </figcaption>
       </figure>
     </div>

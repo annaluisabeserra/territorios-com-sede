@@ -1,0 +1,118 @@
+---
+import Base from "../layouts/Base.astro";
+import { indicators, readJson, resumo, DEFAULT_UF } from "../lib/data";
+import { SOURCE_LABEL, unitLabel } from "../lib/indicators";
+
+const IND = indicators();
+const cid = readJson<any>("cid_drsai.json");
+const pesos = readJson<any>("pesos_indice.json");
+const calc = readJson<any>("calculadora.json");
+const R = resumo(DEFAULT_UF);
+const groups: Record<string, string> = { acesso: "Acesso (Censo)", servico: "Serviço (SNIS e ANA)", saude: "Saúde (SIH/SUS)", contexto: "Contexto", indice: "Índice" };
+const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= []).push([k, d]); return acc; }, {} as Record<string, [string, typeof IND[string]][]>);
+---
+<Base title="Metodologia" description="Fórmula, fonte, limitações e data de referência de cada indicador.">
+  <section class="wrap section text-wide">
+    <p class="eyebrow">Metodologia aberta</p>
+    <h1>Como cada número é calculado</h1>
+    <p class="text">Todos os indicadores vêm de bases públicas, com fonte e data de referência. Quando um dado não existe, aparece “sem dado”, nunca zero. Estimativas aparecem rotuladas, com premissas. O código é aberto: qualquer pessoa pode refazer as contas.</p>
+    <nav class="toc small" aria-label="Seções"><a href="#principios">Princípios</a><a href="#indicadores">Indicadores</a><a href="#termometro">Termômetro 2033</a><a href="#drsai">Doenças (DRSAI)</a><a href="#calculadora">Calculadora</a><a href="#indice">Índice</a><a href="#agir">Agir</a><a href="#fontes">Fontes</a></nav>
+
+    <h2 id="principios">Princípios</h2>
+    <ol class="text">
+      <li><strong>Nenhum número sem fonte.</strong> Cada valor tem base de origem, período e data de coleta.</li>
+      <li><strong>Ausência não é zero.</strong> Dados faltantes não entram em médias, somas ou rankings como zero.</li>
+      <li><strong>Estimativa é rotulada.</strong> Projeções e cálculos de economia mostram premissas e faixa de incerteza.</li>
+      <li><strong>Médias escondem territórios.</strong> Mostramos município, vizinhos, medianas e comunidades tradicionais.</li>
+    </ol>
+
+    <h2 id="indicadores">Indicadores</h2>
+    {Object.entries(byGroup).map(([g, list]) => (
+      <section>
+        <h3>{groups[g] ?? g}</h3>
+        {list.map(([k, d]) => (
+          <details class="ind" id={`ind-${k}`}>
+            <summary>{d.label} <span class="xsmall muted">· {unitLabel(d)}</span></summary>
+            <dl>
+              <dt>Fórmula</dt><dd>{d.formula}</dd>
+              <dt>Fonte</dt><dd>{SOURCE_LABEL[d.source] ?? d.source}</dd>
+              {d.limitations.length > 0 && <><dt>Limitações</dt><dd><ul>{d.limitations.map((l) => <li>{l}</li>)}</ul></dd></>}
+              <dt>Identificador nos dados</dt><dd><code>{k}</code></dd>
+            </dl>
+          </details>
+        ))}
+      </section>
+    ))}
+
+    <h2 id="termometro">Termômetro 2033</h2>
+    <div class="text">
+      <p>A Lei 14.026/2020 fixa para 31/12/2033: 99% da população com água potável e 90% com coleta e tratamento de esgoto.</p>
+      <ul>
+        <li><strong>Água:</strong> atendimento total de água (SNIS IN055). Mede atendimento pela rede, não potabilidade.</li>
+        <li><strong>Esgoto:</strong> esgoto coletado e tratado = IN056 × IN016 ÷ 100. Usar só a coleta (IN056) superestimaria o progresso.</li>
+        <li><strong>Tendência:</strong> regressão linear sobre até 8 anos recentes (mínimo de 3), com o último ponto nos 2 anos mais recentes do SNIS.</li>
+        <li><strong>Classes:</strong> meta atingida (2 anos seguidos acima), no ritmo (projeção até 2033), atrasado, sem dados suficientes. A faixa de anos usa o intervalo de confiança de 95% da tendência; quando ele inclui estagnação, a projeção é marcada como incerta.</li>
+      </ul>
+    </div>
+
+    <h2 id="drsai">Doenças relacionadas ao saneamento (DRSAI)</h2>
+    <p class="text">{cid.reference}</p>
+    <div class="table-scroll"><table>
+      <caption class="visually-hidden">Grupos de doenças e códigos CID-10</caption>
+      <thead><tr><th scope="col">Grupo</th><th scope="col">Códigos CID-10</th><th scope="col">Camada</th><th scope="col">Observação</th></tr></thead>
+      <tbody>{Object.entries(cid.groups).map(([, g]: [string, any]) => <tr><th scope="row">{g.label}</th><td>{g.codes.join(", ")}</td><td>{g.layer === "core" ? "Núcleo (padrão)" : "Opcional"}</td><td class="small">{g.note}</td></tr>)}</tbody>
+    </table></div>
+
+    <h2 id="calculadora">Calculadora de economia / SROI</h2>
+    <div class="text">
+      <p>Mostra quanto o território economizaria reduzindo as DRSAI. <strong>Não estima custo de obras.</strong></p>
+      <p><strong>Valor presente:</strong> VP = Σ<sub>t=1..H</sub> B × r ÷ (1 + taxa)<sup>t</sup>. <strong>SROI:</strong> VP = Σ<sub>t=1..H</sub> B × r × (1 − deadweight) × atribuição × (1 − drop-off)<sup>t−1</sup> ÷ (1 + taxa)<sup>t</sup>; SROI = VP ÷ investimento.</p>
+      <ul>
+        <li>B = custo hospitalar SUS (média de {calc.years_average} anos, corrigida mês a mês pelo IPCA) + produtividade perdida (dias internados × renda diária de referência; para menores de {calc.components.productivity.child_age_limit} anos, conta o dia do adulto acompanhante).</li>
+        <li>Taxa de desconto padrão: {String(calc.discount_rate * 100).replace(".", ",")}% ao ano (taxa social de desconto do governo federal, nota técnica de 2020). Sensibilidade: {calc.discount_rate_sensitivity.map((x: number) => `${x * 100}%`).join(" a ")}.</li>
+        <li>SROI: deadweight {calc.sroi.deadweight * 100}%, atribuição {calc.sroi.attribution * 100}%, drop-off {calc.sroi.drop_off * 100}% ao ano, com faixas de sensibilidade.</li>
+        <li>Atendimento ambulatorial e óbitos ficam desligados (sem referência documentada ou sem dado).</li>
+        <li>A mesma conta roda em Python e em TypeScript, com resultados idênticos verificados em 204 casos de teste.</li>
+      </ul>
+    </div>
+
+    <h2 id="indice">Índice de prioridade territorial</h2>
+    <div class="table-scroll"><table>
+      <caption class="visually-hidden">Dimensões e pesos do índice</caption>
+      <thead><tr><th scope="col">Dimensão</th><th scope="col" class="num">Peso</th><th scope="col">Componentes</th><th scope="col">Situação nesta versão ({R.uf.sigla})</th></tr></thead>
+      <tbody>{Object.entries(pesos.dimensions).map(([k, d]: [string, any]) => <tr><th scope="row">{d.label}</th><td class="num">{Math.round(d.weight * 100)}%</td><td class="small">{d.components.map((c: any) => IND[c.indicator]?.short ?? c.indicator).join("; ")}</td><td class="small">{R.index.dims_available.includes(k) ? "com dados" : "sem dados"}</td></tr>)}</tbody>
+    </table></div>
+    <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões.</p>
+
+    <h2 id="agir">Agir: regras das sugestões</h2>
+    <div class="table-scroll"><table>
+      <caption class="visually-hidden">Regras das tecnologias sociais sugeridas</caption>
+      <thead><tr><th scope="col">Solução</th><th scope="col">É sugerida quando</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Captação de água da chuva e cisternas</th><td>Município do Semiárido ou com decretos de seca nos últimos 5 anos</td></tr>
+        <tr><th scope="row">Filtros e tratamento no ponto de uso</th><td>20% ou mais da população fora da rede de água, ou mais de 10% de amostras fora do padrão</td></tr>
+        <tr><th scope="row">Unidades autônomas com energia solar</th><td>30% ou mais da população fora da rede de água (acesso à energia não avaliado)</td></tr>
+        <tr><th scope="row">Saneamento descentralizado</th><td>Esgoto adequado abaixo de 50% (Censo), rede coletora abaixo de 50% (SNIS) ou nenhum prestador de esgoto declarado</td></tr>
+        <tr><th scope="row">Redução de perdas</th><td>Perdas de 40% ou mais e população de 50 mil ou mais</td></tr>
+        <tr><th scope="row">Educação ambiental</th><td>Sempre</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="fontes">Estado das fontes ({R.uf.nome})</h2>
+    <div class="table-scroll"><table>
+      <caption class="visually-hidden">Estado de cada fonte de dados</caption>
+      <thead><tr><th scope="col">Base</th><th scope="col">Situação</th><th scope="col">Período</th><th scope="col">Origem</th></tr></thead>
+      <tbody>{Object.entries(R.sources).map(([k, s]) => <tr><th scope="row">{s.name ?? k}</th><td>{s.status === "ok" ? "em uso" : s.status === "stale" ? "desatualizada" : "indisponível"}</td><td>{s.reference_period ?? "–"}</td><td class="small">{s.url_kind === "official" ? "oficial" : s.url_kind === "mirror" ? "cópia pública rastreável" : "–"}</td></tr>)}</tbody>
+    </table></div>
+  </section>
+</Base>
+<style>
+  .toc { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-4) 0 var(--s-6); }
+  h2 { margin-top: var(--s-7); scroll-margin-top: 80px; }
+  .ind { border-bottom: 1px solid var(--c-line); padding: var(--s-3) 0; }
+  .ind summary { min-height: 44px; display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+  dl { display: grid; grid-template-columns: minmax(8rem, 12rem) 1fr; gap: var(--s-2) var(--s-4); margin: var(--s-3) 0; font-size: var(--fs-sm); }
+  dt { font-weight: 700; }
+  dd { margin: 0; }
+  @media (max-width: 600px) { dl { grid-template-columns: 1fr; } }
+</style>

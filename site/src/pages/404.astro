@@ -1,0 +1,11 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Página não encontrada">
+  <section class="wrap section text">
+    <h1>Não encontramos esta página</h1>
+    <p>O endereço pode ter mudado. Tente buscar o seu município:</p>
+    <form action="/busca" method="get" role="search"><label for="q404" class="visually-hidden">Buscar</label><input id="q404" name="q" type="search" placeholder="Nome do município" style="padding:.7rem;border-radius:8px;border:1px solid var(--c-ink-muted);min-height:44px" /> <button class="btn" type="submit">Buscar</button></form>
+    <p><a href="/">Voltar para o início</a></p>
+  </section>
+</Base>

@@ -7,11 +7,13 @@ semiarido,True
 populacao,11071
 censo_lixo_coletado_pct,81.0229531899512
 ana_coleta_tratamento_pct,0.0
-pop_quilombola,0.0
-pop_cor_indigena,10.0
-pct_pop_quilombola_indigena,0.09032607713846988
+pop_quilombola,
+pop_cor_indigena,2.0
+pct_pop_quilombola_indigena,
 snis_agua_pct,79.39
 snis_esgoto_pct,
+snis_esgoto_tratado_pct,
+snis_tratamento_coletado_pct,
 snis_tratamento_pct,
 snis_perdas_pct,34.5
 snis_coleta_esgoto_pct,

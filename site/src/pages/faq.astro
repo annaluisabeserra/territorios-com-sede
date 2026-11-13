@@ -1,0 +1,41 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../layouts/Base.astro";
+
+const items = (await getCollection("faq")).sort((a, b) => a.data.order - b.data.order);
+const rendered = await Promise.all(items.map(async (i) => ({ i, Content: (await render(i)).Content })));
+const cats = [...new Set(items.map((i) => i.data.category))];
+const jsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: items.map((i) => ({ "@type": "Question", name: i.data.question, acceptedAnswer: { "@type": "Answer", text: i.body } })) };
+---
+<Base title="Perguntas frequentes" description="Respostas simples sobre saneamento, saúde, dados e como usar a plataforma." jsonLd={jsonLd}>
+  <section class="wrap section">
+    <p class="eyebrow">Perguntas frequentes</p>
+    <h1>Dúvidas sobre água, esgoto e estes dados</h1>
+    <nav aria-label="Temas" class="cats small">{cats.map((c) => <a href={`#tema-${c.toLowerCase().replace(/\s+/g, "-")}`}>{c}</a>)}</nav>
+    {cats.map((c) => (
+      <section class="cat">
+        <h2 id={`tema-${c.toLowerCase().replace(/\s+/g, "-")}`}>{c}</h2>
+        {rendered.filter(({ i }) => i.data.category === c).map(({ i, Content }) => (
+          <details id={i.id} class="q">
+            <summary>{i.data.question}</summary>
+            <div class="a text"><Content /></div>
+          </details>
+        ))}
+      </section>
+    ))}
+    <p class="small">Não achou sua pergunta? <a href="/sobre#corrigir">Fale com a gente</a>.</p>
+  </section>
+</Base>
+<script>
+  // Abre a pergunta indicada no endereço (ex.: /faq#snis-censo)
+  const id = decodeURIComponent(location.hash.slice(1));
+  const el = id && document.getElementById(id);
+  if (el instanceof HTMLDetailsElement) { el.open = true; el.scrollIntoView(); }
+</script>
+<style>
+  .cats { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-4) 0; }
+  .cat { margin-top: var(--s-6); }
+  .q { border-bottom: 1px solid var(--c-line); padding: var(--s-3) 0; }
+  .q summary { font-size: var(--fs-lg); min-height: 44px; display: flex; align-items: center; }
+  .a { padding: var(--s-3) 0 var(--s-2); }
+</style>

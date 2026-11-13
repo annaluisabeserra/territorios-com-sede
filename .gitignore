@@ -25,3 +25,4 @@ public/data/
 *.part
 *.pem
 .npmrc
+public/vendor/

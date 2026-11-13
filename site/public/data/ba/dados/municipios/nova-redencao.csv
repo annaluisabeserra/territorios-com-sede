@@ -12,6 +12,8 @@ pop_cor_indigena,8.0
 pct_pop_quilombola_indigena,0.1857256566728575
 snis_agua_pct,82.29
 snis_esgoto_pct,
+snis_esgoto_tratado_pct,
+snis_tratamento_coletado_pct,
 snis_tratamento_pct,
 snis_perdas_pct,13.01
 snis_coleta_esgoto_pct,

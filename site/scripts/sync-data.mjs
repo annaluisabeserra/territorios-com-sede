@@ -33,4 +33,8 @@ for (const uf of index.ufs) {
   );
 }
 writeFileSync(join(dst, ".synced"), new Date().toISOString());
+// Worker do MapLibre (autocontido): servido como arquivo estático e apontado com setWorkerUrl.
+const vendor = resolve(here, "../public/vendor");
+mkdirSync(vendor, { recursive: true });
+cpSync(resolve(here, "../node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs"), join(vendor, "maplibre-gl-worker.mjs"));
 console.log("dados sincronizados em", dst);

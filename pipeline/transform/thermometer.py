@@ -7,7 +7,8 @@ Regras (revisão M2):
 - o último ponto do município precisa ser de ano_ref − 2 ou mais recente; senão, "sem dados suficientes";
 - regressão linear (mínimos quadrados) sobre 3 a 8 pontos;
 - "meta atingida" exige os dois últimos anos disponíveis (consecutivos) acima da meta;
-- a projeção parte do último valor observado (não do ajustado), nunca para um ano anterior a ano_ref + 1;
+- a projeção parte do último valor observado, no ano em que foi observado, e nunca cai antes de ano_ref + 1;
+  a faixa (otimista/pessimista) é a "faixa da tendência": usa o IC da inclinação, não é um intervalo de previsão;
 - se o limite inferior do IC 95% da inclinação for ≤ 0, a projeção é marcada como incerta.
 Esgoto usa "coleta com tratamento" (IN056 × IN016 / 100), porque a meta exige as duas coisas.
 """
@@ -22,7 +23,8 @@ TARGETS = {"agua": 99.0, "esgoto": 90.0}
 MIN_POINTS = 3
 WINDOW = 8  # anos na janela (ano_ref − 7 … ano_ref)
 MAX_STALENESS = 2
-T_CRIT_95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447}
+# t de Student bicaudal 95% por graus de liberdade (n − 2). WINDOW = 8 ⇒ no máximo 6; a tabela vai até 10.
+T_CRIT_95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228}
 
 
 @dataclass
@@ -48,12 +50,13 @@ class Thermometer:
         return asdict(self)
 
 
-def _year_to_reach(current: float, ref_year: int, slope: float, target: float) -> int | None:
+def _year_to_reach(current: float, cur_year: int, ref_year: int, slope: float, target: float) -> int | None:
+    """Ano em que a tendência cruza a meta, a partir do ano do último dado; nunca antes de ref_year + 1."""
     if current >= target:
-        return ref_year
+        return ref_year + 1
     if slope <= 0:
         return None
-    return ref_year + max(1, math.ceil((target - current) / slope))
+    return max(ref_year + 1, cur_year + math.ceil((target - current) / slope))
 
 
 def _empty(service: str, target: float, reason: str, cur=None, cur_year=None, n=0, years=None) -> Thermometer:
@@ -120,16 +123,15 @@ def compute(service: str, series: dict[int, float | None], ref_year: int | None 
     if dof > 0:
         resid = [v - (intercept + slope * y) for y, v in pts]
         se = math.sqrt(sum(r * r for r in resid) / dof / sxx)
-        t = T_CRIT_95.get(dof, 1.96)
+        if dof not in T_CRIT_95:
+            raise ValueError(f"t crítico não tabelado para {dof} graus de liberdade (aumente T_CRIT_95)")
+        t = T_CRIT_95[dof]
         lo, hi = slope - t * se, slope + t * se
     else:
         lo = hi = slope
-    start_year = max(cur_year, ref)
-    proj = _year_to_reach(cur, start_year, slope, target)
-    proj_opt = _year_to_reach(cur, start_year, hi, target)
-    proj_pes = _year_to_reach(cur, start_year, lo, target)
-    if cur >= target:  # só o último ano acima da meta: ainda não conta como atingida
-        proj = proj_opt = proj_pes = start_year + 1
+    proj = _year_to_reach(cur, cur_year, ref, slope, target)
+    proj_opt = _year_to_reach(cur, cur_year, ref, hi, target)
+    proj_pes = _year_to_reach(cur, cur_year, ref, lo, target)
     status = "no_ritmo" if proj is not None and proj <= TARGET_YEAR else "atrasado"
     uncertain = lo <= 0 < slope
     reason = "tendência incerta: o intervalo de confiança inclui estagnação" if uncertain else ""

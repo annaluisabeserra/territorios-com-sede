@@ -1,0 +1,36 @@
+---
+import Base from "../layouts/Base.astro";
+import { CONTACT_EMAIL, ISSUE_URL, REPO_URL } from "../lib/site";
+---
+<Base title="Sobre" description="Por que o Territórios com Sede existe, quem faz e como contribuir.">
+  <article class="wrap section text">
+    <p class="eyebrow">Sobre</p>
+    <h1>No Brasil, a sede tem endereço</h1>
+    <p class="lead">E quase sempre ele está fora das estatísticas.</p>
+    <h2>O problema</h2>
+    <p>Os dados de saneamento existem, mas estão espalhados em dezenas de sistemas públicos e numa linguagem que não serve a quem decide nem a quem sofre. As médias municipais escondem os territórios que mais precisam: a comunidade rural, o quilombo, a aldeia, o bairro sem rede.</p>
+    <h2>A ideia</h2>
+    <p>A falta de saneamento é um <strong>gasto público invisível</strong>: internações no SUS, água tratada que vaza pelo caminho, dias de trabalho e de escola perdidos. O país já paga pelo saneamento que não tem, só que paga em forma de doença.</p>
+    <h2>O que a plataforma faz, em três verbos</h2>
+    <ul>
+      <li><strong>Ver</strong> a situação de cada município e das comunidades dentro dele.</li>
+      <li><strong>Calcular</strong> quanto o território economizaria eliminando as doenças ligadas à água.</li>
+      <li><strong>Agir</strong> onde o investimento gera mais impacto, com acompanhamento de resultado.</li>
+    </ul>
+    <h2>Por que agora</h2>
+    <p>Faltam 7 anos para as metas de 2033 do Marco Legal do Saneamento. O Censo 2022 contou a população quilombola pela primeira vez. E, ao longo de 2027, novos governos elaboram os planos plurianuais de 2028 a 2031: é a hora de colocar a água e o esgoto de cada território no orçamento.</p>
+    <h2>Quem faz</h2>
+    <p>O <a href="https://institutosdw.org">Instituto SDW</a>, com sede em Salvador (BA) e atuação em Salvador (Itacaranha) e em São Gonçalo do Amarante (CE, Croatá). O Instituto é ligado ao grupo SDW, que leva água potável e saneamento a comunidades rurais, indígenas e quilombolas em mais de 16 estados, com educação ambiental e tecnologias sociais como filtros, captação de água da chuva e unidades de tratamento com energia solar.</p>
+    <p>Nossa missão cabe numa frase: <strong>que ninguém adoeça por causa da água que bebe.</strong></p>
+    <h2 id="corrigir">Como contribuir ou corrigir um dado</h2>
+    <p>Encontrou um número estranho, uma informação desatualizada ou algo que deveria estar aqui? Conte para a gente:</p>
+    <ul>
+      <li><a href={ISSUE_URL}>Formulário público de correção</a> (GitHub; precisa de conta gratuita).</li>
+      <li>E-mail: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</li>
+      <li>Comunidades e organizações podem pedir a retirada de informações sobre seu território: <a href="/povos-e-comunidades#retirada">veja como</a>.</li>
+    </ul>
+    <h2>Código e dados abertos</h2>
+    <p>O código está em <a href={REPO_URL}>{REPO_URL.replace("https://", "")}</a> (licença MIT). Os dados derivados estão em <a href="/dados">Dados abertos</a> (CC BY 4.0). A plataforma roda sem custo de operação, com software livre e serviços gratuitos.</p>
+  </article>
+</Base>
+<style>.lead { font-size: var(--fs-xl); font-family: var(--font-display); color: var(--c-water-700); }</style>

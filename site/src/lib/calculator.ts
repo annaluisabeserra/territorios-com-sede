@@ -39,7 +39,9 @@ export interface Result {
 
 function validate(p: Params): void {
   if (!(p.reduction_pct >= 0 && p.reduction_pct <= 100)) throw new RangeError("reduction_pct deve estar entre 0 e 100");
-  if (!(p.horizon_years >= 1 && p.horizon_years <= 30)) throw new RangeError("horizon_years deve estar entre 1 e 30");
+  if (!Number.isInteger(p.horizon_years) || !(p.horizon_years >= 1 && p.horizon_years <= 30)) throw new RangeError("horizon_years deve ser inteiro entre 1 e 30");
+  if (p.outpatient_multiplier < 0) throw new RangeError("outpatient_multiplier não pode ser negativo");
+  if (p.investment !== null && p.investment < 0) throw new RangeError("investment não pode ser negativo");
   if (p.discount_rate < 0) throw new RangeError("discount_rate não pode ser negativa");
   for (const k of ["deadweight", "attribution", "drop_off"] as const) {
     if (!(p[k] >= 0 && p[k] <= 1)) throw new RangeError(`${k} deve estar entre 0 e 1`);
@@ -47,25 +49,41 @@ function validate(p: Params): void {
 }
 
 const isNum = (v: number | null | undefined): v is number => v !== null && v !== undefined && !Number.isNaN(v);
+const nonneg = (v: number | null | undefined): v is number => isNum(v) && v >= 0;
+
+export function annuityFactor(years: number, rate: number): number {
+  let total = 0.0;
+  let disc = 1.0;
+  const growth = 1.0 + rate;
+  const n = Math.floor(years);
+  for (let i = 0; i < n; i++) {
+    disc = disc * growth;
+    total = total + 1.0 / disc;
+  }
+  return total;
+}
 
 export function components(b: Baseline, p: Params): { comp: Record<string, number>; missing: string[] } {
   const comp: Record<string, number> = {};
   const missing: string[] = [];
   if (p.use_hospital) {
-    if (!isNum(b.hospital_cost)) missing.push("hospital");
+    if (!nonneg(b.hospital_cost)) missing.push("hospital");
     else comp.hospital = b.hospital_cost;
   }
   if (p.use_productivity) {
-    if (!isNum(b.hospital_days) || !isNum(b.daily_income)) missing.push("productivity");
+    if (!nonneg(b.hospital_days) || !nonneg(b.daily_income)) missing.push("productivity");
     else comp.productivity = b.hospital_days * b.daily_income;
   }
   if (p.use_outpatient) {
-    if (!isNum(b.hospital_cost) || p.outpatient_multiplier <= 0) missing.push("outpatient");
+    if (!nonneg(b.hospital_cost) || p.outpatient_multiplier <= 0) missing.push("outpatient");
     else comp.outpatient = b.hospital_cost * p.outpatient_multiplier;
   }
   if (p.use_deaths) {
-    if (!isNum(b.deaths) || !isNum(b.productive_years_lost) || !isNum(b.daily_income)) missing.push("deaths");
-    else comp.deaths = b.deaths * b.productive_years_lost * (b.daily_income * 365.0);
+    if (!nonneg(b.deaths) || !nonneg(b.productive_years_lost) || !nonneg(b.daily_income)) missing.push("deaths");
+    else {
+      const annualIncome = b.daily_income * 365.0;
+      comp.deaths = b.deaths * annuityFactor(b.productive_years_lost, p.discount_rate) * annualIncome;
+    }
   }
   return { comp, missing };
 }
@@ -92,7 +110,7 @@ export function calculate(b: Baseline, p: Params): Result {
   const r = p.reduction_pct / 100.0;
   const annual = base * r;
   const pv = presentValue(annual, p.horizon_years, p.discount_rate);
-  const school = isNum(b.school_days) ? b.school_days * r : null;
+  const school = nonneg(b.school_days) ? b.school_days * r : null;
   const res: Result = { annual_base: base, components: comp, annual_saving: annual, pv_saving: pv,
     school_days_avoided: school, sroi_pv: null, sroi_ratio: null, missing };
   if (p.investment !== null && p.investment > 0) {
@@ -103,32 +121,46 @@ export function calculate(b: Baseline, p: Params): Result {
   return res;
 }
 
-export function sensitivity(b: Baseline, p: Params, ranges: Partial<Record<"discount_rate" | "deadweight" | "attribution" | "drop_off", [number, number]>>): [number, number] {
-  const [loRate, hiRate] = ranges.discount_rate ?? [p.discount_rate, p.discount_rate];
-  const sroi = p.investment !== null && p.investment > 0;
-  if (!sroi) {
-    return [calculate(b, { ...p, discount_rate: hiRate }).pv_saving, calculate(b, { ...p, discount_rate: loRate }).pv_saving];
-  }
-  const dw = ranges.deadweight ?? [p.deadweight, p.deadweight];
-  const at = ranges.attribution ?? [p.attribution, p.attribution];
-  const dr = ranges.drop_off ?? [p.drop_off, p.drop_off];
+export type Ranges = Partial<Record<"discount_rate" | "deadweight" | "attribution" | "drop_off", [number, number]>>;
+export interface Sensitivity { pv: [number, number]; sroi_pv: [number, number] | null }
+
+/** Intervalo que sempre contém o valor escolhido pelo usuário. */
+function span(r: [number, number] | undefined, v: number): [number, number] {
+  const [lo, hi] = r ?? [v, v];
+  return [lo < v ? lo : v, hi > v ? hi : v];
+}
+
+export function sensitivity(b: Baseline, p: Params, ranges: Ranges): Sensitivity {
+  const [loRate, hiRate] = span(ranges.discount_rate, p.discount_rate);
+  const pv: [number, number] = [
+    calculate(b, { ...p, discount_rate: hiRate }).pv_saving,
+    calculate(b, { ...p, discount_rate: loRate }).pv_saving,
+  ];
+  if (!(p.investment !== null && p.investment > 0)) return { pv, sroi_pv: null };
+  const dw = span(ranges.deadweight, p.deadweight);
+  const at = span(ranges.attribution, p.attribution);
+  const dr = span(ranges.drop_off, p.drop_off);
   const worst = calculate(b, { ...p, discount_rate: hiRate, deadweight: dw[1], attribution: at[0], drop_off: dr[1] });
   const best = calculate(b, { ...p, discount_rate: loRate, deadweight: dw[0], attribution: at[1], drop_off: dr[0] });
-  return [worst.sroi_pv ?? 0, best.sroi_pv ?? 0];
+  return { pv, sroi_pv: [worst.sroi_pv ?? 0, best.sroi_pv ?? 0] };
 }
 
 /** Parâmetros ↔ URL (link compartilhável). */
-export function toQuery(p: Params): string {
+export function toQuery(p: Params, extra: Record<string, string> = {}): string {
   const q = new URLSearchParams({ r: String(p.reduction_pct), h: String(p.horizon_years), t: String(p.discount_rate),
-    hosp: p.use_hospital ? "1" : "0", prod: p.use_productivity ? "1" : "0" });
+    hosp: p.use_hospital ? "1" : "0", prod: p.use_productivity ? "1" : "0", ...extra });
+  if (p.use_outpatient) { q.set("amb", "1"); q.set("ambm", String(p.outpatient_multiplier)); }
+  if (p.use_deaths) q.set("obt", "1");
   if (p.investment) { q.set("inv", String(p.investment)); q.set("dw", String(p.deadweight)); q.set("at", String(p.attribution)); q.set("do", String(p.drop_off)); }
   return q.toString();
 }
 
 export function fromQuery(q: URLSearchParams, base: Params = DEFAULT_PARAMS): Params {
   const num = (k: string, d: number, lo: number, hi: number) => {
-    const v = Number(q.get(k));
-    return q.has(k) && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
+    const raw = q.get(k);
+    if (raw === null || raw.trim() === "") return d; // vazio = ausente (não 0)
+    const v = Number(raw);
+    return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
   };
   const inv = q.has("inv") ? num("inv", 0, 0, 1e12) : null;
   return {
@@ -138,6 +170,9 @@ export function fromQuery(q: URLSearchParams, base: Params = DEFAULT_PARAMS): Pa
     discount_rate: num("t", base.discount_rate, 0, 0.3),
     use_hospital: q.get("hosp") !== "0",
     use_productivity: q.get("prod") !== "0",
+    use_outpatient: q.get("amb") === "1",
+    outpatient_multiplier: num("ambm", base.outpatient_multiplier, 0, 100),
+    use_deaths: q.get("obt") === "1",
     investment: inv && inv > 0 ? inv : null,
     deadweight: num("dw", base.deadweight, 0, 1),
     attribution: num("at", base.attribution, 0, 1),

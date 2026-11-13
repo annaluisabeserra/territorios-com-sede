@@ -29,7 +29,7 @@ const srcLine = (k: string, label: string) => {
 };
 const rows = [
   ["censo_agua_rede_pct", "censo_agua"], ["censo_esgoto_adequado_pct", "censo_esgoto"], ["censo_lixo_coletado_pct", "censo_lixo"],
-  ["snis_agua_pct", "snis"], ["snis_esgoto_pct", "snis"], ["snis_tratamento_pct", "snis"], ["snis_perdas_pct", "snis"],
+  ["snis_agua_pct", "snis"], ["snis_esgoto_pct", "snis"], ["snis_esgoto_tratado_pct", "snis"], ["snis_tratamento_pct", "snis"], ["snis_perdas_pct", "snis"],
   ["snis_consumo_lhabdia", "snis"], ["drsai_taxa_10mil", "sih_drsai"], ["drsai_custo_per_capita", "sih_drsai"],
 ] as const;
 const nbVals = f.neighbors.map((n) => ({ ...n, m: R.municipios.find((x) => x.cod === n.cod)! }));
@@ -80,7 +80,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
               return (
                 <tr>
                   <th scope="row">{d?.short ?? k}<br /><span class="xsmall muted">{d?.direction === "higher_is_better" ? "quanto maior, melhor" : d?.direction === "higher_is_worse" ? "quanto menor, melhor" : ""}</span></th>
-                  <td class="num"><strong>{fmtValue(d, f.ind[k])}</strong>{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}</td>
+                  <td class="num">{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
                   <td class="num">{fmtValue(d, st?.median_uf)}</td>
                   <td class="num">{fmtValue(d, st?.median_br)}</td>
                   <td class="xsmall">{ref(s) ? `${SOURCE_LABEL[d?.source ?? ""] ?? d?.source}, ${src[s].reference_period}` : "fonte indisponível nesta atualização"}</td>
@@ -123,9 +123,9 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <p class="text">O Marco Legal do Saneamento (Lei 14.026/2020) definiu que, até 2033, 99% da população deve ter água potável e 90% deve ter coleta e tratamento de esgoto. Medimos a distância com os dados do SNIS e projetamos a tendência dos últimos anos.</p>
       <div class="grid grid-2">
         <div class="card"><ThermometerCard t={f.thermometer.agua} title="Água: meta de 99%" /></div>
-        <div class="card"><ThermometerCard t={f.thermometer.esgoto} title="Esgoto: meta de 90%" /></div>
+        <div class="card"><ThermometerCard t={f.thermometer.esgoto} title="Esgoto coletado e tratado: meta de 90%" /></div>
       </div>
-      <p class="source">Fonte: {srcLine("snis", "SNIS")}. O indicador de esgoto (IN056) mede coleta; a meta também exige tratamento, então o termômetro é otimista. <a href="/metodologia#termometro">Como calculamos</a>.</p>
+      <p class="source">Fonte: {srcLine("snis", "SNIS")}. Esgoto coletado e tratado = atendimento por rede coletora (IN056) × tratamento do esgoto coletado (IN016). A meta exige coleta e tratamento. <a href="/metodologia#termometro">Como calculamos</a>.</p>
     </section>
 
     <section id="saude" class="section">
@@ -157,15 +157,17 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
             <dt>Pessoas de cor ou raça indígena</dt>
             <dd>{c.pop_cor_indigena === null ? <span class="nodata">sem dado</span> : <strong>{fmtNumber(c.pop_cor_indigena)}</strong>}</dd>
           </dl>
-          {c.pop_quilombola_lower_bound && <p class="xsmall muted">“Pelo menos”: a cópia pública usada soma faixas de idade e sexo, e o IBGE oculta faixas muito pequenas para proteger a privacidade. O total oficial pode ser maior.</p>}
+          {c.pop_quilombola_lower_bound && c.pop_quilombola !== null && <p class="xsmall muted">“Pelo menos”: a cópia pública usada soma faixas de idade e sexo, e o IBGE oculta faixas muito pequenas para proteger a privacidade ({fmtNumber(c.quilombola_pct_celulas_sigilo)}% das faixas deste município estão sob sigilo). O total oficial pode ser maior.</p>}
+          {c.pop_quilombola === null && <p class="xsmall muted">“Sem dado”: todas as faixas de idade e sexo deste município estão sob sigilo na cópia pública usada, ou não há pessoas quilombolas recenseadas. Não é possível distinguir os dois casos.</p>}
+          <p class="xsmall muted">{c.nota_territorio} O status oficial de titulação (INCRA) e de certificação (Fundação Palmares) ainda não está integrado à plataforma.</p>
           <p class="source">Fonte: {srcLine("censo_quilombola", "IBGE, Censo 2022")}.</p>
         </div>
         <div class="card">
           <h3>Terras indígenas</h3>
           {c.terras_indigenas.length ? (
-            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>{t.nome ?? "Terra indígena (nome não informado na fonte)"}</strong>{t.etnia && ` · ${t.etnia}`}<br /><span class="small">Situação: {t.fase ?? "não informada"}{t.modalidade && ` · ${t.modalidade}`}</span></li>)}</ul>
+            <ul class="tis">{c.terras_indigenas.map((t) => <li><strong>Terra Indígena {t.nome}</strong>{t.ufs && t.ufs !== f.uf && <span class="small"> ({t.ufs})</span>}<br /><span class="small">Situação oficial: <strong>{t.fase ?? "não informada"}</strong>{t.modalidade && ` · ${t.modalidade}`}. Povos: {t.etnia ?? "consultar a FUNAI"}.{t.data_ref && ` Dados de ${t.data_ref.slice(6, 8)}/${t.data_ref.slice(4, 6)}/${t.data_ref.slice(0, 4)}.`}</span></li>)}</ul>
           ) : <p class="muted">Nenhuma terra indígena com área relevante dentro do município, segundo a FUNAI.</p>}
-          <p class="source">Fonte: {srcLine("terras_indigenas", "FUNAI")}. Mostramos só o território oficial, nunca a localização de aldeias. <a href="/povos-e-comunidades">Nossos princípios e como pedir correção</a>.</p>
+          <p class="source">Fonte: {c.fonte_tis}. Mostramos só o território oficial, nunca a localização de aldeias. <a href="/povos-e-comunidades">Nossos princípios e como pedir correção ou retirada</a>.</p>
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 # Relatório de validação
 
-Gerado em 13/11/2026 19:27 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
+Gerado em 13/11/2026 19:38 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
 
 Este relatório complementa as checagens automáticas (que derrubam o pipeline) com checagens de plausibilidade que exigem leitura humana. Itens marcados **pendente** dependem de fontes que não puderam ser lidas no ambiente de construção (ver `docs/DATA_SOURCES.md`).
 
@@ -104,16 +104,16 @@ O índice oficial não ranqueia nesta versão: há 2 de 5 dimensões (acesso, vu
 | 8 | Banzaê | 93 | 65,8 | 93,0 | 29,1 |
 | 9 | Oliveira dos Brejinhos | 93 | 67,4 | sem dado | sem dado |
 | 10 | Muquém de São Francisco | 92 | 57,3 | 94,2 | 25,7 |
-| 406 | Sebastião Laranjeiras | 10 | 3,9 | sem dado | sem dado |
-| 407 | Ibicaraí | 9 | 2,8 | sem dado | sem dado |
-| 408 | Macarani | 9 | 11,2 | 11,2 | 0,1 |
+| 406 | Barrocas | 10 | 0,0 | sem dado | 0,7 |
+| 407 | Macarani | 9 | 11,2 | 11,2 | 0,1 |
+| 408 | Ibicaraí | 9 | 2,8 | sem dado | sem dado |
 | 409 | Dom Macedo Costa | 5 | 0,2 | sem dado | sem dado |
 | 410 | Feira da Mata | 5 | 0,2 | sem dado | sem dado |
 | 411 | Valente | 4 | 0,2 | sem dado | 0,1 |
-| 412 | Itapetinga | 3 | 0,0 | 2,9 | sem dado |
-| 413 | Tanquinho | 2 | 0,0 | sem dado | 0,1 |
-| 414 | Itajuípe | 2 | 0,0 | 0,0 | sem dado |
-| 415 | Saubara | 1 | 0,0 | sem dado | 0,0 |
+| 412 | Itapetinga | 2 | 0,0 | 2,9 | sem dado |
+| 413 | Tanquinho | 1 | 0,0 | sem dado | 0,1 |
+| 414 | Itajuípe | 0 | 0,0 | 0,0 | sem dado |
+| 415 | Saubara | 0 | 0,0 | sem dado | 0,0 |
 
 **Leitura (revisão manual):** o topo exploratório é dominado pela falta de rede de água (57% a 81% da população fora da rede); onde há dado de povos tradicionais (Maraú, Banzaê, Muquém de São Francisco) ele reforça a posição. A base reúne municípios com rede de água quase universal. O mecanismo responde na direção esperada. Ressalvas: (1) sem saúde, clima e qualidade da água, este ranking não serve para priorizar; (2) o percentual quilombola + indígena fica sem dado onde o espelho do Censo tem sigilo total, então a dimensão vulnerabilidade pesa pouco até a tabela oficial do SIDRA entrar; (3) o esgoto do SNIS falta em muitos municípios pequenos (provável ausência de rede), o que os favorece; o Censo corrige isso.
 

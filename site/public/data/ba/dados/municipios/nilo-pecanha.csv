@@ -8,10 +8,12 @@ populacao,12063
 censo_lixo_coletado_pct,63.930616648684534
 ana_coleta_tratamento_pct,0.0
 pop_quilombola,552.0
-pop_cor_indigena,16.0
-pct_pop_quilombola_indigena,4.708613114482301
+pop_cor_indigena,14.0
+pct_pop_quilombola_indigena,4.692033490839758
 snis_agua_pct,24.59
 snis_esgoto_pct,69.75
+snis_esgoto_tratado_pct,0.0
+snis_tratamento_coletado_pct,0.0
 snis_tratamento_pct,0.0
 snis_perdas_pct,32.9
 snis_coleta_esgoto_pct,100.0

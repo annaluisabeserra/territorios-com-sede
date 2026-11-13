@@ -48,5 +48,20 @@ def test_only_recent_window_is_used():
 
 
 def test_uncertain_flag():
-    t = compute("esgoto", {2018: 20.0, 2019: 50.0, 2020: 10.0, 2021: 60.0, 2022: 30.0})
-    assert t.uncertain or t.status == "atrasado"
+    # inclinação positiva, mas muito ruidosa: IC inclui zero
+    t = compute("esgoto", {2017: 20.0, 2018: 55.0, 2019: 15.0, 2020: 60.0, 2021: 25.0, 2022: 62.0})
+    assert t.slope > 0 and t.slope_low <= 0 and t.uncertain
+
+
+def test_projection_starts_at_last_observed_year():
+    # série 2014–2020, inclinação 10, último valor 70 em 2020, ref 2022 → 70 + 10×2 = 90 em 2022 → max(2023, 2022) = 2023
+    t = compute("esgoto", {2014 + i: 10.0 + 10 * i for i in range(7)}, ref_year=2022)
+    assert t.projected_year == 2023
+
+
+def test_ci_matches_reference_regression():
+    # valores de referência calculados com mínimos quadrados e t(3) = 3,182
+    t = compute("agua", {2018: 50.0, 2019: 52.0, 2020: 53.0, 2021: 57.0, 2022: 58.0})
+    assert abs(t.slope - 2.1) < 1e-9
+    se = (sum(r * r for r in [0.2, 0.1, -1.0, 0.9, -0.2]) / 3 / 10) ** 0.5
+    assert abs(t.slope_low - (2.1 - 3.182 * se)) < 1e-9

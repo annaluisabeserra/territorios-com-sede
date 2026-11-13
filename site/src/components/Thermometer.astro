@@ -10,7 +10,7 @@ const statusText: Record<string, string> = {
   atingida: "A meta já foi alcançada.",
   no_ritmo: t.projected_year ? `Mantido o ritmo, a meta seria alcançada por volta de ${t.projected_year}.` : "",
   atrasado: t.projected_year ? `No ritmo atual, a meta só seria alcançada por volta de ${t.projected_year}, depois de 2033.` : "No ritmo atual, a meta não seria alcançada: o indicador está parado ou caindo.",
-  sem_dados: t.current !== null ? `Há só ${t.n_points} ano(s) de dados, o mínimo para projetar são 3.` : "O município não informou este dado ao SNIS.",
+  sem_dados: t.reason ? `Não dá para projetar: ${t.reason}.` : "O município não informou este dado ao SNIS.",
 };
 const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
   t.projected_year_low && t.projected_year_high ? `Faixa provável: ${t.projected_year_low} a ${t.projected_year_high}.`
@@ -20,15 +20,16 @@ const range = t.status !== "atingida" && t.status !== "sem_dados" ? (
 <div class="thermo">
   <div class="head">
     <h3>{title}</h3>
-    <span class:list={["tag", THERMO_CLASS[t.status]]}>{THERMO_LABEL[t.status]}</span>
+    <span class:list={["tag", THERMO_CLASS[t.status]]}>{THERMO_LABEL[t.status]}{t.uncertain && " (projeção incerta)"}</span>
   </div>
   <div class="bar" role="img" aria-label={`${title}: ${t.current !== null ? fmtPct(t.current) : "sem dado"} hoje, meta de ${fmtNumber(t.target)}%`}>
     <div class="fill" style={`width:${Math.min(100, cur)}%`}></div>
     <div class="target" style={`left:${t.target}%`}><span>meta {fmtNumber(t.target)}%</span></div>
   </div>
-  <p class="big">{t.current !== null ? fmtPct(t.current) : <span class="nodata">sem dado</span>} {t.current_year && <span class="small muted">em {t.current_year}</span>}</p>
+  <p class="big">{t.current !== null ? fmtPct(t.current) : <span class="nodata">sem dado</span>} {t.current_year && <span class="small muted">em {t.current_year}{t.status === "sem_dados" && t.reason.startsWith("último") ? " (desatualizado)" : ""}</span>}</p>
   {t.gap !== null && t.gap > 0 && <p class="small">Faltam <strong>{fmtNumber(t.gap, 1)} pontos percentuais</strong> até a meta.</p>}
   <p class="small">{statusText[t.status]} {range}</p>
+  {t.uncertain && <p class="xsmall"><strong>Projeção incerta:</strong> os dados oscilam muito, e a tendência pode ser de estagnação.</p>}
   {t.slope !== null && <p class="xsmall muted">Tendência: {t.slope >= 0 ? "+" : ""}{fmtNumber(t.slope, 2)} ponto(s) por ano, calculada sobre {t.n_points} anos ({t.years[0]}–{t.years[t.years.length - 1]}). Projeção linear e indicativa.</p>}
 </div>
 <style>

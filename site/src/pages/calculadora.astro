@@ -26,7 +26,7 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
           <div class="chips">
             {cfg.scenarios.map((s: any) => (<button type="button" class="chip" data-r={s.reduction_pct} data-id={s.id}>{s.label}</button>))}
           </div>
-          <p class="xsmall muted" id="sdw-note" hidden>{sdw.label}: <strong>{sdw.disclaimer}</strong>.</p>
+          <p class="xsmall muted" id="sdw-note" hidden>{sdw.label}: <strong>{sdw.disclaimer}</strong>. O resultado vem de comunidades atendidas pelos projetos; aplicá-lo ao município inteiro é uma extrapolação.</p>
           <label for="r">Redução: <output id="r-out">{cfg.reduction_pct}%</output></label>
           <input id="r" type="range" min="0" max="100" step="1" value={cfg.reduction_pct} />
         </fieldset>
@@ -79,6 +79,7 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
       </div>
     </form>
   </section>
+  <script type="application/json" id="calc-cfg" set:html={JSON.stringify(cfg)} />
 </Base>
 <script>
   import { calculate, sensitivity, fromQuery, toQuery, DEFAULT_PARAMS, type Params } from "../lib/calculator";
@@ -93,13 +94,20 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
   let ficha: Ficha | null = null;
   let scenario = "";
 
+  // Padrões e faixas vêm de pipeline/config/calculadora.yaml (fonte única), embutido na página no build.
+  const CFG = JSON.parse(document.getElementById("calc-cfg")!.textContent!);
+  const RANGES = { discount_rate: CFG.discount_rate_sensitivity, deadweight: CFG.sroi.sensitivity.deadweight,
+    attribution: CFG.sroi.sensitivity.attribution, drop_off: CFG.sroi.sensitivity.drop_off };
+  const DEFAULTS: Params = { ...DEFAULT_PARAMS, reduction_pct: CFG.reduction_pct, horizon_years: CFG.horizon_years,
+    discount_rate: CFG.discount_rate, deadweight: CFG.sroi.deadweight, attribution: CFG.sroi.attribution, drop_off: CFG.sroi.drop_off };
   const qs = new URLSearchParams(location.search);
-  const init = fromQuery(qs, { ...DEFAULT_PARAMS, deadweight: 0.1, attribution: 0.8, drop_off: 0.05 });
+  const init = fromQuery(qs, DEFAULTS);
   const setv = (id: string, v: string | number) => (($(id) as HTMLInputElement).value = String(v));
   setv("r", init.reduction_pct); setv("h", init.horizon_years); setv("t", +(init.discount_rate * 100).toFixed(3));
   if (init.investment) { setv("inv", init.investment); ($("sroi-box") as HTMLDetailsElement).open = true; }
   setv("dw", +(init.deadweight * 100).toFixed(2)); setv("at", +(init.attribution * 100).toFixed(2)); setv("do", +(init.drop_off * 100).toFixed(2));
   ($("c-hosp") as HTMLInputElement).checked = init.use_hospital; ($("c-prod") as HTMLInputElement).checked = init.use_productivity;
+  ($("c-vet") as HTMLInputElement).checked = qs.get("vet") === "1";
   const m0 = qs.get("m"), uf0 = qs.get("uf") ?? "ba";
   if (m0) mun.value = `${uf0}/${m0}`;
 
@@ -108,10 +116,10 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
 
   function params(): Params {
     const inv = num("inv");
-    return { ...DEFAULT_PARAMS, reduction_pct: num("r") ?? 50, horizon_years: num("h") ?? 10,
-      discount_rate: (num("t") ?? 8.5) / 100, use_hospital: checked("c-hosp"), use_productivity: checked("c-prod"),
-      investment: inv && inv > 0 ? inv : null, deadweight: (num("dw") ?? 10) / 100, attribution: (num("at") ?? 80) / 100,
-      drop_off: (num("do") ?? 5) / 100 };
+    return { ...DEFAULTS, reduction_pct: num("r") ?? DEFAULTS.reduction_pct, horizon_years: Math.round(num("h") ?? DEFAULTS.horizon_years),
+      discount_rate: (num("t") ?? DEFAULTS.discount_rate * 100) / 100, use_hospital: checked("c-hosp"), use_productivity: checked("c-prod"),
+      investment: inv && inv > 0 ? inv : null, deadweight: (num("dw") ?? DEFAULTS.deadweight * 100) / 100,
+      attribution: (num("at") ?? DEFAULTS.attribution * 100) / 100, drop_off: (num("do") ?? DEFAULTS.drop_off * 100) / 100 };
   }
 
   function baseline(): { b: Baseline; manual: boolean } {
@@ -137,7 +145,7 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
     if (!ficha && !manual) { out.innerHTML = `<p class="muted">Escolha um município para começar, ou informe os dados manualmente.</p>`; return; }
     let r;
     try { r = calculate(b, p); } catch (e) { out.innerHTML = `<p class="nodata">${(e as Error).message}</p>`; return; }
-    const [lo, hi] = sensitivity(b, p, { discount_rate: [0.04, 0.12], deadweight: [0, 0.3], attribution: [0.5, 1], drop_off: [0, 0.15] });
+    const sens = sensitivity(b, p, RANGES);
     if (Object.keys(r.components).length === 0) {
       out.innerHTML = `<h2>${name}</h2><div class="pending"><p><strong>Ainda não há dados de internações processados para ${name}.</strong></p>
         <p class="small">O custo hospitalar vem do SIH/SUS (DATASUS) e a renda, do Censo 2022. Essas fontes são atualizadas pelo pipeline automático e não estavam disponíveis nesta versão. Enquanto isso, você pode <a href="#manual-box" id="open-manual">informar os dados manualmente</a>.</p></div>`;
@@ -149,13 +157,18 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
     const comp = Object.entries(r.components).map(([k, v]) => `<tr><th scope="row">${LABEL[k]}</th><td class="num">${fmtBRL(v)}</td><td class="num">${fmtBRL(v * p.reduction_pct / 100)}</td></tr>`).join("");
     const miss = r.missing.length ? `<p class="xsmall muted">Componentes sem dado (não entram na soma): ${r.missing.map((m) => LABEL[m]).join(", ")}.</p>` : "";
     const sdwNote = scenario === "sdw92" ? ` O cenário de 92% é um <strong>dado informado pela SDW, em validação independente</strong>.` : "";
-    const text = `Em ${name}, a redução de ${fmtNumber(p.reduction_pct)}% das doenças relacionadas ao saneamento inadequado pode poupar ${fmtBRL(r.annual_saving)} por ano, ou ${fmtBRL(r.pv_saving)} em ${p.horizon_years} anos (valor presente, taxa de ${fmtNumber(p.discount_rate * 100, 1)}% ao ano). Fonte: Territórios com Sede, a partir de dados do DATASUS${period}.`;
+    const rr = p.reduction_pct / 100;
+    const sus = (r.components.hospital ?? 0) * rr;
+    const social = (r.components.productivity ?? 0) * rr;
+    const parts = [sus > 0 ? `${fmtBRL(sus)} por ano em internações pagas pelo SUS` : "", social > 0 ? `${fmtBRL(social)} por ano em renda que as famílias deixam de perder` : ""].filter(Boolean);
+    const text = `Em ${name}, a redução de ${fmtNumber(p.reduction_pct)}% das doenças relacionadas ao saneamento inadequado pode evitar ${parts.join(" e ")}: um custo social de ${fmtBRL(r.annual_saving)} por ano, ou ${fmtBRL(r.pv_saving)} em ${p.horizon_years} anos (valor presente, taxa de ${fmtNumber(p.discount_rate * 100, 1)}% ao ano). Fonte: Territórios com Sede, a partir de dados do DATASUS${period}.`;
     out.innerHTML = `${tag}<h2>${name}</h2>
-      <div class="big"><p class="n">${fmtBRLShort(r.annual_saving)}</p><p>de economia por ano com ${fmtNumber(p.reduction_pct)}% menos doenças</p></div>
+      <div class="big"><p class="n">${fmtBRLShort(r.annual_saving)}</p><p>de custo social evitado por ano com ${fmtNumber(p.reduction_pct)}% menos doenças${sus > 0 ? `, dos quais ${fmtBRLShort(sus)} em internações pagas pelo SUS (verba federal e estadual)` : ""}</p></div>
       <div class="big"><p class="n">${fmtBRLShort(r.pv_saving)}</p><p>acumulados em ${p.horizon_years} ${p.horizon_years === 1 ? "ano" : "anos"}, em valor presente</p></div>
       ${r.school_days_avoided !== null ? `<p>Além disso, cerca de <strong>${fmtNumber(r.school_days_avoided)} dias de internação de crianças e jovens de 6 a 17 anos</strong> seriam evitados por ano, dias longe da escola.</p>` : ""}
       ${p.investment ? `<div class="sroi"><p><strong>SROI: ${fmtNumber(r.sroi_ratio, 2)}</strong>. Cada R$ 1 investido gera cerca de R$ ${fmtNumber(r.sroi_ratio, 2)} em benefício social evitando doenças (valor presente de ${fmtBRL(r.sroi_pv)}, já descontados deadweight, atribuição e drop-off).</p></div>` : ""}
-      <p class="small">Faixa de sensibilidade: <strong>${fmtBRLShort(lo)} a ${fmtBRLShort(hi)}</strong>, variando a taxa de desconto entre 4% e 12%${p.investment ? " e as premissas do SROI" : ""}. É uma estimativa, não uma previsão.</p>
+      <p class="small">Faixa do valor acumulado: <strong>${fmtBRLShort(sens.pv[0])} a ${fmtBRLShort(sens.pv[1])}</strong>, variando a taxa de desconto entre ${fmtNumber(RANGES.discount_rate[0] * 100)}% e ${fmtNumber(RANGES.discount_rate[1] * 100)}% (e incluindo a taxa escolhida).${sens.sroi_pv ? ` Faixa do valor presente do SROI: <strong>${fmtBRLShort(sens.sroi_pv[0])} a ${fmtBRLShort(sens.sroi_pv[1])}</strong>, variando também deadweight, atribuição e drop-off.` : ""}</p>
+      <p class="xsmall muted">É uma estimativa, não uma previsão. O valor acumulado supõe que o custo atual se mantém e que a redução vale desde o primeiro ano; por isso é um teto. No modo SROI, deadweight e drop-off tornam a conta mais conservadora.</p>
       <div class="table-scroll"><table><caption class="visually-hidden">Decomposição por componente</caption><thead><tr><th scope="col">Componente</th><th scope="col" class="num">Custo atual por ano</th><th scope="col" class="num">Economia por ano</th></tr></thead><tbody>${comp}</tbody></table></div>
       ${miss}
       <h3>Texto pronto para copiar</h3>
@@ -163,7 +176,9 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
       <p class="small">${sdwNote}</p>
       <button type="button" class="btn secondary no-print" id="copy-text">Copiar texto</button>`;
     $("copy-text")?.addEventListener("click", () => navigator.clipboard?.writeText(text));
-    const q = toQuery(p) + (ficha ? `&uf=${ficha.uf.toLowerCase()}&m=${ficha.slug}` : "");
+    const extra: Record<string, string> = checked("c-vet") ? { vet: "1" } : {};
+    if (ficha) { extra.uf = ficha.uf.toLowerCase(); extra.m = ficha.slug; }
+    const q = toQuery(p, extra);
     history.replaceState(null, "", `?${q}`);
   }
 

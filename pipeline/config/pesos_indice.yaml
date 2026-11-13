@@ -3,6 +3,9 @@
 # Componente faltante: o peso é redistribuído entre os presentes da mesma dimensão;
 # dimensão inteira faltante: o peso é redistribuído entre as dimensões presentes e o município é sinalizado.
 min_dimensions_for_rank: 3
+# Dimensões obrigatórias para entrar no ranking (revisão M3): sem elas, a exclusão por dado faltante não seria
+# aleatória (ex.: vulnerabilidade ausente onde o Censo tem sigilo total).
+required_dimensions: [acesso, saude]
 # Fallbacks: se o indicador principal estiver indisponível para a UF inteira, usa o substituto (e sinaliza).
 fallbacks:
   censo_sem_agua_rede_pct: snis_sem_agua_pct
