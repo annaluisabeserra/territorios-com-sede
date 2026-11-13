@@ -45,7 +45,7 @@ const tableYears = [...new Set(years)].sort();
   {has && (
     <details class="small">
       <summary>Ver os dados em tabela</summary>
-      <div class="table-scroll"><table>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
         <thead><tr><th scope="col">Ano</th>{series.map((s) => <th scope="col" class="num">{s.label}</th>)}</tr></thead>
         <tbody>{tableYears.map((y) => (<tr><th scope="row">{y}</th>{series.map((s) => { const p = s.points.find((q) => q[0] === y); return <td class="num">{p ? fmtPct(p[1]) : "sem dado"}</td>; })}</tr>))}</tbody>
       </table></div>

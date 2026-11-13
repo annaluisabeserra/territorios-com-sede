@@ -535,6 +535,7 @@ def build_uf(uf: config.UF) -> None:
                 "slug": row["slug"],
                 "ri": row["regiao_intermediaria"],
                 "rim": row["regiao_imediata"],
+                "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao")),
                 "semiarido": row["semiarido"],
                 "ind": ind,
                 "pct": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},

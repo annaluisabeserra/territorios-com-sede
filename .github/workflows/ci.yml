@@ -29,3 +29,24 @@ jobs:
       - run: npm --prefix site ci
       - run: npm --prefix site run check
       - run: npm --prefix site test
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [pipeline, site]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: uv sync --locked
+      - run: uv run python -m pipeline.run --only-build
+      - run: npm --prefix site ci
+      - run: npm --prefix site run build
+      - run: npx --prefix site playwright install --with-deps chromium
+      - run: npm --prefix site run e2e
+      - name: Lighthouse (mobile, mínimo 90 nas quatro categorias)
+        run: cd site && npx --yes @lhci/cli@0.14.0 autorun

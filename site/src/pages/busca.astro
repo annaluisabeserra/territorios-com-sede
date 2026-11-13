@@ -1,0 +1,57 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Busca" description="Busque municípios, comunidades, indicadores e perguntas.">
+  <section class="wrap section">
+    <h1>Busca</h1>
+    <form role="search" id="f" action="/busca" method="get">
+      <label for="q">Município, comunidade, indicador ou pergunta</label>
+      <div class="row"><input id="q" name="q" type="search" autocomplete="off" autofocus /><button class="btn" type="submit">Buscar</button></div>
+      <p class="xsmall muted">Busca por CEP ainda não disponível: não encontramos uma base aberta e estável que relacione CEP a município sem chave de acesso.</p>
+    </form>
+    <p id="status" class="small" role="status" aria-live="polite"></p>
+    <ol id="results" class="results"></ol>
+    <div id="none" hidden class="card">
+      <p><strong>Nada encontrado.</strong> Algumas ideias:</p>
+      <ul><li>Confira a grafia ou digite só o começo do nome (ex.: “Feira”).</li><li>Procure pelo tema: <a href="/busca?q=esgoto">esgoto</a>, <a href="/busca?q=água">água</a>, <a href="/busca?q=quilombola">quilombola</a>, <a href="/busca?q=calculadora">calculadora</a>.</li><li>Veja todos os municípios no <a href="/mapa">mapa</a> (tabela abaixo do mapa).</li></ul>
+      <div id="suggest"></div>
+    </div>
+  </section>
+</Base>
+<script>
+  import { buildIndex, search, type Doc } from "../lib/search";
+  import { track } from "../lib/learn";
+  const q = document.getElementById("q") as HTMLInputElement;
+  const out = document.getElementById("results")!;
+  const status = document.getElementById("status")!;
+  const none = document.getElementById("none")!;
+  const initial = new URLSearchParams(location.search).get("q") ?? "";
+  q.value = initial;
+  const docs: Doc[] = await (await fetch("/busca-index.json")).json();
+  const ms = buildIndex(docs);
+  function run(value: string, log = false) {
+    const v = value.trim();
+    if (!v) { out.innerHTML = ""; status.textContent = ""; none.hidden = true; return; }
+    const r = search(ms, v).slice(0, 30);
+    status.textContent = r.length ? `${r.length} resultado(s) para “${v}”` : "";
+    none.hidden = r.length > 0;
+    if (!r.length) {
+      const near = ms.search(v, { fuzzy: 0.45, prefix: true, combineWith: "OR" }).slice(0, 5);
+      document.getElementById("suggest")!.innerHTML = near.length ? `<p class="small">Você quis dizer: ${near.map((n) => `<a href="${n.url}">${n.title}</a>`).join(", ")}?</p>` : "";
+      if (log) track("search_no_result", { q: v.slice(0, 60).toLowerCase() });
+    }
+    out.innerHTML = r.map((x) => `<li><a href="${x.url}"><span class="t">${x.title}</span></a> <span class="tag">${x.type}</span> <span class="small muted">${x.sub}</span></li>`).join("");
+  }
+  run(initial, true);
+  let timer: number | undefined;
+  q.addEventListener("input", () => { clearTimeout(timer); timer = window.setTimeout(() => run(q.value), 150); });
+  document.getElementById("f")!.addEventListener("submit", (e) => { e.preventDefault(); history.replaceState(null, "", `?q=${encodeURIComponent(q.value)}`); run(q.value, true); });
+</script>
+<style>
+  label { display: block; font-weight: 700; margin-bottom: var(--s-2); }
+  .row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+  input { flex: 1 1 16rem; padding: .8rem 1rem; border: 2px solid var(--c-water-700); border-radius: 999px; min-height: 48px; }
+  .results { list-style: none; padding: 0; margin: var(--s-4) 0; display: grid; gap: var(--s-2); }
+  .results :global(li) { padding: var(--s-3); border-bottom: 1px solid var(--c-line); }
+  .results :global(.t) { font-weight: 700; font-size: var(--fs-lg); }
+</style>

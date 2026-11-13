@@ -70,7 +70,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
 
     <section id="indicadores" class="section">
       <h2>Como está o saneamento</h2>
-      <div class="table-scroll card flat">
+      <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)">
         <table>
           <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana da {f.uf_nome} e do Brasil</caption>
           <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">{f.nome}</th><th scope="col" class="num">Mediana {f.uf}</th><th scope="col" class="num">Mediana Brasil</th><th scope="col">Fonte</th></tr></thead>
@@ -104,7 +104,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
         <div class="card">
           <h3>Vizinhos</h3>
           {nbVals.length ? (
-            <div class="table-scroll"><table>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
               <caption class="visually-hidden">Comparação com municípios vizinhos</caption>
               <thead><tr><th scope="col">Município</th><th scope="col" class="num">Água (SNIS)</th><th scope="col" class="num">Esgoto (SNIS)</th></tr></thead>
               <tbody>

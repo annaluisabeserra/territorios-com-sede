@@ -1,0 +1,111 @@
+---
+import Base from "../layouts/Base.astro";
+import { DEFAULT_UF, indicators, resumo, ufs } from "../lib/data";
+import { READY, FILTERS, toQuery, type Spec } from "../lib/questions";
+
+const IND = indicators();
+const inds = Object.entries(IND).filter(([k, d]) => ["pct", "count", "rate_10k", "brl_pc", "lhabdia", "index"].includes(d.unit) && !k.startsWith("censo_sem") && !k.startsWith("snis_sem"));
+const R = resumo(DEFAULT_UF);
+const regions = [...new Set(R.municipios.map((m) => m.ri))].filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"));
+const base: Spec = { mode: "ranking", ind: "snis_agua_pct", region: "todas", filter: "todos", order: "asc", n: 10 };
+const list = ufs();
+---
+<Base title="Perguntas aos dados" description="Monte perguntas sobre água, esgoto e saúde e receba a resposta com gráfico, tabela e link para compartilhar.">
+  <section class="wrap section">
+    <p class="eyebrow">Ver</p>
+    <h1>Pergunte aos dados</h1>
+    <p class="text">Escolha nos menus e a resposta aparece na hora, com gráfico e tabela. Cada pergunta gera um link que você pode compartilhar.</p>
+    <form id="q" class="card builder" onsubmit="return false">
+      <div class="sentence">
+        <label class="visually-hidden" for="mode">Tipo de resposta</label>
+        <select id="mode"><option value="ranking">Ranking</option><option value="lista">Lista</option><option value="comparacao">Comparação</option></select>
+        <span>de</span>
+        <label class="visually-hidden" for="ind">Indicador</label>
+        <select id="ind">{inds.map(([k, d]) => <option value={k} selected={k === base.ind}>{d.short}</option>)}</select>
+        <span>em</span>
+        <label class="visually-hidden" for="uf">Estado</label>
+        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+        <label class="visually-hidden" for="region">Região intermediária</label>
+        <select id="region"><option value="todas">todas as regiões</option>{regions.map((r) => <option value={r}>região de {r}</option>)}</select>
+        <span>,</span>
+        <label class="visually-hidden" for="filter">Filtro</label>
+        <select id="filter">{Object.entries(FILTERS).map(([k, v]) => <option value={k}>{v}</option>)}</select>
+      </div>
+      <div class="opts small">
+        <label>Ordem <select id="order"><option value="asc">do menor para o maior</option><option value="desc">do maior para o menor</option></select></label>
+        <label id="n-wrap">Quantos <select id="n"><option>5</option><option selected>10</option><option>20</option><option>50</option></select></label>
+        <label id="cmp-wrap" hidden>Municípios para comparar (separe por vírgula) <input id="cmp" type="text" placeholder="Salvador, Feira de Santana" /></label>
+      </div>
+    </form>
+    <div id="answer" aria-live="polite"></div>
+    <h2>Perguntas prontas</h2>
+    <ul class="ready">{READY.map((r) => <li><a href={`/perguntas?${toQuery({ ...base, ...r.spec } as Spec)}`}>{r.label}</a></li>)}</ul>
+  </section>
+</Base>
+<script>
+  import { answer, fromQuery, toQuery, FILTERS, type Spec } from "../lib/questions";
+  import { fmtValue, unitLabel } from "../lib/indicators";
+  import { normalize } from "../lib/search";
+  import { track } from "../lib/learn";
+  import type { IndicatorDef, Resumo } from "../lib/types";
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const ids = ["mode", "ind", "region", "filter", "order", "n", "uf"];
+  let IND: Record<string, IndicatorDef> = await (await fetch("/data/indicadores.json")).json();
+  let R: Resumo; let ufLoaded = "";
+  const base: Spec = { mode: "ranking", ind: "snis_agua_pct", region: "todas", filter: "todos", order: "asc", n: 10 };
+  const init = fromQuery(new URLSearchParams(location.search), base);
+  const q0 = new URLSearchParams(location.search);
+  if (q0.get("uf")) ($("uf") as HTMLSelectElement).value = q0.get("uf")!;
+  ($("mode") as HTMLSelectElement).value = init.mode; ($("ind") as HTMLSelectElement).value = init.ind;
+  ($("region") as HTMLSelectElement).value = init.region; ($("filter") as HTMLSelectElement).value = init.filter;
+  ($("order") as HTMLSelectElement).value = init.order; ($("n") as HTMLSelectElement).value = String(init.n);
+  const val = (id: string) => ($(id) as HTMLSelectElement | HTMLInputElement).value;
+
+  async function run(log = false) {
+    const uf = val("uf");
+    if (uf !== ufLoaded) { R = await (await fetch(`/data/${uf}/resumo.json`)).json(); ufLoaded = uf; }
+    const mode = val("mode") as Spec["mode"];
+    $("cmp-wrap").hidden = mode !== "comparacao"; $("n-wrap").hidden = mode !== "ranking";
+    const names = val("cmp").split(",").map((s) => normalize(s.trim())).filter(Boolean);
+    const compare = R.municipios.filter((m) => names.includes(normalize(m.nome))).map((m) => m.slug);
+    const s: Spec = { mode, ind: val("ind"), region: val("region"), filter: val("filter") as Spec["filter"], order: val("order") as Spec["order"], n: Number(val("n")), compare };
+    const res = answer(R.municipios, s);
+    const def = IND[s.ind];
+    const max = Math.max(...res.rows.map((r) => r.v ?? 0), 1);
+    const where = s.region === "todas" ? R.uf.nome : `região de ${s.region} (${R.uf.sigla})`;
+    const title = `${mode === "ranking" ? `Ranking (${s.n})` : mode === "lista" ? "Lista" : "Comparação"}: ${def?.label ?? s.ind} em ${where}${s.filter !== "todos" ? `, ${FILTERS[s.filter]}` : ""}`;
+    const src = def?.source === "snis" ? R.sources.snis : def?.source === "ibge_censo2022" ? R.sources.populacao : def?.source === "datasus_sih" ? R.sources.sih_drsai : null;
+    if (!res.rows.length) {
+      $("answer").innerHTML = `<div class="card"><h2>${title}</h2><p class="nodata">Nenhum município com dado para esta pergunta${res.universe ? ` (${res.universe} sem dado)` : ""}.</p></div>`;
+    } else {
+      const bars = res.rows.slice(0, 50).map((r) => `<li class="bar"><span class="lbl"><a href="/municipio/${R.uf.slug}/${r.m.slug}">${r.m.nome}</a></span><span class="track" aria-hidden="true"><span style="width:${r.v === null ? 0 : Math.max(1, (r.v / max) * 100)}%"></span></span><span class="v">${fmtValue(def, r.v)}</span></li>`).join("");
+      $("answer").innerHTML = `<div class="card"><h2>${title}</h2>
+        <p class="small muted">${unitLabel(def ?? ({ unit: "count" } as any))}. ${res.withoutData ? `${res.withoutData} de ${res.universe} municípios sem dado ficaram de fora.` : ""}</p>
+        <ol class="bars" aria-label="Gráfico de barras">${bars}</ol>
+        <details class="small"><summary>Ver em tabela</summary><div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table><caption class="visually-hidden">${title}</caption><thead><tr><th scope="col" class="num">#</th><th scope="col">Município</th><th scope="col" class="num">Valor</th></tr></thead><tbody>${res.rows.map((r, i) => `<tr><td class="num">${i + 1}</td><th scope="row">${r.m.nome}</th><td class="num">${fmtValue(def, r.v)}</td></tr>`).join("")}</tbody></table></div></details>
+        <p class="source">Fonte: ${src ? `${src.name}, ${src.reference_period ?? ""}` : "ver metodologia"}. <a href="/metodologia#ind-${s.ind}">Como este indicador é calculado</a></p>
+        <button class="btn secondary" type="button" id="share">Copiar link desta pergunta</button></div>`;
+      $("share").addEventListener("click", () => navigator.clipboard?.writeText(location.href));
+    }
+    history.replaceState(null, "", `?${toQuery(s)}&uf=${uf}`);
+    if (log) track("guided_question", { m: s.mode, i: s.ind, f: s.filter });
+  }
+  ids.forEach((id) => $(id).addEventListener("change", () => run(true)));
+  $("cmp").addEventListener("change", () => run(true));
+  run();
+</script>
+<style>
+  .builder { margin: var(--s-5) 0; }
+  .sentence { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; font-size: var(--fs-lg); }
+  .sentence select, .opts select, .opts input { padding: .5rem .6rem; border: 2px solid var(--c-water-700); border-radius: 8px; min-height: 44px; background: #fff; font-weight: 700; color: var(--c-water-900); max-width: 100%; }
+  .opts { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-4); }
+  .opts label { display: grid; gap: 4px; }
+  #answer :global(.bars) { display: grid; gap: 6px; margin: var(--s-4) 0; list-style: none; padding: 0; }
+  #answer :global(.bar) { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr 6.5rem; gap: var(--s-2); align-items: center; font-size: var(--fs-sm); }
+  #answer :global(.track) { height: 14px; background: var(--c-sand-100); border-radius: 999px; overflow: hidden; display: block; }
+  #answer :global(.track span) { display: block; height: 100%; background: var(--c-water-500); border-radius: 999px; }
+  #answer :global(.v) { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { #answer :global(.bar) { grid-template-columns: 1fr 5.5rem; } #answer :global(.track) { grid-column: 1 / -1; order: 3; } }
+  .ready { columns: 2 22rem; }
+  .ready li { margin-bottom: var(--s-2); break-inside: avoid; }
+</style>

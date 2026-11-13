@@ -41,6 +41,7 @@ export interface IndexInfo {
   dims_missing: string[];
   fallbacks_used: Record<string, string>;
   min_dimensions_for_rank: number;
+  required_dimensions?: string[];
   ranked: number;
 }
 

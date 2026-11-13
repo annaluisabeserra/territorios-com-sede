@@ -1,5 +1,5 @@
 ---
-question: "O que significa "cópia pública do dado oficial"?"
+question: "O que significa \"cópia pública do dado oficial\"?"
 order: 20
 category: "Dados"
 ---

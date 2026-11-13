@@ -1,0 +1,91 @@
+---
+import Base from "../layouts/Base.astro";
+import { DEFAULT_UF, readJson, resumo, ufs } from "../lib/data";
+import { fmtNumber } from "../lib/format";
+
+const R = resumo(DEFAULT_UF);
+const dims = R.index.dimensions;
+const sens = readJson<any>(DEFAULT_UF, "indice_sensibilidade.json");
+const list = ufs();
+---
+<Base title="Prioridades" description="Índice de prioridade territorial com pesos ajustáveis: onde o investimento em saneamento gera mais impacto.">
+  <section class="wrap section">
+    <p class="eyebrow">Agir</p>
+    <h1>Onde o investimento gera mais impacto?</h1>
+    <p class="text">O índice de prioridade combina cinco dimensões. Cada uma vira um percentil dentro do estado (100 = pior situação). Mude os pesos para ver como o ranking muda: a conta é refeita no seu navegador.</p>
+    <div class="grid layout">
+      <form class="card" id="w" onsubmit="return false">
+        <div class="field"><label for="uf">Estado</label><select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select></div>
+        <fieldset>
+          <legend>Pesos das dimensões</legend>
+          {Object.entries(dims).map(([k, d]) => (
+            <div class="field">
+              <label for={`w-${k}`}>{d.label}: <output id={`o-${k}`}>{Math.round(d.weight * 100)}</output></label>
+              <input type="range" id={`w-${k}`} data-dim={k} min="0" max="100" step="5" value={Math.round(d.weight * 100)} />
+              <span class="xsmall muted">{R.index.dims_available.includes(k) ? "com dados nesta versão" : "sem dados nesta versão"}</span>
+            </div>
+          ))}
+        </fieldset>
+        <button type="button" class="btn secondary" id="reset">Voltar aos pesos padrão</button>
+        <p class="xsmall muted">Os pesos são normalizados para somar 100%. Para entrar no ranking, o município precisa ter dados de pelo menos {R.index.min_dimensions_for_rank} dimensões, incluindo {R.index.required_dimensions?.map((d: string) => dims[d]?.label.toLowerCase()).join(" e ")}.</p>
+      </form>
+      <div>
+        <div id="state" class="card" aria-live="polite"></div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table id="rank"><caption class="visually-hidden">Ranking de prioridade</caption><thead></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <h2>Análise de sensibilidade</h2>
+    {sens?.status === "ok" ? (
+      <p class="text">Variando cada peso em ±10 pontos percentuais, o top 20 mantém em média {fmtNumber(sens.mean_overlap, 1)} dos 20 municípios (mínimo de {sens.min_overlap}).</p>
+    ) : (
+      <p class="text">A análise de sensibilidade (quanto o top 20 muda variando cada peso em ±10 pontos) é publicada quando o índice pode ser calculado. Nesta versão, faltam dados de {R.index.dims_missing.map((d) => dims[d].label.toLowerCase()).join(", ")}.</p>
+    )}
+    <p class="small"><a href="/metodologia#indice">Como o índice é calculado</a></p>
+  </section>
+</Base>
+<script>
+  import { rank, weightedIndex } from "../lib/priority";
+  import { fmtNumber } from "../lib/format";
+  import type { Resumo } from "../lib/types";
+  const $ = (id: string) => document.getElementById(id)!;
+  const sliders = [...document.querySelectorAll<HTMLInputElement>("input[type=range][data-dim]")];
+  const defaults = Object.fromEntries(sliders.map((s) => [s.dataset.dim!, Number(s.value)]));
+  let R: Resumo;
+  async function load() {
+    R = await (await fetch(`/data/${($("uf") as HTMLSelectElement).value}/resumo.json`)).json();
+    render();
+  }
+  function render() {
+    const w: Record<string, number> = {};
+    const total = sliders.reduce((a, s) => a + Number(s.value), 0) || 1;
+    for (const s of sliders) { w[s.dataset.dim!] = Number(s.value) / total; $(`o-${s.dataset.dim}`).textContent = `${Math.round((Number(s.value) / total) * 100)}%`; }
+    const scores: Record<string, number | null> = {};
+    for (const m of R.municipios) scores[m.cod] = weightedIndex(m.dims, w, R.index.min_dimensions_for_rank, (R.index as any).required_dimensions ?? [])[0];
+    const pos = rank(scores);
+    const ranked = R.municipios.filter((m) => pos[m.cod] !== null).sort((a, b) => (pos[a.cod]! - pos[b.cod]!));
+    const thead = $("rank").querySelector("thead")!, tbody = $("rank").querySelector("tbody")!;
+    if (!ranked.length) {
+      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes ainda indisponíveis (internações do SUS, decretos de emergência e qualidade da água). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
+      thead.innerHTML = ""; tbody.innerHTML = ""; return;
+    }
+    $("state").innerHTML = `<p>${ranked.length} municípios ranqueados.</p>`;
+    thead.innerHTML = `<tr><th scope="col" class="num">Posição</th><th scope="col">Município</th><th scope="col" class="num">Nota</th>${Object.entries(R.index.dimensions).map(([, d]) => `<th scope="col" class="num">${d.label}</th>`).join("")}</tr>`;
+    tbody.innerHTML = ranked.slice(0, 50).map((m) => `<tr><td class="num">${pos[m.cod]}</td><th scope="row"><a href="/municipio/${R.uf.slug}/${m.slug}">${m.nome}</a></th><td class="num">${fmtNumber(scores[m.cod], 0)}</td>${Object.keys(R.index.dimensions).map((d) => `<td class="num">${m.dims[d] === null ? "sem dado" : fmtNumber(m.dims[d], 0)}</td>`).join("")}</tr>`).join("");
+  }
+  sliders.forEach((s) => s.addEventListener("input", () => R && render()));
+  $("reset").addEventListener("click", () => { sliders.forEach((s) => (s.value = String(defaults[s.dataset.dim!]))); render(); });
+  $("uf").addEventListener("change", load);
+  load();
+</script>
+<style>
+  .layout { grid-template-columns: 1fr; align-items: start; margin-top: var(--s-5); }
+  @media (min-width: 900px) { .layout { grid-template-columns: 22rem 1fr; } }
+  fieldset { border: 0; padding: 0; margin: var(--s-3) 0; display: grid; gap: var(--s-3); }
+  legend { font-weight: 700; margin-bottom: var(--s-2); }
+  .field { display: grid; gap: 2px; }
+  .field label { font-weight: 700; }
+  input[type=range] { width: 100%; accent-color: var(--c-water-700); min-height: 32px; }
+  select { padding: .6rem; border: 1px solid var(--c-ink-muted); border-radius: 8px; min-height: 44px; background: #fff; width: 100%; }
+  h2 { margin-top: var(--s-7); }
+</style>

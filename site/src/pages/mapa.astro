@@ -1,6 +1,8 @@
 ---
 import Base from "../layouts/Base.astro";
-import { indicators, ufs } from "../lib/data";
+import StaticMap from "../components/StaticMap.astro";
+import { DEFAULT_UF, indicators, resumo, ufs } from "../lib/data";
+import { THERMO_COLORS } from "../lib/indicators";
 
 const IND = indicators();
 const layers = [
@@ -10,6 +12,8 @@ const layers = [
   { id: "semiarido", label: "Semiárido", kind: "cat" },
 ];
 const list = ufs();
+const R0 = resumo(DEFAULT_UF);
+const preview = Object.fromEntries(R0.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
 ---
 <Base title="Mapa" description="Mapa interativo de água, esgoto, saúde e comunidades de cada município.">
   <link rel="preload" as="fetch" href="/data/ba/resumo.json" crossorigin="anonymous" slot="head" />
@@ -35,7 +39,12 @@ const list = ufs();
       <p class="xsmall muted">Territórios quilombolas (INCRA), assentamentos e unidades de conservação ainda não estão integrados. <a href="/dados#fontes">Ver o estado das fontes</a>.</p>
     </div>
     <div class="mapbox">
-      <div id="map" role="region" aria-label="Mapa interativo. A mesma informação está na tabela abaixo do mapa."></div>
+      <div id="map" role="region" aria-label="Mapa interativo. A mesma informação está na tabela abaixo do mapa.">
+        <div id="preview" class="preview">
+          <StaticMap uf={DEFAULT_UF} values={{}} palette={[]} categorical={preview} label="Prévia estática do mapa: meta de esgoto de 2033" />
+          <button type="button" class="btn" id="activate">Abrir mapa interativo</button>
+        </div>
+      </div>
       <div id="tip" class="tip" hidden></div>
       <noscript><p class="card">O mapa interativo precisa de JavaScript. A tabela abaixo traz os mesmos dados.</p></noscript>
     </div>
@@ -44,13 +53,12 @@ const list = ufs();
     <details class="tabled">
     <summary><span id="table-title">Tabela do mapa</span> <span class="small muted">(todos os municípios, mesma informação do mapa)</span></summary>
     <p class="small">Clique no título de uma coluna para ordenar.</p>
-    <div class="table-scroll card flat"><table id="tbl"><caption class="visually-hidden" id="tbl-cap"></caption><thead><tr><th scope="col"><button data-sort="nome">Município</button></th><th scope="col" class="num"><button data-sort="v">Valor</button></th><th scope="col">Região intermediária</th></tr></thead><tbody></tbody></table></div>
+    <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table id="tbl"><caption class="visually-hidden" id="tbl-cap"></caption><thead><tr><th scope="col"><button data-sort="nome">Município</button></th><th scope="col" class="num"><button data-sort="v">Valor</button></th><th scope="col">Região intermediária</th></tr></thead><tbody></tbody></table></div>
     </details>
   </section>
 </Base>
 <script>
-  import * as maplibregl from "maplibre-gl";
-  import "maplibre-gl/dist/maplibre-gl.css";
+  import type * as ML from "maplibre-gl";
   import { classOf, fmtValue, GOOD, BAD, NODATA, quantileBreaks, THERMO_COLORS, THERMO_LABEL, unitLabel } from "../lib/indicators";
   import { fmtNumber } from "../lib/format";
   import type { IndicatorDef, Resumo } from "../lib/types";
@@ -65,12 +73,10 @@ const list = ufs();
   let geo: any;
   let sortKey = "v", sortDir = -1;
 
-  maplibregl.setWorkerUrl("/vendor/maplibre-gl-worker.mjs");
-  const map = new maplibregl.Map({
-    container: "map", style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef4f6" } }] },
-    center: [-41.7, -12.9], zoom: 5, attributionControl: { compact: true }, cooperativeGestures: true,
-  });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  // O MapLibre (~300 KB comprimido) só carrega sob demanda: botão no celular, ociosidade no desktop.
+  let maplibregl: typeof ML;
+  let map: ML.Map;
+  let mapReady = false;
 
   function valueOf(m: Resumo["municipios"][number], layer: string): number | string | null {
     if (layer === "thermo_agua") return m.thermo.agua;
@@ -102,7 +108,7 @@ const list = ufs();
       const m = byCod.get(String(f.properties.cod_ibge7));
       f.properties.fill = m ? s.color(valueOf(m, layer)) : NODATA;
     }
-    (map.getSource("mun") as maplibregl.GeoJSONSource)?.setData(geo);
+    if (mapReady && map?.getSource("mun")) (map.getSource("mun") as ML.GeoJSONSource).setData(geo);
     const def = IND[layer];
     $("legend").innerHTML = `<p class="small"><strong>${layerSel.selectedOptions[0].text}</strong>${def ? ` <span class="muted">(${unitLabel(def)})</span>` : ""}</p><ul>${s.legend.map((l) => `<li><i style="background:${l.c}"></i>${l.t}</li>`).join("")}</ul>`;
     const srcKey = def?.source === "snis" || layer.startsWith("thermo") ? "snis" : def?.source === "datasus_sih" ? "sih_drsai" : layer === "semiarido" ? "semiarido" : def?.source === "ibge_censo2022" ? "censo_lixo" : null;
@@ -142,8 +148,13 @@ const list = ufs();
       Object.keys(IND).length ? Promise.resolve(IND) : fetch(`/data/indicadores.json`).then((x) => x.json()),
     ]);
     R = r; geo = g; IND = ind;
+    paint();
+    if (mapReady) addToMap();
+  }
+
+  function addToMap() {
     const add = () => {
-      if (map.getSource("mun")) (map.getSource("mun") as maplibregl.GeoJSONSource).setData(geo);
+      if (map.getSource("mun")) (map.getSource("mun") as ML.GeoJSONSource).setData(geo);
       else {
         map.addSource("mun", { type: "geojson", data: geo });
         map.addLayer({ id: "mun-fill", type: "fill", source: "mun", paint: { "fill-color": ["get", "fill"], "fill-opacity": 0.92 } });
@@ -153,43 +164,70 @@ const list = ufs();
       const b = new maplibregl.LngLatBounds();
       for (const f of geo.features) for (const poly of f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) for (const [x, y] of poly[0]) b.extend([x, y]);
       map.fitBounds(b, { padding: 20, animate: false });
-      paint();
     };
     map.loaded() ? add() : map.once("load", add);
   }
 
-  const tip = $("tip");
-  map.on("mousemove", "mun-fill", (e: maplibregl.MapLayerMouseEvent) => {
-    const f = e.features?.[0]; if (!f) return;
-    const m = R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (!m) return;
-    map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], f.properties!.cod_ibge7]);
-    map.getCanvas().style.cursor = "pointer";
-    tip.hidden = false;
-    tip.innerHTML = `<strong>${m.nome}</strong><br>${layerSel.selectedOptions[0].text}: ${display(m, layerSel.value)}<br><span class="xsmall">${$("source").textContent}</span><br><span class="xsmall">Clique para abrir a ficha</span>`;
-    tip.style.left = `${e.point.x + 12}px`; tip.style.top = `${e.point.y + 12}px`;
-  });
-  map.on("mouseleave", "mun-fill", () => { tip.hidden = true; map.getCanvas().style.cursor = ""; map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], ""]); });
-  map.on("click", "mun-fill", (e: maplibregl.MapLayerMouseEvent) => { const f = e.features?.[0]; const m = f && R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (m) location.href = `/municipio/${R.uf.slug}/${m.slug}`; });
+  async function initMap() {
+    if (mapReady) return;
+    mapReady = true;
+    $("activate").setAttribute("disabled", "");
+    $("activate").textContent = "Carregando mapa…";
+    const [mod] = await Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]);
+    maplibregl = mod;
+    maplibregl.setWorkerUrl("/vendor/maplibre-gl-worker.mjs");
+    $("preview").remove();
+    map = new maplibregl.Map({
+      container: "map", style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef4f6" } }] },
+      center: [-41.7, -12.9], zoom: 5, attributionControl: { compact: true }, cooperativeGestures: true,
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    const tip = $("tip");
+    map.on("mousemove", "mun-fill", (e: ML.MapLayerMouseEvent) => {
+      const f = e.features?.[0]; if (!f) return;
+      const m = R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (!m) return;
+      map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], f.properties!.cod_ibge7]);
+      map.getCanvas().style.cursor = "pointer";
+      tip.hidden = false;
+      tip.innerHTML = `<strong>${m.nome}</strong><br>${layerSel.selectedOptions[0].text}: ${display(m, layerSel.value)}<br><span class="xsmall">${$("source").textContent}</span><br><span class="xsmall">Clique para abrir a ficha</span>`;
+      tip.style.left = `${e.point.x + 12}px`; tip.style.top = `${e.point.y + 12}px`;
+    });
+    map.on("mouseleave", "mun-fill", () => { tip.hidden = true; map.getCanvas().style.cursor = ""; map.setFilter("mun-hover", ["==", ["get", "cod_ibge7"], ""]); });
+    map.on("click", "mun-fill", (e: ML.MapLayerMouseEvent) => { const f = e.features?.[0]; const m = f && R.municipios.find((x) => x.cod === String(f.properties!.cod_ibge7)); if (m) location.href = `/municipio/${R.uf.slug}/${m.slug}`; });
+    map.on("click", "tis-fill", (e: ML.MapLayerMouseEvent) => {
+      const p = e.features?.[0]?.properties; if (!p) return;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<strong>Terra Indígena ${p.nome}</strong><br>Situação: ${p.fase ?? "não informada"}<br><span style="font-size:12px">Fonte: FUNAI (limites simplificados)</span>`).addTo(map);
+    });
+    BLANK = map.getStyle();
+    if (R) addToMap();
+    if (($("tis") as HTMLInputElement).checked) toggleTis(true);
+  }
 
+  function toggleTis(on: boolean) {
+    if (!mapReady || !map) return;
+    const run = () => {
+      if (on && !map.getSource("tis")) {
+        map.addSource("tis", { type: "geojson", data: `/data/${ufSel.value}/terras_indigenas.geojson` });
+        map.addLayer({ id: "tis-fill", type: "fill", source: "tis", paint: { "fill-color": "#5b2a86", "fill-opacity": 0.25 } });
+        map.addLayer({ id: "tis-line", type: "line", source: "tis", paint: { "line-color": "#5b2a86", "line-width": 1.5, "line-dasharray": [2, 1] } });
+      }
+      for (const id of ["tis-fill", "tis-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    };
+    map.loaded() ? run() : map.once("load", run);
+  }
   $("tis").addEventListener("change", async (e) => {
     const on = (e.target as HTMLInputElement).checked;
-    if (on && !map.getSource("tis")) {
-      map.addSource("tis", { type: "geojson", data: `/data/${ufSel.value}/terras_indigenas.geojson` });
-      map.addLayer({ id: "tis-fill", type: "fill", source: "tis", paint: { "fill-color": "#5b2a86", "fill-opacity": 0.25 } });
-      map.addLayer({ id: "tis-line", type: "line", source: "tis", paint: { "line-color": "#5b2a86", "line-width": 1.5, "line-dasharray": [2, 1] } });
-    }
-    for (const id of ["tis-fill", "tis-line"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    if (on && !mapReady) await initMap();
+    toggleTis(on);
   });
-  map.on("click", "tis-fill", (e: maplibregl.MapLayerMouseEvent) => {
-    const p = e.features?.[0]?.properties; if (!p) return;
-    new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<strong>Terra Indígena ${p.nome}</strong><br>Situação: ${p.fase ?? "não informada"}<br><span style="font-size:12px">Fonte: FUNAI (limites simplificados)</span>`).addTo(map);
-  });
+
   // Mapa de fundo opcional: estilo vetorial gratuito e sem chave do OpenFreeMap (SPEC §4). Desligado por padrão
   // para economizar dados em 3G. Nossas camadas são preservadas na troca de estilo.
-  const BLANK = map.getStyle();
-  $("basemap").addEventListener("change", (e) => {
+  let BLANK: ML.StyleSpecification;
+  $("basemap").addEventListener("change", async (e) => {
     const on = (e.target as HTMLInputElement).checked;
-    const keep = (prev: maplibregl.StyleSpecification, next: maplibregl.StyleSpecification): maplibregl.StyleSpecification => ({
+    if (!mapReady) await initMap();
+    const keep = (prev: ML.StyleSpecification, next: ML.StyleSpecification): ML.StyleSpecification => ({
       ...next,
       sources: { ...next.sources, ...Object.fromEntries(Object.entries(prev.sources).filter(([k]) => k === "mun" || k === "tis")) },
       layers: [...next.layers.filter((l) => l.id !== "bg"), ...prev.layers.filter((l) => l.id.startsWith("mun") || l.id.startsWith("tis"))],
@@ -201,9 +239,17 @@ const list = ufs();
     if (sortKey === b.dataset.sort) sortDir *= -1; else { sortKey = b.dataset.sort!; sortDir = sortKey === "nome" ? 1 : -1; }
     renderTable();
   }));
-  layerSel.addEventListener("change", paint);
-  ufSel.addEventListener("change", loadUF);
+  layerSel.addEventListener("change", () => { paint(); if (!mapReady) $("preview").classList.add("stale"); });
+  ufSel.addEventListener("change", () => { loadUF(); if (!mapReady) initMap(); });
+  $("activate").addEventListener("click", initMap);
   loadUF();
+  // Desktop com boa conexão: ativa sozinho quando o navegador fica ocioso. Celular ou economia de dados: espera o botão.
+  const conn = (navigator as any).connection;
+  const saveData = conn?.saveData || /2g|3g/.test(conn?.effectiveType ?? "");
+  if (matchMedia("(min-width: 900px) and (pointer: fine)").matches && !saveData) {
+    const idle = (window as any).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1500));
+    window.addEventListener("load", () => idle(() => initMap(), { timeout: 4000 }));
+  }
 </script>
 <style>
   .mapwrap { display: grid; gap: var(--s-4); padding-top: var(--s-5); }
@@ -216,6 +262,10 @@ const list = ufs();
   .check input { width: 20px; height: 20px; }
   .mapbox { position: relative; }
   #map { height: min(72vh, 680px); min-height: 380px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--c-line); }
+  .preview { position: relative; height: 100%; display: grid; place-items: center; padding: var(--s-4); background: #eef4f6; }
+  .preview :global(svg) { max-height: 100%; width: auto; max-width: 100%; }
+  .preview #activate { position: absolute; bottom: var(--s-4); left: 50%; transform: translateX(-50%); }
+  .preview.stale :global(svg) { opacity: 0.35; }
   .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--c-line); box-shadow: var(--shadow); padding: var(--s-2) var(--s-3); border-radius: 8px; font-size: var(--fs-sm); max-width: 260px; z-index: 2; }
   .legend :global(ul) { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); }
   .legend :global(i) { display: inline-block; width: 16px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; border: 1px solid rgb(0 0 0 / 10%); }

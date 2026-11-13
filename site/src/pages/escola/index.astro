@@ -1,0 +1,38 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { resumo, ufs } from "../../lib/data";
+
+const roteiros = (await getCollection("escola")).sort((a, b) => a.data.order - b.data.order);
+const list = ufs().map((u) => ({ ...u, ms: resumo(u.slug).municipios.map((m) => ({ s: m.slug, n: m.nome })).sort((a, b) => a.n.localeCompare(b.n, "pt-BR")) }));
+---
+<Base title="Territórios com Sede na escola" description="Atividades para professores e páginas para estudantes, com os dados do próprio município.">
+  <section class="wrap section">
+    <p class="eyebrow">Escola</p>
+    <h1>Territórios com Sede na escola</h1>
+    <p class="text">Água e saneamento a partir da realidade de cada município. Três roteiros de atividade para professores e uma página em linguagem simples para estudantes, pronta para imprimir.</p>
+    <h2>Página do município para estudantes</h2>
+    <form action="/escola" method="get" class="pick" id="pick">
+      <label for="mun">Escolha o município</label>
+      <select id="mun" name="m">{list.map((u) => <optgroup label={u.sigla}>{u.ms.map((m) => <option value={`${u.slug}/${m.s}`}>{m.n}</option>)}</optgroup>)}</select>
+      <button class="btn" type="submit">Abrir</button>
+    </form>
+    <h2>Roteiros para professores</h2>
+    <div class="grid grid-3">{roteiros.map((r) => (
+      <a class="card" href={`/escola/roteiro/${r.id}`}><span class="tag">{r.data.duration}</span><h3>{r.data.title}</h3><p class="small">{r.data.summary}</p><p class="xsmall muted">{r.data.level}</p></a>
+    ))}</div>
+  </section>
+</Base>
+<script>
+  document.getElementById("pick")!.addEventListener("submit", (e) => {
+    e.preventDefault();
+    location.href = `/escola/${(document.getElementById("mun") as HTMLSelectElement).value}`;
+  });
+</script>
+<style>
+  .pick { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; margin-bottom: var(--s-6); }
+  .pick label { width: 100%; font-weight: 700; }
+  .pick select { padding: .6rem; min-height: 44px; border-radius: 8px; border: 1px solid var(--c-ink-muted); background: #fff; flex: 1 1 16rem; }
+  a.card { text-decoration: none; color: inherit; }
+  a.card h3 { color: var(--c-water-900); margin-top: var(--s-2); }
+</style>

@@ -1,0 +1,21 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  return (await getCollection("escola")).map((r) => ({ params: { id: r.id }, props: { r } }));
+}
+const { r } = Astro.props;
+const { Content } = await render(r);
+---
+<Base title={r.data.title} description={r.data.summary}>
+  <article class="wrap section text roteiro">
+    <p class="eyebrow">Roteiro para professores</p>
+    <h1>{r.data.title}</h1>
+    <p><span class="tag">{r.data.level}</span> <span class="tag">{r.data.duration}</span></p>
+    <p class="lead">{r.data.summary}</p>
+    <Content />
+    <p class="no-print"><button class="btn secondary" onclick="window.print()">Imprimir</button> <a href="/escola">Voltar</a></p>
+  </article>
+</Base>
+<style>.lead { font-size: var(--fs-lg); } .roteiro :global(h2) { margin-top: var(--s-6); }</style>

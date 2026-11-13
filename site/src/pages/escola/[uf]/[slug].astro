@@ -1,0 +1,71 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Locator from "../../../components/Locator.astro";
+import { ficha, resumo, ufs } from "../../../lib/data";
+import { fmtNumber, fmtPct, oneInN } from "../../../lib/format";
+
+export function getStaticPaths() {
+  return ufs().flatMap((u) => resumo(u.slug).municipios.map((m) => ({ params: { uf: u.slug, slug: m.slug } })));
+}
+const { uf, slug } = Astro.params as { uf: string; slug: string };
+const f = ficha(uf, slug);
+const agua = f.ind.snis_agua_pct, esg = f.ind.snis_esgoto_pct, trat = f.ind.snis_esgoto_tratado_pct;
+const semAgua = agua !== null ? 100 - agua : null;
+const frac = oneInN(semAgua);
+const ta = f.thermometer.agua, te = f.thermometer.esgoto;
+const ritmo: Record<string, string> = { atingida: "já chegou lá", no_ritmo: "está no caminho para chegar lá", atrasado: "está atrasado: no ritmo atual, não chega a tempo", sem_dados: "não tem dados suficientes para sabermos" };
+---
+<Base title={`${f.nome} na escola`} description={`Água e esgoto em ${f.nome}, explicado para estudantes.`}>
+  <article class="wrap section aluno">
+    <p class="eyebrow">Territórios com Sede na escola</p>
+    <div class="top">
+      <div>
+        <h1>A água e o esgoto em {f.nome}</h1>
+        <p class="lead">{f.nome} fica no estado {f.uf === "BA" ? "da" : "do"} {f.uf_nome} e tem <strong>{fmtNumber(f.ind.populacao)} moradores</strong> (Censo 2022).</p>
+      </div>
+      <div class="loc"><Locator uf={uf} cod={f.cod} nome={f.nome} /></div>
+    </div>
+    <section class="box">
+      <h2><span aria-hidden="true">💧</span> Água</h2>
+      {agua !== null ? (
+        <p>A companhia de água diz que atende <strong>{fmtPct(agua)}</strong> da população.{semAgua !== null && semAgua > 1 && <> Isso quer dizer que {frac ? <strong>{frac} moradores</strong> : <strong>{fmtPct(semAgua)} dos moradores</strong>} não recebem água da rede e dependem de poço, cisterna, carro-pipa ou rio.</>}</p>
+      ) : <p>Não há dado recente sobre o atendimento de água em {f.nome}. Isso também é uma informação: por que será que ninguém informou?</p>}
+    </section>
+    <section class="box">
+      <h2><span aria-hidden="true">🚽</span> Esgoto</h2>
+      {esg !== null ? (
+        <p>A rede de esgoto chega a <strong>{fmtPct(esg)}</strong> da população.{trat !== null && <> Mas coletar não é tratar: só <strong>{fmtPct(trat)}</strong> da população tem o esgoto coletado <em>e</em> tratado. O resto vai para rios, valas ou fossas.</>}</p>
+      ) : f.esgoto_sem_declaracao ? <p>Nenhuma empresa informou ter rede de esgoto em {f.nome}. Em geral, isso significa que as casas usam fossas ou que o esgoto corre a céu aberto.</p> : <p>Não há dado recente sobre o esgoto em {f.nome}.</p>}
+    </section>
+    <section class="box">
+      <h2><span aria-hidden="true">🎯</span> A meta de 2033</h2>
+      <p>Uma lei de 2020 (o Marco Legal do Saneamento) diz que, até 2033, 99 em cada 100 brasileiros devem ter água potável e 90 em cada 100 devem ter esgoto coletado e tratado.</p>
+      <p>Na água, {f.nome} <strong>{ritmo[ta.status]}</strong>. No esgoto, <strong>{ritmo[te.status]}</strong>.</p>
+    </section>
+    <section class="box">
+      <h2><span aria-hidden="true">🩺</span> Por que isso importa?</h2>
+      <p>Sem água limpa e sem esgoto tratado, doenças como diarreia, hepatite A, verminoses e leptospirose se espalham. Crianças ficam doentes e faltam à escola, adultos faltam ao trabalho, e o SUS gasta com internações que poderiam ser evitadas.</p>
+    </section>
+    <section class="box think">
+      <h2><span aria-hidden="true">✏️</span> Para pensar e responder</h2>
+      <ol>
+        <li>De onde vem a água que você bebe em casa? E o esgoto, para onde vai?</li>
+        <li>Se {f.nome} tivesse 100 moradores, quantos não teriam água da rede? {semAgua === null ? "(Não há dado: o que você faria para descobrir?)" : ""}</li>
+        <li>O que você e sua turma poderiam fazer para cuidar da água no seu bairro?</li>
+      </ol>
+    </section>
+    <p class="source">Fontes: IBGE (Censo 2022) e SNIS (Ministério das Cidades), dados de {f.ind_ano.snis_agua_pct ?? "anos recentes"}. Plataforma Territórios com Sede, do Instituto SDW. Mais dados em territorios.institutosdw.org/municipio/{uf}/{slug}</p>
+    <p class="no-print"><button class="btn" onclick="window.print()">Imprimir esta página</button> <a class="btn secondary" href={`/municipio/${uf}/${slug}`}>Ver a ficha completa</a></p>
+  </article>
+</Base>
+<style>
+  .aluno { max-width: 50rem; font-size: 1.15rem; }
+  .top { display: grid; gap: var(--s-4); grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 640px) { .top { grid-template-columns: 1fr 180px; } }
+  .loc { max-width: 180px; }
+  .lead { font-size: var(--fs-lg); }
+  .box { border: 2px solid var(--c-water-300); border-radius: var(--radius-lg); padding: var(--s-4) var(--s-5); margin: var(--s-4) 0; background: #fff; break-inside: avoid; }
+  .box h2 { font-size: var(--fs-lg); }
+  .think { border-style: dashed; }
+  .think li { margin-bottom: var(--s-4); }
+</style>

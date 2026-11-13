@@ -1,5 +1,5 @@
 ---
-question: "Por que aparece "sem dado"?"
+question: "Por que aparece \"sem dado\"?"
 order: 11
 category: "Dados"
 ---
