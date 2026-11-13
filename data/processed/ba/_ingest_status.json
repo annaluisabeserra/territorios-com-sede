@@ -73,6 +73,44 @@
     "url_kind": "mirror",
     "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet"
   },
+  "ucs_uso_sustentavel": {
+    "status": "ok",
+    "rows": 5,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_geobr_mapas/unidade_conservacao/unidade_conservacao.csv.gz"
+  },
+  "censo_renda": {
+    "status": "unavailable",
+    "reason": "FetchError: todas as URLs falharam:"
+  },
+  "censo_indigenas": {
+    "status": "unavailable",
+    "reason": "FetchError: todas as URLs falharam:"
+  },
+  "sisagua": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano): sem acesso aos domínios do Ministério da Saúde no ambiente de construção e sem espelho público; módulo de leitura a implementar com a fonte em mãos. Referência: OpenDataSUS / dados.gov.br (conjuntos 'SISAGUA - Controle' e 'Vigilâ"
+  },
+  "s2id": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: MIDR — S2ID (decretos de situação de emergência e calamidade): sem acesso aos domínios gov.br no ambiente de construção e sem espelho público verificado. Referência: Sistema Integrado de Informações sobre Desastres (S2ID) e dados abertos do MIDR"
+  },
+  "incra_quilombolas": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: INCRA — Territórios quilombolas (polígonos e fase do processo): indisponível. Referência: https://certificacao.incra.gov.br/csv_shp/export_shp.py (Acervo Fundiário, camada de áreas quilombolas)"
+  },
+  "palmares_certidoes": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas: indisponível. Referência: https://www.gov.br/palmares/pt-br/departamentos/protecao-preservacao-e-articulacao/certificacao-quilombola"
+  },
+  "cadunico": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: MDS — CadÚnico (dados agregados por município): ferramentas do MDS sem API pública estável verificada. Referência: VIS Data / Cecad (MDS)"
+  },
+  "siconfi": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Tesouro Nacional — SICONFI (despesa municipal com saneamento): domínio do Tesouro bloqueado no ambiente de construção; espelho público só em nível de UF. Referência: API de dados abertos do SICONFI (apidatalake.tesouro.gov.br)"
+  },
   "sih_drsai": {
     "status": "skipped"
   }

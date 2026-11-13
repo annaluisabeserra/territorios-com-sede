@@ -72,3 +72,11 @@ def try_chain(source_id: str, uf: UF, handlers: dict[str, callable]) -> SourceRe
         except Exception as exc:  # noqa: BLE001 - cada falha é registrada e a próxima URL é tentada
             errors.append(f"[{src.kind}] {src.url}: {type(exc).__name__}: {exc}")
     raise SourceUnavailable(f"{source_id}: nenhuma URL utilizável.\n" + "\n".join(errors))
+
+
+def declared_unavailable(source_id: str) -> SourceResult:
+    """Fonte registrada mas sem leitor nem espelho: falha com o motivo documentado em sources.yaml."""
+    s = spec(source_id)
+    raise SourceUnavailable(
+        f"{s['name']}: {s.get('unavailable_reason', 'indisponível')}. Referência: {s.get('official_reference', '')}"
+    )

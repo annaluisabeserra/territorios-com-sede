@@ -400,3 +400,15 @@ indicators:
     limitations:
       - Conceito mais próximo do IN056 do SNIS; usado na comparação SNIS × Censo.
     map: false
+
+  pop_indigena:
+    label: Pessoas indígenas (Censo 2022)
+    short: Pessoas indígenas
+    unit: count
+    direction: neutral
+    group: contexto
+    source: ibge_censo2022
+    formula: Pessoas indígenas residentes no município, pelo critério do IBGE (cor ou raça indígena ou que se consideram indígenas).
+    limitations:
+      - Lida do SIDRA no GitHub Actions; no espelho usado no desenvolvimento só existe "cor ou raça indígena".
+    map: false

@@ -1,0 +1,9 @@
+{
+  "output": "sisagua.parquet",
+  "uf": "BA",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano): sem acesso aos domínios do Ministério da Saúde no ambiente de construção e sem espelho público; módulo de leitura a implementar com a fonte em mãos. Referência: OpenDataSUS / dados.gov.br (conjuntos 'SISAGUA - Controle' e 'Vigilâ",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:16:04+00:00"
+}

@@ -130,6 +130,12 @@ def ingest(uf: config.UF, skip_sih: bool = False) -> dict:
     malha = gpd.read_parquet(processed_dir(uf) / "malhas.parquet")
     stage(uf, "terras_indigenas", lambda: funai.terras_indigenas(uf, malha), status)
     stage(uf, "ucs_uso_sustentavel", lambda: ucs.uso_sustentavel(uf, malha), status)
+    stage(uf, "censo_renda", lambda: ibge.renda(uf), status)
+    stage(uf, "censo_indigenas", lambda: ibge.indigenas(uf), status)
+    from pipeline.sources.catalog import declared_unavailable
+
+    for sid in ("sisagua", "s2id", "incra_quilombolas", "palmares_certidoes", "cadunico", "siconfi"):
+        stage(uf, sid, lambda sid=sid: declared_unavailable(sid), status)
     if skip_sih:
         status["sih_drsai"] = {"status": "skipped"}
     else:

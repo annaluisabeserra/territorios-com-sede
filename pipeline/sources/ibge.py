@@ -249,3 +249,11 @@ def _sidra_first(source_id: str, uf: UF, handlers: dict, value_name: str) -> Sou
         raise SourceUnavailable(f"SIDRA: {sidra_error}\n{exc}") from exc
     res.meta.notes = (res.meta.notes + f" | SIDRA oficial indisponível: {sidra_error[:200]}").strip(" |")
     return res
+
+
+def renda(uf: UF) -> SourceResult:
+    return sidra.total_from_catalog("censo_renda", uf, "renda_domiciliar_pc")
+
+
+def indigenas(uf: UF) -> SourceResult:
+    return sidra.total_from_catalog("censo_indigenas", uf, "pop_indigena")

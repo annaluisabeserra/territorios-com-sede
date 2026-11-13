@@ -157,3 +157,42 @@ ucs_uso_sustentavel:
     - kind: mirror
       url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_geobr_mapas/unidade_conservacao/unidade_conservacao.csv.gz"
       note: Base dos Dados (geobr/Ipea a partir do CNUC/MMA), polígonos em WKT
+
+censo_renda:
+  name: IBGE — Censo 2022, rendimento domiciliar per capita
+  license: Dados públicos IBGE
+  sidra:
+    keywords: ["rendimento"]
+    variable_keywords: ["rendimento", "per capita"]
+    units: ["reais"]
+  urls: []
+
+censo_indigenas:
+  name: IBGE — Censo 2022, pessoas indígenas
+  license: Dados públicos IBGE
+  sidra: { keywords: ["indígena"], variable_keywords: ["pessoas indígenas"] }
+  urls: []
+
+sisagua:
+  name: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano)
+  official_reference: "OpenDataSUS / dados.gov.br (conjuntos 'SISAGUA - Controle' e 'Vigilância'); arquivos grandes por ano"
+  unavailable_reason: "sem acesso aos domínios do Ministério da Saúde no ambiente de construção e sem espelho público; módulo de leitura a implementar com a fonte em mãos"
+  urls: []
+
+s2id:
+  name: MIDR — S2ID (decretos de situação de emergência e calamidade)
+  official_reference: "Sistema Integrado de Informações sobre Desastres (S2ID) e dados abertos do MIDR"
+  unavailable_reason: "sem acesso aos domínios gov.br no ambiente de construção e sem espelho público verificado"
+  urls: []
+
+cadunico:
+  name: MDS — CadÚnico (dados agregados por município)
+  official_reference: "VIS Data / Cecad (MDS)"
+  unavailable_reason: "ferramentas do MDS sem API pública estável verificada"
+  urls: []
+
+siconfi:
+  name: Tesouro Nacional — SICONFI (despesa municipal com saneamento)
+  official_reference: "API de dados abertos do SICONFI (apidatalake.tesouro.gov.br)"
+  unavailable_reason: "domínio do Tesouro bloqueado no ambiente de construção; espelho público só em nível de UF"
+  urls: []

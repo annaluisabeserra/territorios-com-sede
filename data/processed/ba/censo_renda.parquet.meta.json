@@ -1,0 +1,9 @@
+{
+  "output": "censo_renda.parquet",
+  "uf": "BA",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "FetchError: todas as URLs falharam:",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:16:01+00:00"
+}

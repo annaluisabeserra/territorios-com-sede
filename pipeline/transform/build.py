@@ -48,6 +48,8 @@ SOURCE_NAMES = {
     "censo_quilombola": "IBGE — Censo 2022, pessoas quilombolas",
     "censo_raca": "IBGE — Censo 2022, cor ou raça",
     "terras_indigenas": "FUNAI — Terras indígenas",
+    "censo_renda": "IBGE — Censo 2022, rendimento domiciliar per capita",
+    "censo_indigenas": "IBGE — Censo 2022, pessoas indígenas",
 }
 
 
@@ -107,7 +109,9 @@ class Inputs:
             out[name] = {
                 "status": m.get("status"),
                 "status_reason": (m.get("status_reason") or "")[:300],
-                "name": src.get("name") or SOURCE_NAMES.get(name, name),
+                "name": src.get("name")
+                or SOURCE_NAMES.get(name)
+                or config.load("sources").get(name, {}).get("name", name),
                 "url": src.get("url"),
                 "url_kind": src.get("url_kind"),
                 "reference_period": src.get("reference_period"),
@@ -205,6 +209,8 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         "censo_esgoto": ["censo_esgoto_adequado_pct", "censo_com_esgoto_adequado_pessoas", "censo_esgoto_rede_pct"],
         "censo_lixo": ["censo_lixo_coletado_pct"],
         "ana_atlas": ["ana_coleta_tratamento_pct", "ana_solucao_individual_pct", "ana_sem_atendimento_pct"],
+        "censo_renda": ["renda_domiciliar_pc"],
+        "censo_indigenas": ["pop_indigena"],
     }.items():
         df = inp.get(name)
         if df is not None:
@@ -752,6 +758,7 @@ def build_uf(uf: config.UF) -> None:
                 "pop_quilombola_em_territorio": row.get("pop_quilombola_em_territorio"),
                 "pop_quilombola_lower_bound": ctx["flags"].get("pop_quilombola_lower_bound", False),
                 "pop_cor_indigena": ind.get("pop_cor_indigena"),
+                "pop_indigena": ind.get("pop_indigena"),
                 "quilombola_pct_celulas_sigilo": row.get("quilombola_pct_celulas_sigilo"),
                 "fonte_censo": "IBGE, Censo Demográfico 2022 (data de referência 01/08/2022)",
                 "fonte_tis": "FUNAI, terras indígenas (polígonos oficiais); limites simplificados para a web",

@@ -65,7 +65,10 @@ def census_candidates(catalog: list[dict], keywords: list[str]) -> list[dict]:
 
 
 def choose_table(
-    metas: list[dict], variable_keywords: list[str], classification_keywords: list[str] | None
+    metas: list[dict],
+    variable_keywords: list[str],
+    classification_keywords: list[str] | None,
+    units: tuple[str, ...] = ("pessoas", "habitantes", "moradores"),
 ) -> TableChoice | None:
     """Escolhe, entre metadados candidatos, a tabela mais simples que atende aos requisitos."""
     ranked = []
@@ -80,7 +83,7 @@ def choose_table(
             (v for v in m.get("variaveis", []) if all(norm(k) in norm(v["nome"]) for k in variable_keywords)),
             None,
         )
-        if var is None or norm(var.get("unidade", "")) not in {"pessoas", "habitantes", "moradores"}:
+        if var is None or norm(var.get("unidade", "")) not in set(units):
             continue
         cls = None
         if classification_keywords:
@@ -146,7 +149,8 @@ def _discover(source_id: str) -> TableChoice:
             metas.append(m)
         except Exception:  # noqa: BLE001
             continue
-    choice = choose_table(metas, cfg["variable_keywords"], cfg.get("classification_keywords"))
+    units = tuple(norm(u) for u in cfg.get("units", ["pessoas", "habitantes", "moradores"]))
+    choice = choose_table(metas, cfg["variable_keywords"], cfg.get("classification_keywords"), units)
     if choice is None:
         raise SourceUnavailable(
             f"{source_id}: nenhuma tabela do Censo 2022 no catálogo SIDRA casou com {cfg} "

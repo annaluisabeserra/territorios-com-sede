@@ -163,8 +163,9 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <dl class="kv">
             <dt>Pessoas quilombolas</dt>
             <dd>{c.pop_quilombola === null ? <span class="nodata">sem dado</span> : c.pop_quilombola_lower_bound ? <>pelo menos <strong>{fmtNumber(c.pop_quilombola)}</strong></> : <strong>{fmtNumber(c.pop_quilombola)}</strong>}</dd>
-            <dt>Pessoas de cor ou raça indígena</dt>
-            <dd>{c.pop_cor_indigena === null ? <span class="nodata">sem dado</span> : <strong>{fmtNumber(c.pop_cor_indigena)}</strong>}</dd>
+            {c.pop_indigena != null ? (<><dt>Pessoas indígenas</dt><dd><strong>{fmtNumber(c.pop_indigena)}</strong></dd></>) : (<>
+            <dt>Pessoas de cor ou raça indígena <span class="xsmall muted">(o total oficial de pessoas indígenas, que inclui quem se considera indígena, ainda não está integrado)</span></dt>
+            <dd>{c.pop_cor_indigena === null ? <span class="nodata">sem dado</span> : <strong>{fmtNumber(c.pop_cor_indigena)}</strong>}</dd></>)}
           </dl>
           {c.pop_quilombola_lower_bound && c.pop_quilombola !== null && <p class="xsmall muted">“Pelo menos”: a cópia pública usada soma faixas de idade e sexo, e o IBGE oculta faixas muito pequenas para proteger a privacidade ({fmtNumber(c.quilombola_pct_celulas_sigilo)}% das faixas deste município estão sob sigilo). O total oficial pode ser maior.</p>}
           {c.pop_quilombola === null && <p class="xsmall muted">“Sem dado”: todas as faixas de idade e sexo deste município estão sob sigilo na cópia pública usada, ou não há pessoas quilombolas recenseadas. Não é possível distinguir os dois casos.</p>}

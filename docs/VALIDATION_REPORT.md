@@ -1,6 +1,6 @@
 # Relatório de validação
 
-Gerado em 13/11/2026 20:14 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
+Gerado em 13/11/2026 20:16 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
 
 Este relatório complementa as checagens automáticas (que derrubam o pipeline) com checagens de plausibilidade que exigem leitura humana. Itens marcados **pendente** dependem de fontes que não puderam ser lidas no ambiente de construção (ver `docs/DATA_SOURCES.md`).
 
@@ -17,17 +17,25 @@ Este relatório complementa as checagens automáticas (que derrubam o pipeline) 
 | Etapa | Status | Origem | Período | Observação |
 |---|---|---|---|---|
 | ana_atlas | ok | espelho | 2013 (população urbana) |  |
+| cadunico | unavailable | – | – | SourceUnavailable: MDS — CadÚnico (dados agregados por município): ferramentas do MDS sem API pública estável verificada |
 | censo_agua | unavailable | – | – | FetchError: todas as URLs falharam: |
 | censo_esgoto | unavailable | – | – | FetchError: todas as URLs falharam: |
+| censo_indigenas | unavailable | – | – | FetchError: todas as URLs falharam: |
 | censo_lixo | ok | espelho | 2022 (data de referência 01/08/2022) |  |
 | censo_quilombola | ok | espelho | 2022 (data de referência 01/08/2022) | {"lower_bound": true} |
 | censo_raca | ok | espelho | 2022 (data de referência 01/08/2022) |  |
+| censo_renda | unavailable | – | – | FetchError: todas as URLs falharam: |
+| incra_quilombolas | unavailable | – | – | SourceUnavailable: INCRA — Territórios quilombolas (polígonos e fase do processo): indisponível. Referência: https://cer |
 | ipca | stale | espelho | até 07/2024 | {"stale": true, "stale_months": 28} |
 | malhas | ok | espelho | 2022 |  |
 | municipios | ok | espelho | vigente |  |
+| palmares_certidoes | unavailable | – | – | SourceUnavailable: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas: indisponível. Refer |
 | populacao | ok | espelho | 2022 (data de referência 01/08/2022) |  |
+| s2id | unavailable | – | – | SourceUnavailable: MIDR — S2ID (decretos de situação de emergência e calamidade): sem acesso aos domínios gov.br no ambi |
 | semiarido | ok | espelho | 2022 |  |
+| siconfi | unavailable | – | – | SourceUnavailable: Tesouro Nacional — SICONFI (despesa municipal com saneamento): domínio do Tesouro bloqueado no ambien |
 | sih_drsai | unavailable | – | – | ImportError: cannot import name 'read_dbc' from 'pyreaddbc' (/home/user/territorios-com-sede/.venv/lib/python3.13/site-p |
+| sisagua | unavailable | – | – | SourceUnavailable: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano): sem acesso aos domínios do Min |
 | snis | ok | espelho | 1995–2022 | {"snis_perdas_pct_invalid_to_null": 60, "snis_agua_pct_capped": 0, "snis_agua_pct_absurd_to_null": 0, "snis_coleta_esgot |
 | terras_indigenas | ok | espelho | vigente na data de coleta |  |
 | ucs_uso_sustentavel | ok | espelho | cadastro vigente na data do espelho |  |
