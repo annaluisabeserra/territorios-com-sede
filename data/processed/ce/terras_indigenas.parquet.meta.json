@@ -1,0 +1,21 @@
+{
+  "output": "terras_indigenas.parquet",
+  "uf": "CE",
+  "sources": [
+    {
+      "source_id": "funai_terras_indigenas",
+      "name": "FUNAI — Terras indígenas (polígonos)",
+      "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet",
+      "url_kind": "mirror",
+      "reference_period": "vigente na data de coleta",
+      "fetched_at": "2026-11-13T19:02:34+00:00",
+      "sha256": "af10241e8cb54bdcc3f2e7837e7563a99247e4c044917954d4a8224a8719af99",
+      "license": "Dados públicos FUNAI",
+      "notes": "geobr v2.0.0 (Ipea) a partir da FUNAI, 2024"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:17:47+00:00"
+}

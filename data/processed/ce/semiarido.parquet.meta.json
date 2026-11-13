@@ -1,0 +1,21 @@
+{
+  "output": "semiarido.parquet",
+  "uf": "CE",
+  "sources": [
+    {
+      "source_id": "ibge_semiarido",
+      "name": "SUDENE/IBGE — Delimitação do Semiárido 2022",
+      "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/semiarid_2022_simplified.parquet",
+      "url_kind": "mirror",
+      "reference_period": "2022",
+      "fetched_at": "2026-11-13T19:02:17+00:00",
+      "sha256": "24d17e405c241fb6ef11b9852597e2f6b3771ec28f712db5ea252ffe68a4396d",
+      "license": "Dados públicos",
+      "notes": "geobr v2.0.0 (Ipea). Lista oficial de municípios do Semiárido (Resolução Condel/Sudene)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:17:32+00:00"
+}

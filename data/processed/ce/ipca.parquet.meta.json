@@ -1,0 +1,21 @@
+{
+  "output": "ipca.parquet",
+  "uf": "CE",
+  "sources": [
+    {
+      "source_id": "ipca",
+      "name": "IBGE — IPCA (número-índice mensal)",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_ipca/mes_brasil/mes_brasil.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "até 07/2024",
+      "fetched_at": "2026-11-13T19:02:26+00:00",
+      "sha256": "35c38f342ac21c2d3ca3910a2cff59659cc2f5b7d0c0050b08c54d5dc5888fa1",
+      "license": "Dados públicos",
+      "notes": "Base dos Dados (IBGE). Série termina em 07/2024"
+    }
+  ],
+  "status": "stale",
+  "status_reason": "{\"stale\": true, \"stale_months\": 28}",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:17:40+00:00"
+}

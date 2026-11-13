@@ -86,3 +86,12 @@ def test_no_broken_tokens_in_public_text(built):
         text = " ".join(f["resumo"]) + f["regiao_intermediaria"] + f["regiao_imediata"]
         text += " ".join(s["why"] for s in f["suggestions"])
         assert not bad.search(text), (p.name, bad.search(text).group(0))
+
+
+def test_national_index_keeps_all_active_ufs_after_single_uf_run():
+    from dataclasses import asdict
+
+    build.build_national_index([asdict(config.uf("CE"))])
+    idx = json.loads((config.PUBLIC_DIR / "index.json").read_text())
+    expected = {u.sigla for u in config.ufs() if (config.PUBLIC_DIR / u.slug / "resumo.json").exists()}
+    assert {u["sigla"] for u in idx["ufs"]} == expected

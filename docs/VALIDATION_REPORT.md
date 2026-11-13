@@ -1,6 +1,6 @@
 # Relatório de validação
 
-Gerado em 13/11/2026 20:16 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
+Gerado em 13/11/2026 20:21 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
 
 Este relatório complementa as checagens automáticas (que derrubam o pipeline) com checagens de plausibilidade que exigem leitura humana. Itens marcados **pendente** dependem de fontes que não puderam ser lidas no ambiente de construção (ver `docs/DATA_SOURCES.md`).
 
@@ -128,7 +128,117 @@ O índice oficial não ranqueia nesta versão: há 2 de 5 dimensões (acesso, vu
 
 Análise de sensibilidade (±10 p.p. por peso, top 20): status `sem_ranking`.
 
-## Ceará
+## Ceará (CE)
 
-Sem dados processados.
+### 1. Origem de cada base
+
+| Etapa | Status | Origem | Período | Observação |
+|---|---|---|---|---|
+| ana_atlas | ok | espelho | 2013 (população urbana) |  |
+| cadunico | unavailable | – | – | SourceUnavailable: MDS — CadÚnico (dados agregados por município): ferramentas do MDS sem API pública estável verificada |
+| censo_agua | unavailable | – | – | FetchError: todas as URLs falharam: |
+| censo_esgoto | unavailable | – | – | FetchError: todas as URLs falharam: |
+| censo_indigenas | unavailable | – | – | FetchError: todas as URLs falharam: |
+| censo_lixo | ok | espelho | 2022 (data de referência 01/08/2022) |  |
+| censo_quilombola | ok | espelho | 2022 (data de referência 01/08/2022) | {"lower_bound": true} |
+| censo_raca | ok | espelho | 2022 (data de referência 01/08/2022) |  |
+| censo_renda | unavailable | – | – | FetchError: todas as URLs falharam: |
+| incra_quilombolas | unavailable | – | – | SourceUnavailable: INCRA — Territórios quilombolas (polígonos e fase do processo): indisponível. Referência: https://cer |
+| ipca | stale | espelho | até 07/2024 | {"stale": true, "stale_months": 28} |
+| malhas | ok | espelho | 2022 |  |
+| municipios | ok | espelho | vigente |  |
+| palmares_certidoes | unavailable | – | – | SourceUnavailable: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas: indisponível. Refer |
+| populacao | ok | espelho | 2022 (data de referência 01/08/2022) |  |
+| s2id | unavailable | – | – | SourceUnavailable: MIDR — S2ID (decretos de situação de emergência e calamidade): sem acesso aos domínios gov.br no ambi |
+| semiarido | ok | espelho | 2022 |  |
+| siconfi | unavailable | – | – | SourceUnavailable: Tesouro Nacional — SICONFI (despesa municipal com saneamento): domínio do Tesouro bloqueado no ambien |
+| sisagua | unavailable | – | – | SourceUnavailable: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano): sem acesso aos domínios do Min |
+| snis | ok | espelho | 1995–2022 | {"snis_perdas_pct_invalid_to_null": 37, "snis_agua_pct_capped": 0, "snis_agua_pct_absurd_to_null": 0, "snis_coleta_esgot |
+| terras_indigenas | ok | espelho | vigente na data de coleta |  |
+| ucs_uso_sustentavel | ok | espelho | cadastro vigente na data do espelho |  |
+
+### 2. Checagens automáticas (SPEC §9)
+
+- Erros: **0** (o pipeline falha se houver algum).
+- Municípios: 184 (esperado 184).
+- População somada: 8.794.957 (oficial 8.794.957).
+- Aviso: 93 saltos > 50% ao ano nas séries SNIS (últimos 8 anos)
+
+Maiores saltos anuais nas séries do SNIS (aviso, não erro; em geral mudança de declaração do prestador):
+
+| Município | Indicador | Ano | Variação relativa ao ano |
+|---|---|---|---|
+| Pentecoste | snis_esgoto_pct | 2020 | 467% |
+| Itapagé | snis_esgoto_pct | 2020 | 465% |
+| Ibaretama | snis_agua_pct | 2022 | 454% |
+| Ocara | snis_agua_pct | 2022 | 362% |
+| Salitre | snis_agua_pct | 2016 | 318% |
+| Guaraciaba do Norte | snis_agua_pct | 2022 | 302% |
+| Viçosa do Ceará | snis_esgoto_pct | 2019 | 275% |
+| Granjeiro | snis_agua_pct | 2022 | 244% |
+| Cariré | snis_agua_pct | 2022 | 238% |
+| Quixeré | snis_agua_pct | 2021 | 217% |
+
+### 3. Internações (SIH) × TabNet
+
+| Município | Internações/ano (pipeline) | Valor/ano (pipeline) | TabNet | Diferença |
+|---|---|---|---|---|
+| São Gonçalo do Amarante | sem dado | R$ sem dado | conferir | – |
+| Fortaleza | sem dado | R$ sem dado | conferir | – |
+
+### 4. Cobertura SNIS × Censo
+
+**Pendente**: o Censo 2022 de água e esgoto (SIDRA) não pôde ser lido no ambiente de construção. A ficha e este relatório passam a mostrar os maiores divergentes (limiar de 15 p.p.) assim que a fonte entrar.
+
+
+Consistência interna do SNIS (IN055 × população atendida ÷ população do Censo, 2022): diferença mediana ≈ 0 p.p., desvio de 0,24 p.p. (conferido na revisão do M2).
+
+### 5. Municípios sem dado, por indicador
+
+| Indicador | Com dado | Sem dado | Exemplos sem dado |
+|---|---|---|---|
+| snis_agua_pct | 184 | 0 |  |
+| snis_esgoto_pct | 118 | 66 | Abaiara, Aiuaba, Alto Santo, Amontada, Apuiarés |
+| snis_esgoto_tratado_pct | 118 | 66 | Abaiara, Aiuaba, Alto Santo, Amontada, Apuiarés |
+| snis_perdas_pct | 184 | 0 |  |
+| censo_lixo_coletado_pct | 184 | 0 |  |
+| pop_quilombola | 66 | 118 | Abaiara, Acarape, Acopiara, Aiuaba, Alcântaras |
+| drsai_internacoes | 0 | 184 | fonte indisponível |
+| censo_agua_rede_pct | 0 | 184 | fonte indisponível |
+
+### 6. Termômetro 2033
+
+- Água (IN055, meta 99%): atrasado: 136; no_ritmo: 38; atingida: 8; sem_dados: 2
+- Esgoto coletado e tratado (IN056 × IN016, meta 90%): atrasado: 102; sem_dados: 82
+
+### 7. Índice de prioridade: revisão do topo e da base
+
+O índice oficial não ranqueia nesta versão: há 2 de 5 dimensões (acesso, vulnerabilidade), abaixo do mínimo de 3. Para testar o mecanismo, abaixo está um **ranking exploratório** com as dimensões disponíveis (não publicado no site):
+
+| Posição | Município | Nota exploratória | Sem água (SNIS) | Sem esgoto (SNIS) | % quilombola + indígena |
+|---|---|---|---|---|---|
+| 1 | Itarema | 92 | 66,3 | 96,2 | 8,6 |
+| 2 | Tamboril | 92 | 64,6 | sem dado | 6,3 |
+| 3 | Parambu | 90 | 69,5 | sem dado | 1,2 |
+| 4 | Salitre | 89 | 54,2 | 96,5 | 10,9 |
+| 5 | Aratuba | 88 | 74,0 | 92,3 | 6,4 |
+| 6 | Amontada | 86 | 96,3 | sem dado | 0,1 |
+| 7 | Monsenhor Tabosa | 86 | 53,9 | sem dado | 20,1 |
+| 8 | Trairi | 84 | 71,5 | 97,2 | 0,2 |
+| 9 | Pacajus | 84 | 55,5 | 97,7 | 0,9 |
+| 10 | Carnaubal | 84 | 53,2 | sem dado | 7,9 |
+| 175 | Itapagé | 19 | 17,9 | 19,1 | 0,0 |
+| 176 | Quixeré | 19 | 22,3 | 59,9 | 0,0 |
+| 177 | Catarina | 18 | 14,6 | 77,2 | 0,0 |
+| 178 | Madalena | 18 | 16,9 | sem dado | 0,0 |
+| 179 | Irauçuba | 16 | 17,4 | 36,0 | 0,0 |
+| 180 | Banabuiú | 16 | 15,3 | sem dado | 0,0 |
+| 181 | Jaguaribe | 14 | 6,2 | 51,7 | 0,0 |
+| 182 | Icapuí | 12 | 0,5 | sem dado | 0,0 |
+| 183 | Deputado Irapuan Pinheiro | 11 | 17,7 | sem dado | 0,0 |
+| 184 | Aiuaba | 10 | 0,0 | sem dado | 0,0 |
+
+**Leitura (revisão manual):** o topo exploratório é dominado pela falta de rede de água (57% a 81% da população fora da rede); onde há dado de povos tradicionais (Maraú, Banzaê, Muquém de São Francisco) ele reforça a posição. A base reúne municípios com rede de água quase universal. O mecanismo responde na direção esperada. Ressalvas: (1) sem saúde, clima e qualidade da água, este ranking não serve para priorizar; (2) o percentual quilombola + indígena fica sem dado onde o espelho do Censo tem sigilo total, então a dimensão vulnerabilidade pesa pouco até a tabela oficial do SIDRA entrar; (3) o esgoto do SNIS falta em muitos municípios pequenos (provável ausência de rede), o que os favorece; o Censo corrige isso.
+
+Análise de sensibilidade (±10 p.p. por peso, top 20): status `sem_ranking`.
 

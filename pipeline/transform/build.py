@@ -827,7 +827,10 @@ def write_downloads(uf: config.UF, tab: pd.DataFrame, ctx: dict, out_dir: Path, 
 def build_national_index(ufs: list[dict]) -> None:
     """Índice nacional mínimo: lista de UFs processadas + dicionário de dados (fonte: indicadores.yaml)."""
     out = config.PUBLIC_DIR
-    processed = [u for u in ufs if (out / u["slug"] / "resumo.json").exists()]
+    # Todas as UFs ativas com dados gerados, não só as da execução atual (rodar `--uf CE` não pode tirar a BA do site).
+    from dataclasses import asdict
+
+    processed = [asdict(u) for u in config.ufs() if (out / u.slug / "resumo.json").exists()]
     dump({"ufs": processed, "generated_at": datetime.now(UTC).isoformat(timespec="seconds")}, out / "index.json")
     ind = config.load("indicadores")["indicators"]
     dump(ind, out / "indicadores.json")

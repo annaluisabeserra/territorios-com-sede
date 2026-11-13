@@ -1,0 +1,9 @@
+{
+  "output": "siconfi.parquet",
+  "uf": "CE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: Tesouro Nacional — SICONFI (despesa municipal com saneamento): domínio do Tesouro bloqueado no ambiente de construção; espelho público só em nível de UF. Referência: API de dados abertos do SICONFI (apidatalake.tesouro.gov.br)",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:17:52+00:00"
+}

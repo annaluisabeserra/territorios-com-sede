@@ -1,0 +1,576 @@
+{
+  "uf": "CE",
+  "errors": [],
+  "warnings": [
+    "93 saltos > 50% ao ano nas séries SNIS (últimos 8 anos)"
+  ],
+  "info": {
+    "municipios": 184,
+    "populacao_total": 8794957,
+    "fontes_indisponiveis": [
+      "censo_agua",
+      "censo_esgoto",
+      "sih_drsai"
+    ],
+    "saltos_series": [
+      {
+        "cod_ibge7": "2300309",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.627
+      },
+      {
+        "cod_ibge7": "2300408",
+        "indicador": "snis_agua_pct",
+        "ano": 2018,
+        "variacao_anual": 1.396
+      },
+      {
+        "cod_ibge7": "2300408",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.694
+      },
+      {
+        "cod_ibge7": "2300507",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.373
+      },
+      {
+        "cod_ibge7": "2300606",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.553
+      },
+      {
+        "cod_ibge7": "2300705",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.698
+      },
+      {
+        "cod_ibge7": "2301109",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.501
+      },
+      {
+        "cod_ibge7": "2301257",
+        "indicador": "snis_agua_pct",
+        "ano": 2017,
+        "variacao_anual": 2.083
+      },
+      {
+        "cod_ibge7": "2301307",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.372
+      },
+      {
+        "cod_ibge7": "2301505",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.274
+      },
+      {
+        "cod_ibge7": "2301604",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.943
+      },
+      {
+        "cod_ibge7": "2301851",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.64
+      },
+      {
+        "cod_ibge7": "2302206",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.156
+      },
+      {
+        "cod_ibge7": "2302305",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.982
+      },
+      {
+        "cod_ibge7": "2302701",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.084
+      },
+      {
+        "cod_ibge7": "2302909",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.584
+      },
+      {
+        "cod_ibge7": "2303006",
+        "indicador": "snis_agua_pct",
+        "ano": 2016,
+        "variacao_anual": 1.102
+      },
+      {
+        "cod_ibge7": "2303006",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.739
+      },
+      {
+        "cod_ibge7": "2303105",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 2.381
+      },
+      {
+        "cod_ibge7": "2303600",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.341
+      },
+      {
+        "cod_ibge7": "2303808",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.7
+      },
+      {
+        "cod_ibge7": "2303931",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.422
+      },
+      {
+        "cod_ibge7": "2304004",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.166
+      },
+      {
+        "cod_ibge7": "2304103",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.693
+      },
+      {
+        "cod_ibge7": "2304236",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.271
+      },
+      {
+        "cod_ibge7": "2304269",
+        "indicador": "snis_agua_pct",
+        "ano": 2016,
+        "variacao_anual": 0.563
+      },
+      {
+        "cod_ibge7": "2304301",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.666
+      },
+      {
+        "cod_ibge7": "2304350",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.79
+      },
+      {
+        "cod_ibge7": "2304657",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.527
+      },
+      {
+        "cod_ibge7": "2304806",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 2.444
+      },
+      {
+        "cod_ibge7": "2305001",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 3.023
+      },
+      {
+        "cod_ibge7": "2305266",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 4.54
+      },
+      {
+        "cod_ibge7": "2305605",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.054
+      },
+      {
+        "cod_ibge7": "2306108",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.579
+      },
+      {
+        "cod_ibge7": "2306207",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.809
+      },
+      {
+        "cod_ibge7": "2306553",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.923
+      },
+      {
+        "cod_ibge7": "2306603",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 2.114
+      },
+      {
+        "cod_ibge7": "2306603",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.603
+      },
+      {
+        "cod_ibge7": "2306801",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.563
+      },
+      {
+        "cod_ibge7": "2307007",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.127
+      },
+      {
+        "cod_ibge7": "2307254",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.908
+      },
+      {
+        "cod_ibge7": "2307809",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.056
+      },
+      {
+        "cod_ibge7": "2308005",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.769
+      },
+      {
+        "cod_ibge7": "2308104",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.901
+      },
+      {
+        "cod_ibge7": "2308203",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.914
+      },
+      {
+        "cod_ibge7": "2308401",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.852
+      },
+      {
+        "cod_ibge7": "2308500",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.622
+      },
+      {
+        "cod_ibge7": "2308807",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.635
+      },
+      {
+        "cod_ibge7": "2308906",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.841
+      },
+      {
+        "cod_ibge7": "2309003",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.926
+      },
+      {
+        "cod_ibge7": "2309409",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.55
+      },
+      {
+        "cod_ibge7": "2309458",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 3.621
+      },
+      {
+        "cod_ibge7": "2309508",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.689
+      },
+      {
+        "cod_ibge7": "2309805",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.63
+      },
+      {
+        "cod_ibge7": "2310001",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.663
+      },
+      {
+        "cod_ibge7": "2310100",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.745
+      },
+      {
+        "cod_ibge7": "2310258",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.61
+      },
+      {
+        "cod_ibge7": "2310506",
+        "indicador": "snis_agua_pct",
+        "ano": 2017,
+        "variacao_anual": 0.582
+      },
+      {
+        "cod_ibge7": "2310902",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.427
+      },
+      {
+        "cod_ibge7": "2310951",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.556
+      },
+      {
+        "cod_ibge7": "2311108",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.37
+      },
+      {
+        "cod_ibge7": "2311207",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.999
+      },
+      {
+        "cod_ibge7": "2311264",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.33
+      },
+      {
+        "cod_ibge7": "2311504",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 2.17
+      },
+      {
+        "cod_ibge7": "2311702",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.382
+      },
+      {
+        "cod_ibge7": "2311900",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.733
+      },
+      {
+        "cod_ibge7": "2311959",
+        "indicador": "snis_agua_pct",
+        "ano": 2016,
+        "variacao_anual": 3.176
+      },
+      {
+        "cod_ibge7": "2311959",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.285
+      },
+      {
+        "cod_ibge7": "2312007",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.258
+      },
+      {
+        "cod_ibge7": "2312205",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.633
+      },
+      {
+        "cod_ibge7": "2312304",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.98
+      },
+      {
+        "cod_ibge7": "2312601",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.689
+      },
+      {
+        "cod_ibge7": "2312700",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.638
+      },
+      {
+        "cod_ibge7": "2313252",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.237
+      },
+      {
+        "cod_ibge7": "2313302",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.537
+      },
+      {
+        "cod_ibge7": "2313351",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.86
+      },
+      {
+        "cod_ibge7": "2313500",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.969
+      },
+      {
+        "cod_ibge7": "2313559",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.731
+      },
+      {
+        "cod_ibge7": "2313609",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.701
+      },
+      {
+        "cod_ibge7": "2313906",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.659
+      },
+      {
+        "cod_ibge7": "2314102",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 1.467
+      },
+      {
+        "cod_ibge7": "2303105",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2021,
+        "variacao_anual": 0.641
+      },
+      {
+        "cod_ibge7": "2303600",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2022,
+        "variacao_anual": 1.021
+      },
+      {
+        "cod_ibge7": "2304004",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2016,
+        "variacao_anual": 0.851
+      },
+      {
+        "cod_ibge7": "2304202",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2018,
+        "variacao_anual": 0.512
+      },
+      {
+        "cod_ibge7": "2304707",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2020,
+        "variacao_anual": 0.82
+      },
+      {
+        "cod_ibge7": "2304707",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2022,
+        "variacao_anual": 0.634
+      },
+      {
+        "cod_ibge7": "2305332",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2020,
+        "variacao_anual": 0.779
+      },
+      {
+        "cod_ibge7": "2306306",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2020,
+        "variacao_anual": 4.646
+      },
+      {
+        "cod_ibge7": "2309300",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2019,
+        "variacao_anual": 1.009
+      },
+      {
+        "cod_ibge7": "2310704",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2020,
+        "variacao_anual": 4.674
+      },
+      {
+        "cod_ibge7": "2312601",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2016,
+        "variacao_anual": 0.929
+      },
+      {
+        "cod_ibge7": "2314102",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2019,
+        "variacao_anual": 2.746
+      }
+    ]
+  }
+}

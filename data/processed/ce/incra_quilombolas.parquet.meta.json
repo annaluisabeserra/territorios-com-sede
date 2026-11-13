@@ -1,0 +1,9 @@
+{
+  "output": "incra_quilombolas.parquet",
+  "uf": "CE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: INCRA — Territórios quilombolas (polígonos e fase do processo): indisponível. Referência: https://certificacao.incra.gov.br/csv_shp/export_shp.py (Acervo Fundiário, camada de áreas quilombolas)",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-13T20:17:52+00:00"
+}

@@ -1,0 +1,24 @@
+,valor
+nome,Granjeiro
+uf,CE
+regiao_intermediaria,Juazeiro do Norte
+regiao_imediata,Juazeiro do Norte
+semiarido,True
+populacao,4841
+censo_lixo_coletado_pct,69.85537190082644
+ana_coleta_tratamento_pct,49.370000000000005
+pop_quilombola,
+pop_cor_indigena,1.0
+pct_pop_quilombola_indigena,0.02065688907250568
+snis_agua_pct,78.56
+snis_esgoto_pct,9.81
+snis_esgoto_tratado_pct,9.81
+snis_tratamento_coletado_pct,100.0
+snis_tratamento_pct,13.57
+snis_perdas_pct,47.15
+snis_coleta_esgoto_pct,13.57
+snis_consumo_lhabdia,172.2
+snis_sem_agua_pct,21.439999999999998
+snis_sem_esgoto_pct,90.19
+indice_prioridade,
+indice_rank,
