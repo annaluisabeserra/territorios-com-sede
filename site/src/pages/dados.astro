@@ -14,7 +14,7 @@ const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", ra
     <p class="text">Todos os dados derivados estão sob a licença <a href="https://creativecommons.org/licenses/by/4.0/deed.pt_BR">Creative Commons Atribuição 4.0 (CC BY 4.0)</a>: você pode copiar, adaptar e usar para qualquer fim, citando a fonte. As bases originais são públicas e têm seus próprios termos (veja <a href="#fontes">Fontes</a>).</p>
 
     <h2>Por estado</h2>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Arquivos para baixar por estado"><table>
       <caption class="visually-hidden">Arquivos para download por estado</caption>
       <thead><tr><th scope="col">Estado</th><th scope="col">Indicadores por município</th><th scope="col">Séries históricas (SNIS)</th><th scope="col">Geodados</th><th scope="col">Atualizado em</th></tr></thead>
       <tbody>{list.map((u) => (
@@ -29,7 +29,7 @@ const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", ra
 
     <h2>Dicionário de dados</h2>
     <p class="small"><a href="/data/dicionario_de_dados.csv" download>Baixar dicionário (CSV)</a> · <a href="/data/indicadores.json" download>JSON</a></p>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Dicionário de dados"><table>
       <caption class="visually-hidden">Dicionário de dados</caption>
       <thead><tr><th scope="col">Coluna</th><th scope="col">Descrição</th><th scope="col">Unidade</th></tr></thead>
       <tbody>
@@ -41,7 +41,7 @@ const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", ra
     <p class="small">Valores vazios significam <strong>sem dado</strong>, nunca zero. Percentuais vão de 0 a 100. Valores monetários em reais corrigidos pelo IPCA (ano-base nos metadados).</p>
 
     <h2 id="fontes">Fontes e licenças</h2>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Fontes e licenças"><table>
       <caption class="visually-hidden">Fontes de dados e situação</caption>
       <thead><tr><th scope="col">Base</th><th scope="col">Situação</th><th scope="col">Período</th><th scope="col">Licença</th><th scope="col">Endereço usado</th></tr></thead>
       <tbody>{Object.entries(list[0].r.sources).map(([k, s]) => (

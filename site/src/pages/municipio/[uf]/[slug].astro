@@ -21,6 +21,14 @@ const src = R.sources;
 const snisYear = R.snis_year;
 const stats = R.stats;
 const ref = (k: string) => (src[k]?.status === "unavailable" ? null : src[k]);
+// Código SNIS de cada indicador, para a citação ficar verificável (jornalista, revisão M4)
+const SNIS_CODE: Record<string, string> = { snis_agua_pct: "IN055", snis_esgoto_pct: "IN056", snis_esgoto_tratado_pct: "IN056 × IN016",
+  snis_tratamento_pct: "IN046", snis_perdas_pct: "IN049", snis_consumo_lhabdia: "IN022" };
+const cellSource = (k: string, s: string) => {
+  if (!ref(s)) return "fonte indisponível nesta atualização";
+  if (s === "snis") return `SNIS ${f.ind_ano[k] ?? f.ind_antigo?.[k]?.[1] ?? ""}, ${SNIS_CODE[k] ?? ""}`;
+  return `${SOURCE_LABEL[IND[k]?.source ?? ""] ?? IND[k]?.source}, ${src[s].reference_period}`;
+};
 const mirrorNote = (k: string) => (src[k]?.url_kind === "mirror" ? " (cópia pública do dado oficial)" : "");
 const srcLine = (k: string, label: string) => {
   const s = src[k];
@@ -81,7 +89,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
 
     <section id="indicadores" class="section">
       <h2>Como está o saneamento</h2>
-      <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)">
+      <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Indicadores do município">
         <table class="stack">
           <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana da {f.uf_nome} e do Brasil</caption>
           <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">{f.nome}</th><th scope="col" class="num">Mediana {f.uf}</th><th scope="col" class="num">Mediana Brasil</th><th scope="col">Fonte</th></tr></thead>
@@ -94,7 +102,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
                   <td class="num" data-label={f.nome}>{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
                   <td class="num" data-label={`Mediana ${f.uf}`}>{fmtValue(d, st?.median_uf)}</td>
                   <td class="num" data-label="Mediana Brasil">{fmtValue(d, st?.median_br)}</td>
-                  <td class="xsmall" data-label="Fonte">{ref(s) ? `${SOURCE_LABEL[d?.source ?? ""] ?? d?.source}, ${src[s].reference_period}` : "fonte indisponível nesta atualização"}</td>
+                  <td class="xsmall" data-label="Fonte">{cellSource(k, s)}</td>
                 </tr>);
             })}
           </tbody>
@@ -118,7 +126,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
         <div class="card">
           <h3>Vizinhos</h3>
           {nbVals.length ? (
-            <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Comparação com os vizinhos"><table>
               <caption class="visually-hidden">Comparação com municípios vizinhos</caption>
               <thead><tr><th scope="col">Município</th><th scope="col" class="num">Água (SNIS)</th><th scope="col" class="num">Esgoto (SNIS)</th></tr></thead>
               <tbody>
@@ -209,7 +217,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <div class="dim"><span class="small">{dimLabel[d]}</span><div class="dbar" role="img" aria-label={`${dimLabel[d]}: ${v === null ? "sem dado" : fmtNumber(v) + " de 100"}`}>{v !== null && <div style={`width:${v}%`}></div>}</div><span class="small num">{v === null ? "sem dado" : fmtNumber(v)}</span></div>
         ))}
       </div>
-      <p class="xsmall muted">Cada barra é o percentil dentro da UF: 100 = pior situação entre os municípios. <a href="/indice">Ajuste os pesos e veja o ranking</a>.</p>
+      <p class="xsmall muted">Cada barra vai de 0 a 100 e compara o município com os outros do estado: 0 é a melhor situação e 100, a pior. <a href="/indice">Ajuste os pesos e veja o ranking</a>.</p>
     </section>
 
     <section id="agir" class="section">
@@ -245,7 +253,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .actions { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-4); }
   .locator { max-width: 320px; justify-self: center; width: 100%; }
   .toc { display: flex; gap: var(--s-3); overflow-x: auto; padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); position: sticky; top: 60px; background: var(--c-sand-50); z-index: 5; white-space: nowrap; }
-  @media (max-width: 979px) { .toc { top: 112px; } }
+  @media (max-width: 979px) { .toc { top: 0; } }
   .section { padding: var(--s-6) 0; border-bottom: 1px solid var(--c-line); scroll-margin-top: 140px; }
   .flat { padding: 0; box-shadow: none; }
   .callout { border-left: 4px solid var(--c-warn); background: var(--c-warn-bg); padding: var(--s-4); border-radius: 0 var(--radius) var(--radius) 0; margin-top: var(--s-4); }

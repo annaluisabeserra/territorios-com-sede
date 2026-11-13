@@ -6,7 +6,7 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-SITE_ORIGIN = "https://territorios.institutosdw.org"
+SITE_ORIGIN = "https://territorios.institutosdw.org"   # várias origens: separe por vírgula
 ASSISTANT_ENABLED = "false"           # assistente desligado por padrão
 ASSISTANT_MODEL = "claude-opus-5-5"   # modelo padrão; a escolha de um modelo mais barato (ex.: claude-haiku-5-5) é da equipe
 ASSISTANT_DAILY_LIMIT = "200"         # teto rígido de perguntas por dia (e 10 por minuto), para limitar custo

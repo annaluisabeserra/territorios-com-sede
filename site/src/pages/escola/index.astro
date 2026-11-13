@@ -17,6 +17,10 @@ const list = ufs().map((u) => ({ ...u, ms: resumo(u.slug).municipios.map((m) => 
       <select id="mun" name="m">{list.map((u) => <optgroup label={u.sigla}>{u.ms.map((m) => <option value={`${u.slug}/${m.s}`}>{m.n}</option>)}</optgroup>)}</select>
       <button class="btn" type="submit">Abrir</button>
     </form>
+    <details class="all">
+      <summary>Ver a lista de todos os municípios</summary>
+      {list.map((u) => (<><h3>{u.name}</h3><ul class="muns">{u.ms.map((m) => <li><a href={`/escola/${u.slug}/${m.s}`}>{m.n}</a></li>)}</ul></>))}
+    </details>
     <h2>Roteiros para professores</h2>
     <div class="grid grid-3">{roteiros.map((r) => (
       <a class="card" href={`/escola/roteiro/${r.id}`}><span class="tag">{r.data.duration}</span><h3>{r.data.title}</h3><p class="small">{r.data.summary}</p><p class="xsmall muted">{r.data.level}</p></a>
@@ -34,5 +38,7 @@ const list = ufs().map((u) => ({ ...u, ms: resumo(u.slug).municipios.map((m) => 
   .pick label { width: 100%; font-weight: 700; }
   .pick select { padding: .6rem; min-height: 44px; border-radius: 8px; border: 1px solid var(--c-ink-muted); background: #fff; flex: 1 1 16rem; }
   a.card { text-decoration: none; color: inherit; }
+  .all { margin: 0 0 var(--s-6); }
+  .muns { columns: 3 12rem; padding-left: var(--s-4); font-size: var(--fs-sm); }
   a.card h3 { color: var(--c-water-900); margin-top: var(--s-2); }
 </style>

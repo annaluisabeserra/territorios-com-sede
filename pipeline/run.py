@@ -51,6 +51,15 @@ def stage(uf: config.UF, name: str, fn: Callable[[], SourceResult], status: dict
         res = fn()
         _write(res.data, path)
         meta = OutputMeta(output=path.name, uf=uf.sigla, sources=[res.meta])
+        # Histórico de mudanças: avisa quando o arquivo de origem mudou desde a última atualização válida
+        prev_meta = read_meta(path)
+        prev_sha = ((prev_meta or {}).get("sources") or [{}])[0].get("sha256")
+        if prev_sha and res.meta.sha256 and prev_sha != res.meta.sha256:
+            res.meta.notes = (
+                res.meta.notes
+                + f" | arquivo de origem mudou desde a última atualização (sha256 anterior {prev_sha[:12]}…)"
+            ).strip(" |")
+            log.info("[%s] %s: arquivo de origem mudou", uf.sigla, name)
         if res.flags:
             meta.status_reason = json.dumps(res.flags, ensure_ascii=False)
             if res.flags.get("stale"):

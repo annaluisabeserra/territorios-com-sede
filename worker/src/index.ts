@@ -30,8 +30,12 @@ async function allowAssistant(env: Env): Promise<boolean> {
   return get(day) <= daily && get(minute) <= 10;
 }
 
+// SITE_ORIGIN aceita várias origens separadas por vírgula (ex.: domínio próprio e GitHub Pages do plano B).
+let currentOrigin = "";
+const allowed = (env: Env) => env.SITE_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
 const cors = (env: Env) => ({
-  "Access-Control-Allow-Origin": env.SITE_ORIGIN,
+  "Access-Control-Allow-Origin": allowed(env).includes(currentOrigin) ? currentOrigin : allowed(env)[0],
+  Vary: "Origin",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 });
@@ -39,9 +43,12 @@ const cors = (env: Env) => ({
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
+    currentOrigin = req.headers.get("Origin") ?? "";
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
 
     if (url.pathname === "/event" && req.method === "POST") {
+      // Só aceita eventos vindos do próprio site (navegadores sempre mandam Origin num POST entre sites)
+      if (!allowed(env).includes(currentOrigin)) return new Response(null, { status: 403, headers: cors(env) });
       const body = await req.text();
       if (body.length > 2000) return new Response(null, { status: 413, headers: cors(env) });
       let ev: { type?: string; data?: unknown };

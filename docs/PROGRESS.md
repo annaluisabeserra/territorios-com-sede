@@ -22,16 +22,23 @@ Registro por marco (SPEC §10). Revisões críticas em `docs/REVIEWS/`.
 
 ## Backlog (itens não graves das revisões)
 
-- Glossário inline na calculadora (deadweight, atribuição, drop-off) e no termômetro.
-- Cabeçalho mais compacto no celular ao rolar.
-- Fonte e ano por célula na tabela da ficha; link direto à fonte oficial ao lado do espelho.
-- Rótulos dos eixos do gráfico em tamanho mínimo de 12 px no celular.
-- `aria-label` único por tabela; ordem de foco dos botões da calculadora.
+- Link direto à fonte oficial ao lado do espelho (o `.meta.json` já registra a tabela oficial quando ela roda).
 - Total oficial de pessoas indígenas e de quilombolas (SIDRA) substituindo as somas do espelho (entra no Actions).
 - Comparação do saneamento de domicílios quilombolas e indígenas com o município (Censo 2022).
 - Etnia das terras indígenas pelo campo oficial da FUNAI (entra no Actions).
 - Uso da ANA como reforço do componente de esgoto no índice; parâmetro de defasagem na calculadora; Theil–Sen como alternativa robusta no termômetro.
 - Campo de metodologia na série (quebra SNIS 2022 e transição para o SINISA).
 - Leitores de SISAGUA, S2ID, INCRA, Palmares, CadÚnico e SICONFI.
-- Limite de taxa no `/event`; lista de origens de CORS; formulário de retirada sem login; seletor da escola sem JavaScript.
-- Checagem do sha256 esperado dos espelhos; ações do GitHub fixadas por SHA.
+- Formulário de retirada sem login (hoje: e-mail e formulário do GitHub).
+- Ações do GitHub fixadas por SHA (exige acesso à API do GitHub).
+
+### Resolvidos depois da entrega inicial
+
+- Rótulos da calculadora em linguagem simples (termo técnico entre aspas, como apoio); barras do índice explicadas sem "percentil".
+- Fonte de cada célula da ficha com ano e código do SNIS (ex.: "SNIS 2022, IN055").
+- Rótulos do gráfico legíveis no celular (~12 px), sem cortes nas bordas.
+- `aria-label` próprio em cada tabela e em cada formulário de busca.
+- Cabeçalho deixa de ficar preso no topo no celular (libera ~120 px de tela).
+- Página da escola com lista de todos os municípios (funciona sem JavaScript).
+- Worker: lista de origens permitidas (domínio próprio + plano B) e eventos aceitos só do próprio site.
+- Pipeline registra no `.meta.json` quando um arquivo de origem muda entre atualizações (histórico de mudanças dos dados).

@@ -36,7 +36,7 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
         </div>
         <details class="field">
           <summary>Premissas e componentes</summary>
-          <label for="t">Taxa de desconto real ao ano (%)</label>
+          <label for="t">Taxa de desconto (% ao ano, acima da inflação)</label>
           <input id="t" type="number" min="0" max="30" step="0.5" value={cfg.discount_rate * 100} inputmode="decimal" />
           <p class="xsmall muted">Padrão: 8,5% ao ano, taxa social de desconto recomendada pelo governo federal (nota técnica de 2020). Ela traduz a ideia de que R$ 1 hoje vale mais que R$ 1 daqui a 10 anos.</p>
           <label class="check"><input type="checkbox" id="c-hosp" checked /> Custo hospitalar do SUS</label>
@@ -48,11 +48,11 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
           <summary>Modo SROI (retorno social do investimento)</summary>
           <label for="inv">Investimento hipotético (R$)</label>
           <input id="inv" type="number" min="0" step="1000" inputmode="numeric" placeholder="Ex.: 2000000" />
-          <label for="dw">Deadweight (%): parte da melhora que aconteceria de qualquer jeito</label>
+          <label for="dw">Melhora que aconteceria de qualquer jeito (%) <span class="xsmall muted">· "deadweight"</span></label>
           <input id="dw" type="number" min="0" max="100" step="1" value={cfg.sroi.deadweight * 100} />
-          <label for="at">Atribuição (%): parte do resultado que se deve ao projeto</label>
+          <label for="at">Parte do resultado que se deve ao projeto (%) <span class="xsmall muted">· "atribuição"</span></label>
           <input id="at" type="number" min="0" max="100" step="1" value={cfg.sroi.attribution * 100} />
-          <label for="do">Drop-off (%): quanto o efeito perde de força a cada ano</label>
+          <label for="do">Quanto o efeito perde de força a cada ano (%) <span class="xsmall muted">· "drop-off"</span></label>
           <input id="do" type="number" min="0" max="100" step="1" value={cfg.sroi.drop_off * 100} />
           <p class="xsmall muted">Princípios do SROI (Social Value International). Valores padrão conservadores, que você pode mudar.</p>
         </details>
@@ -169,7 +169,7 @@ const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
       ${p.investment ? `<div class="sroi"><p><strong>SROI: ${fmtNumber(r.sroi_ratio, 2)}</strong>. Cada R$ 1 investido gera cerca de R$ ${fmtNumber(r.sroi_ratio, 2)} em benefício social evitando doenças (valor presente de ${fmtBRL(r.sroi_pv)}, já descontados deadweight, atribuição e drop-off).</p></div>` : ""}
       <p class="small">Faixa do valor acumulado: <strong>${fmtBRLShort(sens.pv[0])} a ${fmtBRLShort(sens.pv[1])}</strong>, variando a taxa de desconto entre ${fmtNumber(RANGES.discount_rate[0] * 100)}% e ${fmtNumber(RANGES.discount_rate[1] * 100)}% (e incluindo a taxa escolhida).${sens.sroi_pv ? ` Faixa do valor presente do SROI: <strong>${fmtBRLShort(sens.sroi_pv[0])} a ${fmtBRLShort(sens.sroi_pv[1])}</strong>, variando também deadweight, atribuição e drop-off.` : ""}</p>
       <p class="xsmall muted">É uma estimativa, não uma previsão. O valor acumulado supõe que o custo atual se mantém e que a redução vale desde o primeiro ano; por isso é um teto. No modo SROI, deadweight e drop-off tornam a conta mais conservadora.</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table><caption class="visually-hidden">Decomposição por componente</caption><thead><tr><th scope="col">Componente</th><th scope="col" class="num">Custo atual por ano</th><th scope="col" class="num">Economia por ano</th></tr></thead><tbody>${comp}</tbody></table></div>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Decomposição da economia por componente"><table><caption class="visually-hidden">Decomposição por componente</caption><thead><tr><th scope="col">Componente</th><th scope="col" class="num">Custo atual por ano</th><th scope="col" class="num">Economia por ano</th></tr></thead><tbody>${comp}</tbody></table></div>
       ${miss}
       <h3>Texto pronto para copiar</h3>
       <blockquote id="ready">${text}${sdwNote ? "" : ""}</blockquote>

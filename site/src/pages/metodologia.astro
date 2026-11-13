@@ -57,7 +57,7 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
 
     <h2 id="drsai">Doenças relacionadas ao saneamento (DRSAI)</h2>
     <p class="text">{cid.reference}</p>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Doenças e códigos CID-10"><table>
       <caption class="visually-hidden">Grupos de doenças e códigos CID-10</caption>
       <thead><tr><th scope="col">Grupo</th><th scope="col">Códigos CID-10</th><th scope="col">Camada</th><th scope="col">Observação</th></tr></thead>
       <tbody>{Object.entries(cid.groups).map(([, g]: [string, any]) => <tr><th scope="row">{g.label}</th><td>{g.codes.join(", ")}</td><td>{g.layer === "core" ? "Núcleo (padrão)" : "Opcional"}</td><td class="small">{g.note}</td></tr>)}</tbody>
@@ -77,7 +77,7 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
     </div>
 
     <h2 id="indice">Índice de prioridade territorial</h2>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Dimensões e pesos do índice"><table>
       <caption class="visually-hidden">Dimensões e pesos do índice</caption>
       <thead><tr><th scope="col">Dimensão</th><th scope="col" class="num">Peso</th><th scope="col">Componentes</th><th scope="col">Situação nesta versão ({R.uf.sigla})</th></tr></thead>
       <tbody>{Object.entries(pesos.dimensions).map(([k, d]: [string, any]) => <tr><th scope="row">{d.label}</th><td class="num">{Math.round(d.weight * 100)}%</td><td class="small">{d.components.map((c: any) => IND[c.indicator]?.short ?? c.indicator).join("; ")}</td><td class="small">{R.index.dims_available.includes(k) ? "com dados" : "sem dados"}</td></tr>)}</tbody>
@@ -85,7 +85,7 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
     <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões.</p>
 
     <h2 id="agir">Agir: regras das sugestões</h2>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Regras das soluções sugeridas"><table>
       <caption class="visually-hidden">Regras das tecnologias sociais sugeridas</caption>
       <thead><tr><th scope="col">Solução</th><th scope="col">É sugerida quando</th></tr></thead>
       <tbody>
@@ -99,7 +99,7 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
     </table></div>
 
     <h2 id="fontes">Estado das fontes ({R.uf.nome})</h2>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)"><table>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Estado das fontes"><table>
       <caption class="visually-hidden">Estado de cada fonte de dados</caption>
       <thead><tr><th scope="col">Base</th><th scope="col">Situação</th><th scope="col">Período</th><th scope="col">Origem</th></tr></thead>
       <tbody>{Object.entries(R.sources).map(([k, s]) => <tr><th scope="row">{s.name ?? k}</th><td>{s.status === "ok" ? "em uso" : s.status === "stale" ? "desatualizada" : "indisponível"}</td><td>{s.reference_period ?? "–"}</td><td class="small">{s.url_kind === "official" ? "oficial" : s.url_kind === "mirror" ? "cópia pública rastreável" : "–"}</td></tr>)}</tbody>
