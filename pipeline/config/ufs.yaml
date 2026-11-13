@@ -1,0 +1,19 @@
+# UFs processadas pelo pipeline. Rodar outro estado = adicionar/ativar aqui. Nenhuma mudança de código.
+# expected_municipalities: conferido contra a API de Localidades do IBGE em tempo de execução;
+# divergência derruba o pipeline (SPEC §9).
+default_uf: BA
+ufs:
+  BA:
+    code: "29"
+    name: Bahia
+    region: Nordeste
+    expected_municipalities: 417
+    active: true
+    slug: ba
+  CE:
+    code: "23"
+    name: Ceará
+    region: Nordeste
+    expected_municipalities: 184
+    active: true
+    slug: ce

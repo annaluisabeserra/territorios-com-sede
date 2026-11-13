@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+# Node
+node_modules/
+site/dist/
+site/.astro/
+site/test-results/
+site/playwright-report/
+# Dados brutos (cache local de downloads; SPEC §4)
+data/raw/
+# Segredos
+.env
+.env.*
+.dev.vars
+worker/.wrangler/

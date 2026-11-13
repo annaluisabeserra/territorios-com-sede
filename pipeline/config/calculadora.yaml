@@ -1,0 +1,46 @@
+# Parâmetros padrão da calculadora de economia / SROI (SPEC §6.4). Cada valor tem justificativa em
+# docs/DECISIONS.md (ADR-010) e aparece na interface como premissa editável.
+years_average: 5            # média dos últimos N anos completos do SIH
+discount_rate: 0.085        # taxa social de desconto real, Nota Técnica governo federal 2020 (8,5% a.a.)
+discount_rate_sensitivity: [0.04, 0.12]
+horizon_years: 10
+horizon_range: [1, 30]
+reduction_pct: 50
+scenarios:
+  - { id: r25, label: "25%", reduction_pct: 25 }
+  - { id: r50, label: "50%", reduction_pct: 50 }
+  - { id: r100, label: "100%", reduction_pct: 100 }
+  - id: sdw92
+    label: "Resultado médio dos projetos SDW: 92%"
+    reduction_pct: 92
+    disclaimer: "dado informado pela SDW, em validação independente"
+components:
+  hospital:
+    label: Custo hospitalar SUS
+    enabled: true
+  productivity:
+    label: Produtividade perdida
+    enabled: true
+    child_age_limit: 14       # < 14 anos: conta 1 dia de acompanhante adulto por dia de internação
+    working_days_per_month: 22
+  school_days:
+    label: Dias letivos perdidos
+    enabled: true
+    monetized: false
+    age_range: [6, 17]
+  outpatient:
+    label: Atendimento ambulatorial
+    enabled: false
+    multiplier: null          # só pode ser ligado com referência bibliográfica documentada
+    reference: null
+  deaths:
+    label: Óbitos evitáveis
+    enabled: false
+sroi:
+  deadweight: 0.10            # parte da redução que aconteceria de qualquer forma
+  attribution: 0.80           # parte do resultado atribuível ao projeto
+  drop_off: 0.05              # perda de efeito ao ano
+  sensitivity:
+    deadweight: [0.0, 0.30]
+    attribution: [0.50, 1.00]
+    drop_off: [0.0, 0.15]
