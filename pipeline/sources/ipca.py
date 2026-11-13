@@ -31,9 +31,30 @@ def monthly_index(uf: UF) -> SourceResult:
         out = df.rename(columns={"ano": "year", "mes": "month", "indice": "index"})[["year", "month", "index"]]
         out = out.dropna().sort_values(["year", "month"]).reset_index(drop=True)
         last = out.iloc[-1]
-        return SourceResult(out, make_meta("ipca", f, f"até {int(last.month):02d}/{int(last.year)}", src.note))
+        lag = staleness_months(out)
+        flags = {"stale": True, "stale_months": lag} if lag > 3 else None
+        return SourceResult(out, make_meta("ipca", f, f"até {int(last.month):02d}/{int(last.year)}", src.note), flags)
 
     return try_chain("ipca", uf, {"official": official, "mirror": mirror})
+
+
+def staleness_months(ipca: pd.DataFrame) -> int:
+    import datetime as dt
+
+    last = ipca.iloc[-1]
+    today = dt.date.today()
+    return (today.year - int(last.year)) * 12 + (today.month - int(last.month))
+
+
+def monthly_deflator(ipca: pd.DataFrame, base_year: int) -> dict[tuple[int, int], float]:
+    """Fator mês a mês para levar valores nominais a reais da média do ano-base."""
+    g = ipca.groupby("year")["index"].agg(["mean", "count"])
+    if base_year not in g.index or g.loc[base_year, "count"] < 12:
+        raise ValueError(f"ano-base {base_year} sem 12 meses de IPCA")
+    base = g.loc[base_year, "mean"]
+    return {
+        (int(y), int(m)): float(base / i) for y, m, i in zip(ipca["year"], ipca["month"], ipca["index"], strict=True)
+    }
 
 
 def annual_deflator(ipca: pd.DataFrame, base_year: int) -> dict[int, float]:

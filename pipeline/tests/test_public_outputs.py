@@ -53,3 +53,23 @@ def test_every_source_has_status(built):
         assert s["status"] in {"ok", "stale", "unavailable"}, name
         if s["status"] != "unavailable":
             assert s["url"] and s["reference_period"], name
+
+
+def test_indigenous_lands_have_names_and_no_sensitive_fields(built):
+    import geopandas as gpd
+
+    p = config.PUBLIC_DIR / built.slug / "terras_indigenas.geojson"
+    if not p.exists():
+        pytest.skip("sem camada de TIs")
+    g = gpd.read_file(p)
+    assert g["nome"].notna().all()
+    forbidden = {"coordination_region", "faixa_fron", "name_adm_unit", "aldeia", "lat", "lon"}
+    assert not (forbidden & set(g.columns))
+    assert set(g.geom_type) <= {"Polygon", "MultiPolygon"}  # nunca pontos
+
+
+def test_suppressed_counts_are_null_not_zero(built):
+    resumo = json.loads((config.PUBLIC_DIR / built.slug / "resumo.json").read_text())
+    vals = [m["ind"].get("pop_quilombola") for m in resumo["municipios"]]
+    # sigilo total vira None; o espelho não deve produzir zeros artificiais em massa
+    assert sum(1 for v in vals if v == 0) < 5

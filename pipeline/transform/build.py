@@ -29,7 +29,16 @@ from pipeline.transform.calculator import Baseline
 from pipeline.transform.cid import core_groups
 
 log = logging.getLogger(__name__)
-SNIS_SERIES = ["snis_agua_pct", "snis_esgoto_pct", "snis_tratamento_pct", "snis_perdas_pct", "snis_coleta_esgoto_pct"]
+SNIS_SERIES = [
+    "snis_agua_pct",
+    "snis_esgoto_pct",
+    "snis_esgoto_tratado_pct",
+    "snis_tratamento_coletado_pct",
+    "snis_tratamento_pct",
+    "snis_perdas_pct",
+    "snis_coleta_esgoto_pct",
+]
+FRESH_YEARS = 2  # valor do SNIS mais antigo que ano_ref − 2 é tratado como desatualizado
 DIVERGENCE_PP = 15.0
 # Nome legível das etapas (quando a fonte está indisponível, o .meta.json não traz o nome)
 SOURCE_NAMES = {
@@ -112,43 +121,48 @@ class Inputs:
 # --------------------------------------------------------------------------- saúde (SIH)
 
 
+SMALL_CELL = 5  # contagens anuais médias < 5 de óbitos são suprimidas nas saídas públicas (LGPD)
+
+
 def health_tables(inp: Inputs, pop: pd.Series) -> tuple[pd.DataFrame | None, dict]:
-    """Médias anuais DRSAI por município (núcleo e com vetores), deflacionadas pelo IPCA."""
+    """Médias anuais DRSAI por município (núcleo e com vetores), deflacionadas mês a mês pelo IPCA.
+
+    Denominador único: os anos do período. Se algum mês não tiver deflator (IPCA ainda não publicado), o valor
+    monetário daquele ano fica indisponível e o valor médio é calculado só se todos os anos tiverem deflator;
+    caso contrário, `drsai_valor_anual` fica ausente (nunca uma média sobre menos anos escondida).
+    """
     sih = inp.get("sih_drsai")
     ipca = inp.get("ipca")
     info: dict = {}
     if sih is None or sih.empty:
         return None, info
-    years = sorted(sih["year"].unique())
-    from pipeline.sources.ipca import annual_deflator, last_complete_year
+    years = sorted(int(y) for y in sih["year"].unique())
+    from pipeline.sources.ipca import last_complete_year, monthly_deflator
 
-    base_year = min(last_complete_year(ipca), int(max(years))) if ipca is not None else None
-    defl = annual_deflator(ipca, base_year) if base_year else {}
+    base_year = min(last_complete_year(ipca), max(years)) if ipca is not None else None
+    defl = monthly_deflator(ipca, base_year) if base_year else {}
     sih = sih.copy()
-    sih["factor"] = sih["year"].map(defl)
+    if "month" not in sih.columns:
+        sih["month"] = 0
+    sih["factor"] = [defl.get((int(y), int(m))) for y, m in zip(sih["year"], sih["month"], strict=True)]
     sih["valor_real"] = sih["valor_nominal"] * sih["factor"]
-    info = {
-        "years": [int(y) for y in years],
-        "price_base": base_year,
-        "years_without_deflator": [int(y) for y in years if y not in defl],
-    }
+    years_missing_defl = sorted(
+        {int(y) for y, f in zip(sih["year"], sih["factor"], strict=True) if f is None or pd.isna(f)}
+    )
+    info = {"years": years, "price_base": base_year, "years_without_deflator": years_missing_defl}
     core = core_groups()
+    counts = ["internacoes", "dias", "obitos", "dias_6_17", "internacoes_menor5"]
 
     def layer_avg(df: pd.DataFrame, suffix: str) -> pd.DataFrame:
-        per_year = df.groupby(["cod_ibge7", "year"], as_index=False)[
-            ["internacoes", "valor_real", "dias", "obitos", "dias_6_17", "internacoes_menor5"]
-        ].sum(min_count=1)
-        # Média sobre todos os anos do período (anos sem internação valem zero de fato: o arquivo existe).
+        per_year = df.groupby(["cod_ibge7", "year"])[counts + ["valor_real"]].sum(min_count=1)
         full = pd.MultiIndex.from_product([pop.index, years], names=["cod_ibge7", "year"])
-        per_year = per_year.set_index(["cod_ibge7", "year"]).reindex(full)
-        cnt = per_year[["internacoes", "dias", "obitos", "dias_6_17", "internacoes_menor5"]].fillna(0)
-        per_year[cnt.columns] = cnt
-        # valor_real fica NaN se o ano não tem deflator; média só sobre anos com deflator
-        per_year["valor_real"] = per_year["valor_real"].where(per_year.index.get_level_values("year").isin(list(defl)))
-        per_year.loc[
-            per_year["valor_real"].isna() & per_year.index.get_level_values("year").isin(list(defl)), "valor_real"
-        ] = 0.0
+        per_year = per_year.reindex(full)
+        # Arquivos existem para todos os anos: município sem AIH no ano tem zero de fato.
+        per_year[counts] = per_year[counts].fillna(0)
+        per_year["valor_real"] = per_year["valor_real"].fillna(0)
         avg = per_year.groupby(level="cod_ibge7").mean()
+        if years_missing_defl:
+            avg["valor_real"] = float("nan")
         avg.columns = [f"{c}{suffix}" for c in avg.columns]
         return avg
 
@@ -160,8 +174,12 @@ def health_tables(inp: Inputs, pop: pd.Series) -> tuple[pd.DataFrame | None, dic
     out["drsai_dias_anual"] = out["dias"]
     out["drsai_taxa_10mil"] = out["internacoes"] / pop * 10_000
     out["drsai_custo_per_capita"] = out["valor_real"] / pop
+    for col in ("obitos", "obitos_vet"):
+        out[col] = out[col].where(out[col] >= SMALL_CELL)  # suprimido: publicado como "menos de 5"
     by_year = sih[sih["group"].isin(core)].groupby(["cod_ibge7", "year"])[["internacoes", "valor_real"]].sum()
     by_group = sih.groupby(["cod_ibge7", "group"])[["internacoes", "valor_real"]].sum() / len(years)
+    if years_missing_defl:
+        by_group["valor_real"] = float("nan")
     info["by_year"] = by_year
     info["by_group"] = by_group
     return out, info
@@ -179,7 +197,7 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
 
     for name, cols in {
         "censo_agua": ["censo_agua_rede_pct"],
-        "censo_esgoto": ["censo_esgoto_adequado_pct", "censo_com_esgoto_adequado_pessoas"],
+        "censo_esgoto": ["censo_esgoto_adequado_pct", "censo_com_esgoto_adequado_pessoas", "censo_esgoto_rede_pct"],
         "censo_lixo": ["censo_lixo_coletado_pct"],
         "ana_atlas": ["ana_coleta_tratamento_pct", "ana_solucao_individual_pct", "ana_sem_atendimento_pct"],
     }.items():
@@ -203,28 +221,44 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
     r = inp.get("censo_raca")
     if r is not None:
         base = base.join(r.set_index("cod_ibge7")[["pop_cor_indigena"]])
-    if "pop_quilombola" in base or "pop_cor_indigena" in base:
-        pq = base.get("pop_quilombola", pd.Series(0, index=base.index)).fillna(0)
-        pi = base.get("pop_cor_indigena", pd.Series(0, index=base.index)).fillna(0)
-        base["pct_pop_quilombola_indigena"] = (pq + pi) / base["populacao"] * 100
+    if "pop_quilombola" in base and "pop_cor_indigena" in base:
+        # Sem fillna: se um dos dois é desconhecido, o percentual é desconhecido.
+        base["pct_pop_quilombola_indigena"] = (
+            (base["pop_quilombola"] + base["pop_cor_indigena"]) / base["populacao"] * 100
+        )
+    if q is not None:
+        base = base.join(
+            q.set_index("cod_ibge7")[["pct_cells_suppressed"]].rename(
+                columns={"pct_cells_suppressed": "quilombola_pct_celulas_sigilo"}
+            )
+        )
 
     semi = inp.get("semiarido")
     base["semiarido"] = base.index.isin(semi["cod_ibge7"]) if semi is not None else None
     ctx["semiarido_available"] = semi is not None
 
-    # SNIS: último ano disponível de cada indicador + séries
+    # SNIS: último ano de cada indicador, só se recente (≥ ano_ref − FRESH_YEARS). Valor mais antigo vai para
+    # `{col}__antigo` (exibido como "último dado: AAAA") e não entra no índice, no "Agir" nem nas medianas.
     snis = inp.get("snis")
     ctx["snis_series"] = {}
     if snis is not None:
         snis = snis.sort_values("year")
-        ctx["snis_year_max"] = int(snis["year"].max())
+        ref = int(snis["year"].max())
+        ctx["snis_year_max"] = ref
         for col in SNIS_SERIES + ["snis_consumo_lhabdia"]:
             if col not in snis:
                 continue
             valid = snis.dropna(subset=[col])
             last = valid.groupby("cod_ibge7").tail(1).set_index("cod_ibge7")
-            base[col] = last[col]
-            base[f"{col}__ano"] = last["year"]
+            fresh = last["year"] >= ref - FRESH_YEARS
+            base[col] = last[col].where(fresh)
+            base[f"{col}__ano"] = last["year"].where(fresh)
+            base[f"{col}__antigo"] = last[col].where(~fresh)
+            base[f"{col}__antigo_ano"] = last["year"].where(~fresh)
+        # Prestador de esgoto declarado em algum ano recente? (ausência ≠ zero, mas é informação)
+        recent = snis[snis["year"] >= ref - FRESH_YEARS]
+        has_esg = recent.dropna(subset=["snis_esgoto_pct"]).groupby("cod_ibge7").size()
+        base["snis_esgoto_sem_declaracao"] = ~base.index.isin(has_esg.index)
         for col in SNIS_SERIES:
             if col in snis:
                 ctx["snis_series"][col] = snis.pivot_table(index="cod_ibge7", columns="year", values=col)
@@ -359,12 +393,18 @@ def communities(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoDataFrame | 
         t[["ti_id", "ti_area", "geometry"]], m[["cod_ibge7", "geometry"]], how="intersection", keep_geom_type=True
     )
     inter["a"] = inter.geometry.area
-    inter = inter[inter["a"] > 1e4]  # ignora toques de borda (< 1 ha)
+    # Ignora toques de borda produzidos por malhas simplificadas diferentes: a interseção precisa ter pelo menos
+    # 1% da área da TI ou 0,5% da área do município.
+    m_area = m.set_index("cod_ibge7").geometry.area
+    inter = inter[(inter["a"] >= 0.01 * inter["ti_area"]) | (inter["a"] >= 0.005 * inter["cod_ibge7"].map(m_area))]
     by_mun: dict[str, list[dict]] = {}
     for _, r in inter.iterrows():
         ti = t.loc[r["ti_id"]]
         by_mun.setdefault(r["cod_ibge7"], []).append(
             {
+                "codigo_funai": ti.get("codigo_funai"),
+                "ufs": ti.get("ufs"),
+                "data_ref": ti.get("data_ref"),
                 "nome": ti.get("nome"),
                 "etnia": ti.get("etnia"),
                 "fase": ti.get("fase"),
@@ -374,7 +414,8 @@ def communities(inp: Inputs) -> tuple[dict[str, list[dict]], gpd.GeoDataFrame | 
             }
         )
     keep = t[t["ti_id"].isin(inter["ti_id"])].to_crs(4326)
-    keep = keep[[c for c in ["nome", "etnia", "fase", "modalidade", "area_ha", "geometry"] if c in keep.columns]]
+    cols = ["codigo_funai", "nome", "etnia", "fase", "modalidade", "area_ha", "ufs", "data_ref", "geometry"]
+    keep = keep[[c for c in cols if c in keep.columns]]
     return by_mun, keep
 
 
@@ -417,14 +458,16 @@ def national_medians() -> dict[str, float]:
 
 def thermo_for(code: str, ctx: dict) -> dict:
     out = {}
-    for service, col in (("agua", "snis_agua_pct"), ("esgoto", "snis_esgoto_pct")):
+    ref = ctx.get("snis_year_max")
+    # Esgoto: coleta COM tratamento (IN056 × IN016), porque a meta do Marco Legal exige as duas coisas.
+    for service, col in (("agua", "snis_agua_pct"), ("esgoto", "snis_esgoto_tratado_pct")):
         series = ctx["snis_series"].get(col)
         if series is None or code not in series.index:
-            out[service] = thermometer.compute(service, {}).to_dict()
+            out[service] = thermometer.compute(service, {}, ref).to_dict()
         else:
             row = series.loc[code]
             out[service] = thermometer.compute(
-                service, {int(y): (None if pd.isna(v) else float(v)) for y, v in row.items()}
+                service, {int(y): (None if pd.isna(v) else float(v)) for y, v in row.items()}, ref
             ).to_dict()
     return out
 
@@ -456,6 +499,7 @@ def build_uf(uf: config.UF) -> None:
             "min": tab[c].min(),
             "max": tab[c].max(),
             "n": int(tab[c].notna().sum()),
+            "N": int(len(tab)),
             "median_br": br.get(c),
         }
         for c in numeric
@@ -549,7 +593,9 @@ def build_uf(uf: config.UF) -> None:
         div = {}
         for svc, (c_censo, c_snis) in {
             "agua": ("censo_agua_rede_pct", "snis_agua_pct"),
-            "esgoto": ("censo_esgoto_adequado_pct", "snis_esgoto_pct"),
+            # IN056 mede coleta por rede: compara com a categoria "rede geral ou pluvial" do Censo, não com
+            # "esgoto adequado" (que inclui fossa séptica e geraria divergência estrutural).
+            "esgoto": ("censo_esgoto_rede_pct", "snis_esgoto_pct"),
         }.items():
             a, b = ind.get(c_censo), ind.get(c_snis)
             if a is not None and b is not None and not (pd.isna(a) or pd.isna(b)):
@@ -605,8 +651,9 @@ def build_uf(uf: config.UF) -> None:
         nb = [{"cod": c, "nome": names.get(c), "slug": slugs.get(c)} for c in nbrs.get(code, []) if c in names]
         th = thermos[code]
         extra = {
-            "snis_year": years_of.get("snis_esgoto_pct") or years_of.get("snis_agua_pct"),
+            "years": years_of,
             "sih_period": sih_period,
+            "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao")),
         }
         ficha = {
             "cod": code,
@@ -620,6 +667,12 @@ def build_uf(uf: config.UF) -> None:
             "resumo": summary.municipal_summary(row["nome"], ind, th, extra),
             "ind": ind,
             "ind_ano": years_of,
+            "ind_antigo": {
+                c: [row[f"{c}__antigo"], int(row[f"{c}__antigo_ano"])]
+                for c in SNIS_SERIES + ["snis_consumo_lhabdia"]
+                if f"{c}__antigo" in tab and not pd.isna(row.get(f"{c}__antigo"))
+            },
+            "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao")),
             "series": series,
             "thermometer": th,
             "divergence": div,
@@ -641,6 +694,11 @@ def build_uf(uf: config.UF) -> None:
                 "pop_quilombola_em_territorio": row.get("pop_quilombola_em_territorio"),
                 "pop_quilombola_lower_bound": ctx["flags"].get("pop_quilombola_lower_bound", False),
                 "pop_cor_indigena": ind.get("pop_cor_indigena"),
+                "quilombola_pct_celulas_sigilo": row.get("quilombola_pct_celulas_sigilo"),
+                "fonte_censo": "IBGE, Censo Demográfico 2022 (data de referência 01/08/2022)",
+                "fonte_tis": "FUNAI, terras indígenas (polígonos oficiais); limites simplificados para a web",
+                "nota_territorio": "“Em território quilombola” se refere a territórios delimitados pelo IBGE no Censo; "
+                "zero ou vazio não significa ausência de território reivindicado.",
                 "terras_indigenas": com_by_mun.get(code, []),
             },
             "index": {
@@ -651,7 +709,10 @@ def build_uf(uf: config.UF) -> None:
                 "dims": {d: row.get(f"dim_{d}") for d in idx_info["dimensions"]},
                 "components": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},
             },
-            "suggestions": act.suggestions(ind, {"semiarido": row["semiarido"]}),
+            "suggestions": act.suggestions(
+                ind,
+                {"semiarido": row["semiarido"], "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao"))},
+            ),
             "neighbors": nb,
             "generated_at": generated,
         }
@@ -660,9 +721,9 @@ def build_uf(uf: config.UF) -> None:
     # Geodados
     malha = inp.get("malhas").merge(tab[["nome", "slug"]], left_on="cod_ibge7", right_index=True)
     (out_dir).mkdir(parents=True, exist_ok=True)
-    malha.to_crs(4326).to_file(out_dir / "malha.geojson", driver="GeoJSON")
+    malha.to_crs(4326).to_file(out_dir / "malha.geojson", driver="GeoJSON", COORDINATE_PRECISION=5)
     if tis_geo is not None:
-        tis_geo.to_file(out_dir / "terras_indigenas.geojson", driver="GeoJSON")
+        tis_geo.to_file(out_dir / "terras_indigenas.geojson", driver="GeoJSON", COORDINATE_PRECISION=5)
 
     write_downloads(uf, tab, ctx, out_dir, numeric)
     log.info("[%s] build ok: %d fichas, índice ranqueado: %d", uf.sigla, len(tab), idx_info["ranked"])

@@ -1,0 +1,209 @@
+---
+import Base from "../layouts/Base.astro";
+import { DEFAULT_UF, readJson, resumo, ufs } from "../lib/data";
+
+const cfg = readJson<any>("calculadora.json");
+const options = ufs().map((u) => ({ uf: u.slug, sigla: u.sigla, list: resumo(u.slug).municipios.map((m) => ({ s: m.slug, n: m.nome })).sort((a, b) => a.n.localeCompare(b.n, "pt-BR")) }));
+const sdw = cfg.scenarios.find((s: any) => s.id === "sdw92");
+---
+<Base title="Calculadora de economia" description="Quanto o seu município economizaria reduzindo as doenças ligadas à falta de saneamento.">
+  <section class="wrap section">
+    <p class="eyebrow">Calcular</p>
+    <h1>Quanto custa não ter saneamento?</h1>
+    <p class="text lead">O país já paga pelo saneamento que não tem, só que em forma de doença: internações no SUS e dias de trabalho perdidos. Escolha um município e um cenário de redução dessas doenças para ver a economia. <strong>A calculadora não estima o custo de obras.</strong></p>
+
+    <form id="calc" class="calc" onsubmit="return false">
+      <div class="card controls">
+        <div class="field">
+          <label for="mun">Município</label>
+          <select id="mun" name="mun">
+            <option value="">Escolha um município</option>
+            {options.map((o) => (<optgroup label={o.sigla}>{o.list.map((m) => <option value={`${o.uf}/${m.s}`}>{m.n}</option>)}</optgroup>))}
+          </select>
+        </div>
+        <fieldset class="field">
+          <legend>Cenário de redução das doenças</legend>
+          <div class="chips">
+            {cfg.scenarios.map((s: any) => (<button type="button" class="chip" data-r={s.reduction_pct} data-id={s.id}>{s.label}</button>))}
+          </div>
+          <p class="xsmall muted" id="sdw-note" hidden>{sdw.label}: <strong>{sdw.disclaimer}</strong>.</p>
+          <label for="r">Redução: <output id="r-out">{cfg.reduction_pct}%</output></label>
+          <input id="r" type="range" min="0" max="100" step="1" value={cfg.reduction_pct} />
+        </fieldset>
+        <div class="field">
+          <label for="h">Horizonte: <output id="h-out">{cfg.horizon_years} anos</output></label>
+          <input id="h" type="range" min="1" max="30" step="1" value={cfg.horizon_years} />
+        </div>
+        <details class="field">
+          <summary>Premissas e componentes</summary>
+          <label for="t">Taxa de desconto real ao ano (%)</label>
+          <input id="t" type="number" min="0" max="30" step="0.5" value={cfg.discount_rate * 100} inputmode="decimal" />
+          <p class="xsmall muted">Padrão: 8,5% ao ano, taxa social de desconto recomendada pelo governo federal (nota técnica de 2020). Ela traduz a ideia de que R$ 1 hoje vale mais que R$ 1 daqui a 10 anos.</p>
+          <label class="check"><input type="checkbox" id="c-hosp" checked /> Custo hospitalar do SUS</label>
+          <label class="check"><input type="checkbox" id="c-prod" checked /> Produtividade perdida (dias internados × renda diária; para crianças, conta o dia do adulto acompanhante)</label>
+          <label class="check"><input type="checkbox" id="c-vet" /> Incluir doenças transmitidas por mosquitos e outros vetores (relação mais indireta com o saneamento)</label>
+          <p class="xsmall muted">Atendimento ambulatorial e óbitos ficam desligados: só entram com referência científica documentada e dados disponíveis. <a href="/metodologia#calculadora">Veja a metodologia</a>.</p>
+        </details>
+        <details class="field" id="sroi-box">
+          <summary>Modo SROI (retorno social do investimento)</summary>
+          <label for="inv">Investimento hipotético (R$)</label>
+          <input id="inv" type="number" min="0" step="1000" inputmode="numeric" placeholder="Ex.: 2000000" />
+          <label for="dw">Deadweight (%): parte da melhora que aconteceria de qualquer jeito</label>
+          <input id="dw" type="number" min="0" max="100" step="1" value={cfg.sroi.deadweight * 100} />
+          <label for="at">Atribuição (%): parte do resultado que se deve ao projeto</label>
+          <input id="at" type="number" min="0" max="100" step="1" value={cfg.sroi.attribution * 100} />
+          <label for="do">Drop-off (%): quanto o efeito perde de força a cada ano</label>
+          <input id="do" type="number" min="0" max="100" step="1" value={cfg.sroi.drop_off * 100} />
+          <p class="xsmall muted">Princípios do SROI (Social Value International). Valores padrão conservadores, que você pode mudar.</p>
+        </details>
+        <details class="field" id="manual-box">
+          <summary>Informar os dados manualmente</summary>
+          <p class="xsmall muted">Use se você tem dados locais (por exemplo, da secretaria de saúde). O resultado aparece marcado como “dados informados por você”.</p>
+          <label for="m-cost">Custo anual de internações por doenças ligadas ao saneamento (R$)</label>
+          <input id="m-cost" type="number" min="0" step="100" inputmode="numeric" />
+          <label for="m-days">Dias de internação por ano</label>
+          <input id="m-days" type="number" min="0" step="1" inputmode="numeric" />
+          <label for="m-inc">Renda diária de referência (R$/dia)</label>
+          <input id="m-inc" type="number" min="0" step="1" inputmode="decimal" />
+        </details>
+      </div>
+
+      <div class="results" aria-live="polite">
+        <div class="card" id="out">
+          <p class="muted">Escolha um município para começar.</p>
+        </div>
+        <div class="actions no-print">
+          <button type="button" class="btn secondary" id="copy-link">Copiar link com estes parâmetros</button>
+          <button type="button" class="btn secondary" id="print">Salvar em PDF</button>
+        </div>
+      </div>
+    </form>
+  </section>
+</Base>
+<script>
+  import { calculate, sensitivity, fromQuery, toQuery, DEFAULT_PARAMS, type Params } from "../lib/calculator";
+  import { fmtBRL, fmtBRLShort, fmtNumber } from "../lib/format";
+  import type { Baseline, Ficha } from "../lib/types";
+  import { track } from "../lib/learn";
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const form = $("calc");
+  const mun = $<HTMLSelectElement>("mun");
+  const out = $("out");
+  let ficha: Ficha | null = null;
+  let scenario = "";
+
+  const qs = new URLSearchParams(location.search);
+  const init = fromQuery(qs, { ...DEFAULT_PARAMS, deadweight: 0.1, attribution: 0.8, drop_off: 0.05 });
+  const setv = (id: string, v: string | number) => (($(id) as HTMLInputElement).value = String(v));
+  setv("r", init.reduction_pct); setv("h", init.horizon_years); setv("t", +(init.discount_rate * 100).toFixed(3));
+  if (init.investment) { setv("inv", init.investment); ($("sroi-box") as HTMLDetailsElement).open = true; }
+  setv("dw", +(init.deadweight * 100).toFixed(2)); setv("at", +(init.attribution * 100).toFixed(2)); setv("do", +(init.drop_off * 100).toFixed(2));
+  ($("c-hosp") as HTMLInputElement).checked = init.use_hospital; ($("c-prod") as HTMLInputElement).checked = init.use_productivity;
+  const m0 = qs.get("m"), uf0 = qs.get("uf") ?? "ba";
+  if (m0) mun.value = `${uf0}/${m0}`;
+
+  const num = (id: string) => { const v = parseFloat(($(id) as HTMLInputElement).value); return Number.isFinite(v) ? v : null; };
+  const checked = (id: string) => ($(id) as HTMLInputElement).checked;
+
+  function params(): Params {
+    const inv = num("inv");
+    return { ...DEFAULT_PARAMS, reduction_pct: num("r") ?? 50, horizon_years: num("h") ?? 10,
+      discount_rate: (num("t") ?? 8.5) / 100, use_hospital: checked("c-hosp"), use_productivity: checked("c-prod"),
+      investment: inv && inv > 0 ? inv : null, deadweight: (num("dw") ?? 10) / 100, attribution: (num("at") ?? 80) / 100,
+      drop_off: (num("do") ?? 5) / 100 };
+  }
+
+  function baseline(): { b: Baseline; manual: boolean } {
+    const mc = num("m-cost"), md = num("m-days"), mi = num("m-inc");
+    if (mc !== null || md !== null || mi !== null) {
+      return { b: { hospital_cost: mc, hospital_days: md, school_days: null, daily_income: mi }, manual: true };
+    }
+    if (!ficha) return { b: { hospital_cost: null, hospital_days: null, school_days: null, daily_income: null }, manual: false };
+    const vet = checked("c-vet") && ficha.calculator.baseline_vectors;
+    return { b: vet ? ficha.calculator.baseline_vectors! : ficha.calculator.baseline, manual: false };
+  }
+
+  const LABEL: Record<string, string> = { hospital: "Custo hospitalar do SUS", productivity: "Produtividade perdida", outpatient: "Atendimento ambulatorial", deaths: "Óbitos evitáveis" };
+
+  function render() {
+    const p = params();
+    $("r-out").textContent = `${p.reduction_pct}%`;
+    $("h-out").textContent = `${p.horizon_years} ${p.horizon_years === 1 ? "ano" : "anos"}`;
+    $("sdw-note").hidden = scenario !== "sdw92";
+    document.querySelectorAll<HTMLButtonElement>(".chip").forEach((c) => c.setAttribute("aria-pressed", String(Number(c.dataset.r) === p.reduction_pct)));
+    const { b, manual } = baseline();
+    const name = ficha?.nome ?? "o território";
+    if (!ficha && !manual) { out.innerHTML = `<p class="muted">Escolha um município para começar, ou informe os dados manualmente.</p>`; return; }
+    let r;
+    try { r = calculate(b, p); } catch (e) { out.innerHTML = `<p class="nodata">${(e as Error).message}</p>`; return; }
+    const [lo, hi] = sensitivity(b, p, { discount_rate: [0.04, 0.12], deadweight: [0, 0.3], attribution: [0.5, 1], drop_off: [0, 0.15] });
+    if (Object.keys(r.components).length === 0) {
+      out.innerHTML = `<h2>${name}</h2><div class="pending"><p><strong>Ainda não há dados de internações processados para ${name}.</strong></p>
+        <p class="small">O custo hospitalar vem do SIH/SUS (DATASUS) e a renda, do Censo 2022. Essas fontes são atualizadas pelo pipeline automático e não estavam disponíveis nesta versão. Enquanto isso, você pode <a href="#manual-box" id="open-manual">informar os dados manualmente</a>.</p></div>`;
+      $("open-manual")?.addEventListener("click", () => (($("manual-box") as HTMLDetailsElement).open = true));
+      return;
+    }
+    const tag = manual ? `<p class="tag warn">Dados informados por você</p>` : "";
+    const period = ficha?.health?.period ? ` (${ficha.health.period})` : "";
+    const comp = Object.entries(r.components).map(([k, v]) => `<tr><th scope="row">${LABEL[k]}</th><td class="num">${fmtBRL(v)}</td><td class="num">${fmtBRL(v * p.reduction_pct / 100)}</td></tr>`).join("");
+    const miss = r.missing.length ? `<p class="xsmall muted">Componentes sem dado (não entram na soma): ${r.missing.map((m) => LABEL[m]).join(", ")}.</p>` : "";
+    const sdwNote = scenario === "sdw92" ? ` O cenário de 92% é um <strong>dado informado pela SDW, em validação independente</strong>.` : "";
+    const text = `Em ${name}, a redução de ${fmtNumber(p.reduction_pct)}% das doenças relacionadas ao saneamento inadequado pode poupar ${fmtBRL(r.annual_saving)} por ano, ou ${fmtBRL(r.pv_saving)} em ${p.horizon_years} anos (valor presente, taxa de ${fmtNumber(p.discount_rate * 100, 1)}% ao ano). Fonte: Territórios com Sede, a partir de dados do DATASUS${period}.`;
+    out.innerHTML = `${tag}<h2>${name}</h2>
+      <div class="big"><p class="n">${fmtBRLShort(r.annual_saving)}</p><p>de economia por ano com ${fmtNumber(p.reduction_pct)}% menos doenças</p></div>
+      <div class="big"><p class="n">${fmtBRLShort(r.pv_saving)}</p><p>acumulados em ${p.horizon_years} ${p.horizon_years === 1 ? "ano" : "anos"}, em valor presente</p></div>
+      ${r.school_days_avoided !== null ? `<p>Além disso, cerca de <strong>${fmtNumber(r.school_days_avoided)} dias de internação de crianças e jovens de 6 a 17 anos</strong> seriam evitados por ano, dias longe da escola.</p>` : ""}
+      ${p.investment ? `<div class="sroi"><p><strong>SROI: ${fmtNumber(r.sroi_ratio, 2)}</strong>. Cada R$ 1 investido gera cerca de R$ ${fmtNumber(r.sroi_ratio, 2)} em benefício social evitando doenças (valor presente de ${fmtBRL(r.sroi_pv)}, já descontados deadweight, atribuição e drop-off).</p></div>` : ""}
+      <p class="small">Faixa de sensibilidade: <strong>${fmtBRLShort(lo)} a ${fmtBRLShort(hi)}</strong>, variando a taxa de desconto entre 4% e 12%${p.investment ? " e as premissas do SROI" : ""}. É uma estimativa, não uma previsão.</p>
+      <div class="table-scroll"><table><caption class="visually-hidden">Decomposição por componente</caption><thead><tr><th scope="col">Componente</th><th scope="col" class="num">Custo atual por ano</th><th scope="col" class="num">Economia por ano</th></tr></thead><tbody>${comp}</tbody></table></div>
+      ${miss}
+      <h3>Texto pronto para copiar</h3>
+      <blockquote id="ready">${text}${sdwNote ? "" : ""}</blockquote>
+      <p class="small">${sdwNote}</p>
+      <button type="button" class="btn secondary no-print" id="copy-text">Copiar texto</button>`;
+    $("copy-text")?.addEventListener("click", () => navigator.clipboard?.writeText(text));
+    const q = toQuery(p) + (ficha ? `&uf=${ficha.uf.toLowerCase()}&m=${ficha.slug}` : "");
+    history.replaceState(null, "", `?${q}`);
+  }
+
+  async function load() {
+    ficha = null;
+    const v = mun.value;
+    if (v) {
+      const [uf, slug] = v.split("/");
+      try { ficha = await (await fetch(`/data/${uf}/municipios/${slug}.json`)).json(); } catch { ficha = null; }
+    }
+    render();
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".chip").forEach((c) => c.addEventListener("click", () => {
+    setv("r", c.dataset.r!); scenario = c.dataset.id!; render(); track("calc_scenario", { s: scenario });
+  }));
+  form.addEventListener("input", (e) => { if ((e.target as HTMLElement).id === "r") scenario = ""; if ((e.target as HTMLElement).id !== "mun") render(); });
+  mun.addEventListener("change", load);
+  $("copy-link").addEventListener("click", () => navigator.clipboard?.writeText(location.href));
+  $("print").addEventListener("click", () => window.print());
+  load();
+</script>
+<style>
+  .lead { font-size: var(--fs-lg); color: var(--c-ink-soft); }
+  .calc { display: grid; gap: var(--s-5); margin-top: var(--s-5); }
+  @media (min-width: 900px) { .calc { grid-template-columns: 2fr 3fr; align-items: start; } }
+  .controls { display: grid; gap: var(--s-4); }
+  .field { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-2); }
+  .field label, .field legend { font-weight: 700; }
+  .field input[type=number], select { padding: 0.6rem; border: 1px solid var(--c-ink-muted); border-radius: 8px; min-height: 44px; background: #fff; width: 100%; }
+  input[type=range] { width: 100%; accent-color: var(--c-water-700); min-height: 32px; }
+  .check { font-weight: 400 !important; display: flex; gap: var(--s-2); align-items: flex-start; }
+  .check input { width: 20px; height: 20px; margin-top: 3px; flex: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .chip { border: 2px solid var(--c-water-700); background: #fff; color: var(--c-water-900); border-radius: 999px; padding: 0.45rem 0.9rem; min-height: 44px; cursor: pointer; font-weight: 700; }
+  .chip[aria-pressed="true"] { background: var(--c-water-700); color: #fff; }
+  .results :global(.big .n) { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--c-water-900); margin: 0; }
+  .results :global(.big) { margin-bottom: var(--s-4); }
+  .results :global(blockquote) { margin: 0 0 var(--s-3); padding: var(--s-4); background: var(--c-sand-100); border-left: 4px solid var(--c-water-500); border-radius: 0 var(--radius) var(--radius) 0; }
+  .results :global(.pending) { border: 1px dashed var(--c-line); background: var(--c-sand-100); padding: var(--s-4); border-radius: var(--radius); }
+  .results :global(.sroi) { background: var(--c-ok-bg); padding: var(--s-3) var(--s-4); border-radius: var(--radius); margin-bottom: var(--s-3); }
+  .actions { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-3); }
+</style>

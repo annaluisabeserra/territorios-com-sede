@@ -48,9 +48,9 @@ população estimada) está no `VALIDATION_REPORT.md`.
 | P1 | SISAGUA | indisponível | OpenDataSUS / dados.gov.br | não encontrado | Dimensão "qualidade da água" do índice fica sem dado (é reponderada). |
 | P1 | S2ID (decretos) | indisponível | Dados abertos do MIDR | não encontrado | Dimensão "risco climático" usa só o Semiárido como contexto (sem pontuação) até o S2ID entrar. |
 | P1 | FUNAI terras indígenas | espelho | GeoServer WFS da FUNAI | geobr v2.0.0 `indigenouslands_2024` (FUNAI, 2024) | 28 TIs tocam a BA. Fase oficial (declarada, homologada, regularizada etc.) exibida. |
-| P1 | INCRA territórios quilombolas | indisponível | Acervo fundiário do INCRA | geobr: nome do arquivo não encontrado no release | Contagem de pessoas quilombolas por município (Censo) é exibida no lugar dos polígonos. |
-| P1 | Fundação Cultural Palmares | indisponível | Site da Palmares (lista de certidões) | não encontrado | – |
-| P1 | Censo 2022: quilombolas | espelho | SIDRA 9578 (citada pelo IBGE) | BD `populacao_grupo_idade_sexo_quilombola` | Soma de células por idade e sexo: células sob sigilo vêm vazias, então o total é um **mínimo** (BA: 392.439 no espelho). Rotulado na interface. |
+| P1 | INCRA territórios quilombolas | indisponível | Acervo fundiário do INCRA (`certificacao.incra.gov.br`, camada de áreas quilombolas); registrado em `sources.yaml` | geobr: nome do arquivo não encontrado no release | Sem status oficial de titulação na plataforma até a fonte entrar. A ficha diz isso explicitamente. |
+| P1 | Fundação Cultural Palmares | indisponível | Página de certificação quilombola da FCP (planilha sem endereço estável); registrado em `sources.yaml` | não encontrado | Sem lista de comunidades certificadas até a fonte entrar. |
+| P1 | Censo 2022: quilombolas | espelho | SIDRA 9578 (citada pelo IBGE) | BD `populacao_grupo_idade_sexo_quilombola` | Soma de células por idade e sexo: células sob sigilo vêm vazias, então o total é um **mínimo**. Na UF o desvio é pequeno (BA: 392.439 no espelho), mas no município pode ser grande (mediana de 51 de 84 células sob sigilo). Município com todas as células sob sigilo fica sem dado. A ficha mostra a fração de células sob sigilo. Rotulado na interface. |
 | P1 | Censo 2022: indígenas | espelho (parcial) | SIDRA (pessoas indígenas) | BD `populacao_grupo_idade_sexo_raca` (cor ou raça indígena) | "Cor ou raça indígena" é menor que "pessoas indígenas" do IBGE (que inclui quem se declara indígena em TIs). Rotulado com o nome exato. |
 | P2 | Semiárido (SUDENE) | espelho | Sudene | geobr v2.0.0 `semiarid_2022` | 287 municípios da BA. Usado como filtro e nas regras de "Agir". |
 | P2 | ANA Atlas Esgotos | espelho | ANA / SNIRH | BD `br_ana_atlas_esgotos.municipio` | Referência 2013, população urbana. Usado como contexto de tratamento. |
@@ -65,3 +65,9 @@ população estimada) está no `VALIDATION_REPORT.md`.
 
 SNIS (autodeclarado pelos prestadores) × Censo (medida domiciliar): quando ambos existirem e a diferença
 passar de 15 pontos percentuais, a ficha mostra os dois com explicação. Configurável em `indicadores.yaml`.
+
+## Atribuição e licenças dos espelhos
+
+- **Base dos Dados** (basedosdados.org): dados tratados sob CC BY 4.0; os valores são do IBGE, do Ministério das Cidades e da ANA (dados públicos). Três arquivos têm o sufixo `_bdpro` e estão no bucket público; ver Q3 em `QUESTIONS.md`. Citação: *Base dos Dados. Repositório de dados abertos. basedosdados.org.*
+- **geobr** (Ipea): código MIT; dados do IBGE, da Sudene e da FUNAI. Citação: *Pereira, R.H.M.; Gonçalves, C.N. et al. geobr: Loads Shapefiles of Official Spatial Data Sets of Brazil. Ipea.*
+- Os espelhos são arquivos mutáveis sem versão. O sha256 de cada download fica no `.meta.json`, e o histórico do git mostra quando um valor mudou.

@@ -197,8 +197,24 @@ def share_from_catalog(source_id: str, uf: UF, pct_name: str, absolute_name: str
     total = df[df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
     numer = df[df["is_numer"] & ~df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
     out = pd.DataFrame({"total": total, "numer": numer}).reset_index()
+    # Consistência: numerador ≤ total; soma das categorias-folha ≈ total (detecta subtotais misturados).
+    if (out["numer"] > out["total"] * 1.0001).any():
+        raise SourceUnavailable(f"{source_id}: numerador maior que o total (categorias hierárquicas?) em {url}")
+    leaves = df[~df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
+    ratio = (leaves / total).dropna()
+    if len(ratio) and (ratio > 1.02).mean() > 0.5:
+        raise SourceUnavailable(f"{source_id}: soma das categorias excede o total (subtotais na tabela {choice.table})")
+    suppressed = df[~df["is_total"] & df["value"].isna()].groupby("cod_ibge7").size()
     out[pct_name] = out["numer"] / out["total"] * 100
     cols = ["cod_ibge7", pct_name]
+    for extra_name, keys in (cfg.get("extra_numerators") or {}).items():
+        nk = [norm(k) for k in keys]
+        sel = df[~df["is_total"] & df["category"].map(lambda c, nk=nk: any(k in norm(c) for k in nk))]
+        en = sel.groupby("cod_ibge7")["value"].sum(min_count=1)
+        out[extra_name] = out["cod_ibge7"].map(en) / out["total"] * 100
+        cols.append(extra_name)
+    out["categorias_sob_sigilo"] = out["cod_ibge7"].map(suppressed).fillna(0).astype(int)
+    cols.append("categorias_sob_sigilo")
     if absolute_name:
         out[absolute_name] = out["numer"]
         cols.append(absolute_name)

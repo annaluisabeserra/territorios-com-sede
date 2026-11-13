@@ -1,0 +1,79 @@
+{
+  "municipios": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_bd_diretorios_brasil/municipio/municipio.csv.gz"
+  },
+  "malhas": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/municipalities_2022_simplified.parquet"
+  },
+  "populacao": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_idade_sexo/populacao_idade_sexo_bdpro.csv.gz"
+  },
+  "censo_agua": {
+    "status": "unavailable",
+    "reason": "FetchError: todas as URLs falharam:"
+  },
+  "censo_esgoto": {
+    "status": "unavailable",
+    "reason": "FetchError: todas as URLs falharam:"
+  },
+  "censo_lixo": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/caracteristica_domicilio_grupo_idade_raca_destino_lixo/caracteristica_domicilio_grupo_idade_raca_destino_lixo_bdpro.csv.gz"
+  },
+  "censo_quilombola": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_quilombola/populacao_grupo_idade_sexo_quilombola.csv.gz"
+  },
+  "censo_raca": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_raca/populacao_grupo_idade_sexo_raca_bdpro.csv.gz"
+  },
+  "semiarido": {
+    "status": "ok",
+    "rows": 287,
+    "url_kind": "mirror",
+    "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/semiarid_2022_simplified.parquet"
+  },
+  "snis": {
+    "status": "ok",
+    "rows": 9613,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_mdr_snis/municipio_agua_esgoto/municipio_agua_esgoto.csv.gz"
+  },
+  "ana_atlas": {
+    "status": "ok",
+    "rows": 417,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ana_atlas_esgotos/municipio/municipio.csv.gz"
+  },
+  "ipca": {
+    "status": "ok",
+    "rows": 536,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_ipca/mes_brasil/mes_brasil.csv.gz"
+  },
+  "terras_indigenas": {
+    "status": "ok",
+    "rows": 28,
+    "url_kind": "mirror",
+    "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet"
+  },
+  "sih_drsai": {
+    "status": "skipped"
+  }
+}

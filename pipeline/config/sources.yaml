@@ -88,6 +88,8 @@ censo_esgoto:
     variable_keywords: ["moradores"]
     classification_keywords: ["esgotamento sanitário"]
     numerator: ["rede geral", "fossa séptica"]
+    extra_numerators:
+      censo_esgoto_rede_pct: ["rede geral"]
   urls: []
 
 snis:
@@ -113,8 +115,7 @@ datasus_sih:
   # Arquivos por UF do estabelecimento e mês de processamento. Para contar por residência, o pipeline
   # lê os arquivos de todas as UFs listadas em residence_scope e filtra MUNIC_RES.
   url_template: "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/RD{uf}{yy}{mm}.dbc"
-  residence_scope: all_ufs
-  years: 5
+  residence_scope: all_ufs   # anos: calculadora.yaml → years_average
 
 ipca:
   name: IBGE — IPCA (número-índice mensal)
@@ -134,3 +135,15 @@ funai_terras_indigenas:
     - kind: mirror
       url: "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet"
       note: geobr v2.0.0 (Ipea) a partir da FUNAI, 2024
+
+incra_quilombolas:
+  name: INCRA — Territórios quilombolas (polígonos e fase do processo)
+  license: Dados públicos INCRA
+  official_reference: "https://certificacao.incra.gov.br/csv_shp/export_shp.py (Acervo Fundiário, camada de áreas quilombolas)"
+  urls: []   # nenhuma URL estável verificada; ver docs/DATA_SOURCES.md
+
+palmares_certidoes:
+  name: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas
+  license: Dados públicos
+  official_reference: "https://www.gov.br/palmares/pt-br/departamentos/protecao-preservacao-e-articulacao/certificacao-quilombola"
+  urls: []   # planilha publicada em página institucional sem endereço estável

@@ -20,3 +20,8 @@ data/raw/
 worker/.wrangler/
 data/public/
 public/data/
+*.dbc
+*.dbf
+*.part
+*.pem
+.npmrc

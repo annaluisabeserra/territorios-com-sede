@@ -14,8 +14,8 @@
       "notes": "Base dos Dados (IBGE). Série termina em 07/2024"
     }
   ],
-  "status": "ok",
-  "status_reason": "",
+  "status": "stale",
+  "status_reason": "{\"stale\": true, \"stale_months\": 28}",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T19:02:26+00:00"
+  "generated_at": "2026-11-13T19:22:36+00:00"
 }

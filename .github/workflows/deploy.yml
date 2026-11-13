@@ -1,0 +1,75 @@
+name: Deploy
+# Gera data/public a partir de data/processed (ADR-007), constrói o site e publica.
+# Destino padrão: Cloudflare Pages (precisa dos secrets CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID).
+# Sem esses secrets, publica no GitHub Pages (plano de saída, ver HANDOFF.md).
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Atualização mensal de dados"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      cloudflare: ${{ steps.target.outputs.cloudflare }}
+    env:
+      PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN }}
+      PUBLIC_LEARNING_ENDPOINT: ${{ vars.PUBLIC_LEARNING_ENDPOINT }}
+      PUBLIC_ASSISTANT_ENABLED: ${{ vars.PUBLIC_ASSISTANT_ENABLED || 'false' }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://territorios.institutosdw.org' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: uv sync --locked
+      - run: uv run python -m pipeline.run --only-build
+      - run: npm --prefix site ci
+      - run: npm --prefix site run build
+      - id: target
+        run: echo "cloudflare=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: site/dist
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+  cloudflare:
+    needs: build
+    if: needs.build.outputs.cloudflare == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=territorios-com-sede --branch=main
+  github-pages:
+    needs: build
+    if: needs.build.outputs.cloudflare != 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4

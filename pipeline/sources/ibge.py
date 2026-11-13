@@ -27,6 +27,16 @@ def slugify(text: str) -> str:
     return norm
 
 
+def _only_census_2022(df: pd.DataFrame) -> pd.DataFrame:
+    """Alguns espelhos trazem 2010 e 2022 na mesma tabela: fica só 2022 (falha se não houver)."""
+    if "ano" not in df.columns:
+        return df
+    out = df[df["ano"] == 2022]
+    if out.empty:
+        raise SourceUnavailable("espelho sem linhas do Censo 2022")
+    return out
+
+
 def _uf_filter(df: pd.DataFrame, uf: UF, col: str = "cod_ibge7") -> pd.DataFrame:
     df[col] = df[col].astype(str).str.replace(r"\.0$", "", regex=True)
     return df[df[col].str.startswith(uf.code) & (df[col].str.len() == 7)].copy()
@@ -132,23 +142,29 @@ def populacao(uf: UF) -> SourceResult:
 def quilombola(uf: UF) -> SourceResult:
     def mirror(src: SourceURL) -> SourceResult:
         f = fetch_one("censo_quilombola", src, "bd_censo2022_quilombola.csv.gz", "national")
-        df = pd.read_csv(f.path, dtype={"id_municipio": str})
+        df = _only_census_2022(pd.read_csv(f.path, dtype={"id_municipio": str}))
         df = df.rename(columns={"id_municipio": "cod_ibge7"})
         df = _uf_filter(df, uf)
-        g = df.groupby("cod_ibge7").agg(
-            pop_quilombola=("populacao_quilombola", "sum"),
-            pop_quilombola_em_territorio=(
-                "populacao_quilombola",
-                lambda s: s[df.loc[s.index, "localizacao_domicilio"].str.startswith("Em")].sum(),
-            ),
-            cells_suppressed=("populacao_quilombola", lambda s: int(s.isna().sum())),
+        em = df["localizacao_domicilio"].str.startswith("Em")
+        g = pd.DataFrame(
+            {
+                # min_count=1: se todas as células estão sob sigilo, o total é desconhecido (None), não zero
+                "pop_quilombola": df.groupby("cod_ibge7")["populacao_quilombola"].sum(min_count=1),
+                "pop_quilombola_em_territorio": df[em].groupby("cod_ibge7")["populacao_quilombola"].sum(min_count=1),
+                "cells_total": df.groupby("cod_ibge7")["populacao_quilombola"].size(),
+                "cells_suppressed": df.groupby("cod_ibge7")["populacao_quilombola"].apply(
+                    lambda x: int(x.isna().sum())
+                ),
+            }
         )
+        g["pct_cells_suppressed"] = g["cells_suppressed"] / g["cells_total"] * 100
         g = g.reset_index()
         meta = make_meta(
             "censo_quilombola",
             f,
             CENSUS_PERIOD,
-            src.note + ". Valores são soma de células por idade e sexo: mínimo garantido, não total exato.",
+            src.note + ". Valores são soma de células por idade e sexo: mínimo garantido, não total exato; "
+            "município com todas as células sob sigilo fica sem dado.",
         )
         return SourceResult(g, meta, {"lower_bound": True})
 
@@ -158,13 +174,14 @@ def quilombola(uf: UF) -> SourceResult:
 def raca(uf: UF) -> SourceResult:
     def mirror(src: SourceURL) -> SourceResult:
         f = fetch_one("censo_raca", src, "bd_censo2022_raca.csv.gz", "national")
-        df = pd.read_csv(f.path, dtype={"id_municipio": str})
+        df = _only_census_2022(pd.read_csv(f.path, dtype={"id_municipio": str}))
         df = df.rename(columns={"id_municipio": "cod_ibge7"})
         df = _uf_filter(df, uf)
         piv = df.pivot_table(index="cod_ibge7", columns="cor_raca", values="populacao", aggfunc="sum")
         out = pd.DataFrame({"cod_ibge7": piv.index})
         out["pop_cor_indigena"] = piv.get("Indígena", pd.Series(index=piv.index, dtype=float)).values
         out["pop_cor_preta_parda"] = (piv.get("Preta", 0) + piv.get("Parda", 0)).values
+        out["pop_soma_cor_raca"] = piv.sum(axis=1).values
         return SourceResult(out, make_meta("censo_raca", f, CENSUS_PERIOD, src.note))
 
     return try_chain("censo_raca", uf, {"mirror": mirror})

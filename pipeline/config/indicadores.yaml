@@ -112,6 +112,7 @@ indicators:
       - Autodeclarado pelos prestadores de serviço.
       - Municípios que não responderam ao SNIS no ano ficam sem dado.
       - A partir do ano de referência 2023 o SNIS foi substituído pelo SINISA (ver METODOLOGIA).
+      - Mede atendimento pela rede, não potabilidade nem regularidade (a meta de 99% é de água potável).
     map: true
     palette: sequential
 
@@ -123,10 +124,12 @@ indicators:
     group: servico
     source: snis
     formula: >-
-      População total atendida com esgotamento sanitário ÷ população total residente dos municípios
+      População total atendida com esgotamento sanitário (rede coletora) ÷ população total residente dos municípios
       atendidos com abastecimento de água × 100 (IN056).
     limitations:
-      - Autodeclarado. Municípios sem prestador de esgoto declarado ficam sem dado (não zero).
+      - Mede coleta por rede, não tratamento. Para a meta de 2033 usamos "esgoto coletado e tratado".
+      - Autodeclarado. Municípios sem prestador de esgoto declarado ficam sem dado (não zero); a ficha avisa quando nenhum prestador declarou.
+      - Valores de mais de 2 anos antes do último ano do SNIS aparecem como "desatualizado" e não entram no índice.
     map: true
     palette: sequential
 
@@ -139,7 +142,7 @@ indicators:
     source: snis
     formula: Volume de esgoto tratado ÷ volume de água consumido (descontada a água exportada) × 100 (IN046).
     limitations:
-      - Autodeclarado. Pode passar de 100% quando há contribuição de outras fontes; valores acima de 100 são limitados a 100 e sinalizados.
+      - Autodeclarado. Entre 100% e 105% é limitado a 100; acima de 105% é tratado como erro de declaração (sem dado).
     map: true
     palette: sequential
 
@@ -355,4 +358,44 @@ indicators:
     source: sudene_semiarido
     formula: Município incluído na delimitação oficial do Semiárido (Sudene, 2021–2022).
     limitations: []
+    map: false
+
+  snis_esgoto_tratado_pct:
+    label: População com esgoto coletado e tratado (estimativa SNIS)
+    short: Esgoto coletado e tratado
+    unit: pct
+    direction: higher_is_better
+    group: servico
+    source: snis
+    formula: >-
+      Atendimento total de esgoto (IN056) × índice de tratamento do esgoto coletado (IN016) ÷ 100. Aproxima a parcela
+      da população com coleta E tratamento, que é o que a meta de 90% do Marco Legal exige.
+    limitations:
+      - Supõe que o esgoto tratado é distribuído de forma proporcional entre a população atendida.
+      - Sem IN016 declarado, o valor fica sem dado (não se supõe tratamento nem ausência dele).
+    map: true
+    palette: sequential
+
+  snis_tratamento_coletado_pct:
+    label: Tratamento do esgoto coletado (SNIS IN016)
+    short: Tratamento do coletado
+    unit: pct
+    direction: higher_is_better
+    group: servico
+    source: snis
+    formula: Volume de esgoto tratado ÷ volume de esgoto coletado × 100 (IN016).
+    limitations:
+      - Autodeclarado. Valores acima de 105% são tratados como erro de declaração (sem dado).
+    map: false
+
+  censo_esgoto_rede_pct:
+    label: Moradores com esgoto ligado à rede geral ou pluvial (Censo)
+    short: Esgoto na rede (Censo)
+    unit: pct
+    direction: higher_is_better
+    group: acesso
+    source: ibge_censo2022
+    formula: Moradores em domicílios com esgotamento por rede geral, rede pluvial ou fossa ligada à rede ÷ total × 100.
+    limitations:
+      - Conceito mais próximo do IN056 do SNIS; usado na comparação SNIS × Censo.
     map: false

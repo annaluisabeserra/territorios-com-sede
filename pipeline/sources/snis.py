@@ -52,17 +52,25 @@ def municipal_series(uf: UF) -> SourceResult:
             bad = (df["snis_perdas_pct"] < 0) | (df["snis_perdas_pct"] > 100)
             flags["snis_perdas_pct_invalid_to_null"] = int(bad.sum())
             df.loc[bad, "snis_perdas_pct"] = float("nan")
-        for col in PCT_CAP & set(df.columns):
-            over = df[col] > 100
+        for col in sorted(PCT_CAP & set(df.columns)):
+            # Até 105%: diferença de denominador (população estimada), limitada a 100.
+            # Acima de 105%: erro de declaração, vira ausente (ex.: IN046 de 633%).
+            absurd = df[col] > 105
+            over = (df[col] > 100) & ~absurd
             flags[f"{col}_capped"] = int(over.sum())
+            flags[f"{col}_absurd_to_null"] = int(absurd.sum())
             df.loc[over, col] = 100.0
+            df.loc[absurd, col] = float("nan")
+        # Coleta com tratamento (proxy da meta do Marco Legal): IN056 × IN016 / 100
+        if {"snis_esgoto_pct", "snis_tratamento_coletado_pct"} <= set(df.columns):
+            df["snis_esgoto_tratado_pct"] = df["snis_esgoto_pct"] * df["snis_tratamento_coletado_pct"] / 100
         years = f"{int(df['year'].min())}–{int(df['year'].max())}" if len(df) else "sem dados"
         meta = make_meta(
             "snis",
             f,
             years,
             src.note
-            + "; coberturas acima de 100% limitadas a 100 e perdas fora de 0–100 tratadas como ausentes (ver flags)",
+            + "; coberturas entre 100% e 105% limitadas a 100, acima de 105% e perdas fora de 0–100 tratadas como ausentes (ver flags)",
         )
         return SourceResult(df, meta, flags)
 

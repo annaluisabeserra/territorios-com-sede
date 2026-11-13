@@ -26,9 +26,10 @@ groups:
   vetores:
     label: Transmitidas por inseto vetor
     layer: vectors
-    codes: ["A90-A91", "A97", "A95", "B50-B54", "B55", "B57", "B74"]
+    codes: ["A90-A92", "A97", "A95", "B50-B54", "B55", "B57", "B74"]
     note: >-
       Dengue (A90–A91 até 2022; A97 na revisão da CID-10 adotada a partir de 2023 no SIH; ver METODOLOGIA),
+      chikungunya e zika (A92),
       febre amarela (A95), malária (B50–B54), leishmanioses (B55), doença de Chagas (B57) e filariose (B74).
       A relação com o saneamento é mais indireta (água parada, drenagem e lixo).
 layers:

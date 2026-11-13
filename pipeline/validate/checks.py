@@ -118,6 +118,21 @@ def check_percentages(uf: config.UF, rep: Report) -> None:
             rep.check(bad.empty, f"{name}.{col}: {len(bad)} valores fora de 0–100 (ex.: {bad.head(3).tolist()})")
 
 
+def check_census_consistency(uf: config.UF, rep: Report) -> None:
+    pop = _read(uf, "populacao")
+    raca = _read(uf, "censo_raca")
+    if pop is not None and raca is not None and "pop_soma_cor_raca" in raca:
+        m = raca.merge(pop, on="cod_ibge7")
+        over = m[m["pop_soma_cor_raca"] > m["populacao"] * 1.001]
+        rep.check(
+            over.empty, f"soma por cor ou raça maior que a população em {len(over)} municípios (anos misturados?)"
+        )
+    q = _read(uf, "censo_quilombola")
+    if pop is not None and q is not None:
+        m = q.merge(pop, on="cod_ibge7")
+        rep.check(not (m["pop_quilombola"] > m["populacao"]).any(), "população quilombola maior que a população")
+
+
 def check_money(uf: config.UF, rep: Report) -> None:
     sih = _read(uf, "sih_drsai")
     if sih is None:
@@ -146,14 +161,23 @@ def check_series_jumps(uf: config.UF, rep: Report) -> None:
     if snis is None:
         return
     jumps = []
+    ref = int(snis["year"].max())
     for col in ["snis_agua_pct", "snis_esgoto_pct"]:
-        s = snis.sort_values("year").pivot_table(index="year", columns="cod_ibge7", values=col)
-        rel = (s.diff() / s.shift()).abs()
-        last = rel.tail(8)
-        for code in last.columns:
-            big = last[code][last[code] > JUMP_THRESHOLD].dropna()
-            for y, v in big.items():
-                jumps.append({"cod_ibge7": code, "indicador": col, "ano": int(y), "variacao": round(float(v), 3)})
+        # Variação entre anos PRESENTES (atravessa lacunas), normalizada pelo intervalo em anos.
+        d = snis[["cod_ibge7", "year", col]].dropna().sort_values(["cod_ibge7", "year"])
+        d = d[d["year"] >= ref - 7]
+        d["prev"] = d.groupby("cod_ibge7")[col].shift()
+        d["gap"] = d["year"] - d.groupby("cod_ibge7")["year"].shift()
+        d["rel"] = ((d[col] - d["prev"]).abs() / d["prev"].where(d["prev"] > 0)) / d["gap"]
+        for r in d[d["rel"] > JUMP_THRESHOLD].itertuples():
+            jumps.append(
+                {
+                    "cod_ibge7": r.cod_ibge7,
+                    "indicador": col,
+                    "ano": int(r.year),
+                    "variacao_anual": round(float(r.rel), 3),
+                }
+            )
     if jumps:
         rep.warn(f"{len(jumps)} saltos > {JUMP_THRESHOLD:.0%} ao ano nas séries SNIS (últimos 8 anos)")
     rep.info["saltos_series"] = jumps
@@ -165,6 +189,7 @@ def run_all(uf: config.UF) -> Report:
     check_malhas(uf, mun, rep)
     check_populacao(uf, mun, rep)
     check_percentages(uf, rep)
+    check_census_consistency(uf, rep)
     check_money(uf, rep)
     check_sih_crosswalk(uf, rep)
     check_series_jumps(uf, rep)

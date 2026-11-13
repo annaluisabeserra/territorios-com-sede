@@ -48,3 +48,29 @@ Formato: contexto → decisão → alternativas → consequências.
 - **Contexto:** os arquivos públicos (fichas JSON, CSVs por município, GeoJSON) somam ~9,5 MB por UF e chegariam a ~250 MB com 27 estados. Os Parquet processados somam ~1,6 MB por UF.
 - **Decisão:** `data/processed/{uf}` é versionado (histórico por data no git); `data/public` é regenerado em segundos por `python -m pipeline.run --only-build` no workflow de deploy, antes do build do site.
 - **Consequências:** repositório pequeno; o deploy depende de Python (já usado no CI). Os downloads abertos continuam publicados no site.
+
+## ADR-008. Frescor do SNIS, meta de esgoto e regras do termômetro (revisão M2)
+
+- **Contexto:** a revisão crítica do M2 mostrou que (a) valores muito antigos do SNIS (até 2010) eram usados como atuais; (b) o termômetro de esgoto usava o IN056 (coleta), mas a meta da Lei 14.026/2020 exige coleta **e** tratamento; 26 dos 39 municípios "no ritmo" tinham tratamento 0%; (c) a projeção aceitava séries antigas, projetava para o passado e marcava "meta atingida" com um único ponto.
+- **Decisão:** (1) valor do SNIS com mais de 2 anos antes do último ano da UF é "desatualizado": aparece com o ano, mas não entra no índice, no "Agir", nas medianas nem no resumo; (2) a meta de esgoto é medida por "esgoto coletado e tratado" = IN056 × IN016 ÷ 100; (3) termômetro com janela de 8 anos terminando no último ano do SNIS, último ponto obrigatório nos 2 anos mais recentes, "atingida" só com 2 anos consecutivos acima da meta, projeção a partir do valor observado e nunca para antes do ano seguinte ao de referência, marcação de "projeção incerta" quando o IC 95% da tendência inclui estagnação; (4) valores entre 100% e 105% são limitados a 100, e acima de 105% viram ausentes.
+- **Alternativas:** IN046 (tratado ÷ água consumida) como proxy da meta; min(IN056, IN046).
+- **Consequências:** na BA, 10 municípios no ritmo da meta de esgoto (antes 39), 237 sem dados suficientes. O número é menos animador e mais honesto.
+
+## ADR-009. Extratos do SIH compactos e guardados num Release
+
+- **Contexto:** o `actions/cache` expira em 7 dias, então numa execução mensal o cache estaria sempre frio. Além disso, extratos linha a linha (idade, CID, óbito) seriam microdados num artefato público.
+- **Decisão:** cada arquivo RD vira um extrato **agregado** por município × mês × grupo DRSAI × faixa etária (0–4, 5, 6–13, 14–17, 18+, desconhecida), sem dados individuais. Os extratos são guardados num Release `sih-extracts` (gratuito e permanente) e restaurados a cada execução. Os últimos 12 meses são sempre reprocessados, porque o DATASUS republica competências.
+- **Consequências:** a primeira carga é pesada (pode exigir execuções por UF via `workflow_dispatch`); as seguintes baixam só os meses recentes.
+
+## ADR-010. Parâmetros padrão da calculadora
+
+- **Taxa de desconto:** 8,5% real ao ano, taxa social de desconto recomendada para projetos de infraestrutura pela nota técnica do governo federal de 2020 (Catálogo de Parâmetros do Guia Geral de ACB). Sensibilidade: 4% a 12%.
+- **Custo hospitalar:** valor total das AIHs (tabela SUS), corrigido mês a mês pelo IPCA para reais do ano-base; subestima o custo econômico real (escolha conservadora).
+- **Produtividade:** dias de internação × renda diária de referência (rendimento domiciliar per capita do Censo ÷ 30). Usa a renda per capita, menor que a renda do trabalho, porque o paciente médio inclui crianças e idosos. Para menores de 14 anos o dia é do adulto acompanhante, com a mesma renda de referência. Enquanto a renda municipal do Censo 2022 não estiver integrada, o componente fica "sem dado".
+- **SROI:** deadweight 10%, atribuição 80%, drop-off 5% ao ano, com faixas de sensibilidade (0–30%, 50–100%, 0–15%). Valores conservadores típicos de análises SROI de saneamento; revisão por especialista registrada em Q5.
+- **Desligados por padrão:** atendimento ambulatorial (sem multiplicador com referência) e óbitos (SIM sem causa disponível; abordagem sensível).
+
+## ADR-011. Supressão de contagens pequenas
+
+- **Decisão:** médias anuais de óbitos hospitalares por DRSAI abaixo de 5 por município são publicadas como "menos de 5" (`null` com explicação). Contagens de pessoas quilombolas com todas as células sob sigilo ficam `null`.
+- **Consequências:** nenhuma saída permite inferir casos individuais em municípios pequenos.

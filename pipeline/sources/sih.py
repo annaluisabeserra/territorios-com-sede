@@ -6,17 +6,20 @@ em Pernambuco aparece no arquivo de PE. Cada arquivo é reduzido a um extrato DR
 em cache (`data/raw/sih_extracts`, preservado entre execuções pelo actions/cache); o .dbc é apagado em seguida.
 
 Regras de contagem (alinhadas ao TabNet, "Internações" por ano de processamento):
-- internação = AIH com IDENT ≠ 5 (AIH de longa permanência/continuação não conta como nova internação);
+- internação = AIH com IDENT == 1 (AIH normal; a 5, de longa permanência/continuação, não é nova internação);
 - valor = VAL_TOT de todas as AIHs (inclusive continuação), nominal do mês de processamento;
 - dias = DIAS_PERM; óbito hospitalar = MORTE == 1;
-- idade em anos a partir de COD_IDADE/IDADE (4 = anos, 5 = 100 + anos, demais = menor de 1 ano).
+- idade em anos a partir de COD_IDADE/IDADE (4 = anos, 5 = 100 + anos, 1–3 = menor de 1 ano; vazio = desconhecida).
+
+Robustez (revisão M2): download com retry; um arquivo da própria UF ausente num ano completo invalida a etapa
+(a versão anterior é mantida); os últimos 12 meses são reprocessados a cada execução, porque o DATASUS republica
+competências; cada extrato guarda o sha256 do .dbc de origem.
 """
 
 from __future__ import annotations
 
 import logging
 import shutil
-import urllib.request
 from pathlib import Path
 
 import pandas as pd
@@ -77,7 +80,8 @@ def file_url(uf: str, year: int, month: int) -> str:
 def age_years(cod_idade: pd.Series, idade: pd.Series) -> pd.Series:
     cod = cod_idade.astype(str).str.strip()
     val = pd.to_numeric(idade, errors="coerce")
-    out = pd.Series(0.0, index=idade.index)
+    out = pd.Series(float("nan"), index=idade.index)
+    out[cod.isin(["1", "2", "3"])] = 0.0
     out[cod == "4"] = val[cod == "4"]
     out[cod == "5"] = 100 + val[cod == "5"]
     return out
@@ -95,7 +99,7 @@ def reduce_rd(df: pd.DataFrame) -> pd.DataFrame:
             "munic_res6": df["MUNIC_RES"].astype(str).str.strip().str[:6],
             "year": pd.to_numeric(df["ANO_CMPT"], errors="coerce").astype("Int64"),
             "month": pd.to_numeric(df["MES_CMPT"], errors="coerce").astype("Int64"),
-            "is_admission": df["IDENT"].astype(str).str.strip() != "5",
+            "is_admission": df["IDENT"].astype(str).str.strip() == "1",
             "cid": df["DIAG_PRINC"].astype(str).str.strip().str.upper(),
             "group": df["group"],
             "days": pd.to_numeric(df["DIAS_PERM"], errors="coerce").fillna(0).astype(float),
@@ -107,29 +111,65 @@ def reduce_rd(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index(drop=True)
 
 
-def _download(url: str, dest: Path, timeout: int = 300) -> None:
+class NotPublished(Exception):
+    """O arquivo não existe no FTP (mês ainda não publicado)."""
+
+
+def _download(url: str, dest: Path, timeout: int = 300, retries: int = 4) -> None:
+    import time
+    import urllib.error
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".part")
-    with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp, "wb") as fh:  # noqa: S310 - FTP oficial
-        shutil.copyfileobj(r, fh)
-    tmp.replace(dest)
+    last: Exception | None = None
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp, "wb") as fh:  # noqa: S310 - FTP oficial
+                shutil.copyfileobj(r, fh)
+            tmp.replace(dest)
+            return
+        except urllib.error.URLError as exc:
+            # "550" no FTP = arquivo inexistente: não adianta repetir
+            if "550" in str(exc) or "No such file" in str(exc):
+                raise NotPublished(url) from exc
+            last = exc
+        except OSError as exc:
+            last = exc
+        time.sleep(5 * 2**attempt)
+    raise RuntimeError(f"falha ao baixar {url} após {retries} tentativas: {last}")
 
 
-def extract(uf: str, year: int, month: int, *, refresh: bool = False) -> Path | None:
-    """Garante o extrato DRSAI de um arquivo RD. Devolve None se o arquivo não existe no FTP."""
+def _recent(year: int, month: int, months: int = 12) -> bool:
+    import datetime as dt
+
+    today = dt.date.today()
+    return (today.year - year) * 12 + (today.month - month) <= months
+
+
+def extract(uf: str, year: int, month: int, *, refresh: bool | None = None) -> Path | None:
+    """Garante o extrato DRSAI de um arquivo RD. Devolve None se o arquivo não foi publicado no FTP.
+
+    Falhas de rede (diferentes de "não publicado") sobem como exceção: nunca viram subcontagem silenciosa.
+    """
     out = EXTRACT_DIR / f"RD{uf}{year % 100:02d}{month:02d}.parquet"
+    if refresh is None:
+        refresh = _recent(year, month)
     if out.exists() and not refresh:
         return out
     url = file_url(uf, year, month)
     dbc = RAW_DIR / "sih_dbc" / Path(url).name
     try:
         _download(url, dbc)
-    except Exception as exc:  # noqa: BLE001
-        log.warning("SIH indisponível %s: %s", url, exc)
+    except NotPublished:
+        log.info("SIH ainda não publicado: %s", url)
         return None
     dbf = dbc.with_suffix(".dbf")
     try:
-        red = reduce_rd(read_rd(dbc, dbf))
+        from pipeline.sources.http import sha256_file
+
+        digest = sha256_file(dbc)
+        red = compact(reduce_rd(read_rd(dbc, dbf)))
+        red["source_sha256"] = digest
         out.parent.mkdir(parents=True, exist_ok=True)
         red.to_parquet(out, index=False)
     finally:
@@ -153,15 +193,15 @@ def read_rd(dbc: Path, dbf: Path) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
-def latest_complete_year(probe_uf: str = "BA", start: int | None = None) -> int:
-    """Último ano com o arquivo de dezembro publicado."""
+def latest_complete_year(scope: list[str], start: int | None = None) -> int:
+    """Último ano com o arquivo de dezembro publicado para TODAS as UFs do escopo."""
     import datetime as dt
 
     y = start or dt.date.today().year
     for year in range(y, y - 4, -1):
-        if extract(probe_uf, year, 12) is not None:
+        if all(extract(uf, year, 12) is not None for uf in scope):
             return year
-    raise RuntimeError("nenhum arquivo de dezembro do SIH encontrado nos últimos 4 anos")
+    raise RuntimeError("nenhum ano com dezembro do SIH publicado para todo o escopo nos últimos 4 anos")
 
 
 def load_extracts(years: list[int], scope: list[str]) -> tuple[pd.DataFrame, list[str]]:
@@ -179,23 +219,48 @@ def load_extracts(years: list[int], scope: list[str]) -> tuple[pd.DataFrame, lis
     return pd.concat(frames, ignore_index=True), missing
 
 
+AGE_BANDS = [(0, 5, "0-4"), (5, 6, "5"), (6, 14, "6-13"), (14, 18, "14-17"), (18, 200, "18+")]
+
+
+def age_band(age: pd.Series) -> pd.Series:
+    out = pd.Series("na", index=age.index, dtype=object)
+    for lo, hi, label in AGE_BANDS:
+        out[(age >= lo) & (age < hi)] = label
+    return out
+
+
+def compact(red: pd.DataFrame) -> pd.DataFrame:
+    """Agrega o extrato por município × mês × grupo × faixa etária × tipo (deixa de ser microdado; LGPD)."""
+    red = red.copy()
+    red["age_band"] = age_band(red["age"])
+    red["adm"] = red["is_admission"].astype(int)
+    red["adm_death"] = (red["is_admission"] & red["death"]).astype(int)
+    return red.groupby(["munic_res6", "year", "month", "group", "age_band"], as_index=False, dropna=False).agg(
+        adm=("adm", "sum"),
+        adm_death=("adm_death", "sum"),
+        value=("value", "sum"),
+        days=("days", "sum"),
+        aihs=("adm", "size"),
+    )
+
+
 def aggregate(ext: pd.DataFrame, uf_code: str, crosswalk6to7: dict[str, str]) -> tuple[pd.DataFrame, dict]:
-    """Agrega município de residência × ano × grupo. Retorna também o relatório da de-para."""
+    """Agrega município de residência × ano × mês × grupo a partir dos extratos compactos."""
     ext = ext[ext["munic_res6"].str.startswith(uf_code)].copy()
     ext["cod_ibge7"] = ext["munic_res6"].map(crosswalk6to7)
     unmapped = ext[ext["cod_ibge7"].isna()]
     report = {
-        "rows": int(len(ext)),
-        "unmapped_rows": int(len(unmapped)),
+        "rows": int(ext["aihs"].sum()) if len(ext) else 0,
+        "unmapped_rows": int(unmapped["aihs"].sum()) if len(unmapped) else 0,
         "unmapped_codes": sorted(unmapped["munic_res6"].unique().tolist()),
+        "age_unknown_rows": int(ext.loc[ext["age_band"] == "na", "aihs"].sum()) if len(ext) else 0,
     }
     ext = ext[ext["cod_ibge7"].notna()]
-    ext["adm"] = ext["is_admission"].astype(int)
-    ext["adm_death"] = (ext["is_admission"] & ext["death"]).astype(int)
-    ext["days_6_17"] = ext["days"].where((ext["age"] >= 6) & (ext["age"] <= 17), 0.0)
-    ext["days_under14"] = ext["days"].where(ext["age"] < 14, 0.0)
-    ext["adm_under5"] = (ext["is_admission"] & (ext["age"] < 5)).astype(int)
-    g = ext.groupby(["cod_ibge7", "year", "group"], as_index=False).agg(
+    b = ext["age_band"]
+    ext["days_6_17"] = ext["days"].where(b.isin(["6-13", "14-17"]), 0.0)
+    ext["days_under14"] = ext["days"].where(b.isin(["0-4", "5", "6-13"]), 0.0)
+    ext["adm_under5"] = ext["adm"].where(b == "0-4", 0)
+    g = ext.groupby(["cod_ibge7", "year", "month", "group"], as_index=False).agg(
         internacoes=("adm", "sum"),
         valor_nominal=("value", "sum"),
         dias=("days", "sum"),
@@ -205,4 +270,5 @@ def aggregate(ext: pd.DataFrame, uf_code: str, crosswalk6to7: dict[str, str]) ->
         internacoes_menor5=("adm_under5", "sum"),
     )
     g["year"] = g["year"].astype(int)
+    g["month"] = g["month"].astype(int)
     return g, report

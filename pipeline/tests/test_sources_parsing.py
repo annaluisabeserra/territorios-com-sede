@@ -3,7 +3,7 @@
 import pandas as pd
 
 from pipeline.sources import sidra
-from pipeline.sources.sih import age_years, aggregate, reduce_rd
+from pipeline.sources.sih import age_years, aggregate, compact, reduce_rd
 from pipeline.transform.cid import code_to_group, expand
 
 
@@ -104,8 +104,10 @@ def test_age_years():
 def test_sih_reduce_filters_drsai_and_keeps_continuation_value():
     red = reduce_rd(_rd())
     assert len(red) == 5  # J18 (pneumonia) fora
-    agg, rep = aggregate(red, "29", {"292740": "2927408"})
-    sal = agg[agg.cod_ibge7 == "2927408"].set_index("group")
+    comp = compact(red)
+    assert "age" not in comp.columns  # extrato compacto não guarda idade individual
+    agg, rep = aggregate(comp, "29", {"292740": "2927408"})
+    sal = agg[agg.cod_ibge7 == "2927408"].groupby("group").sum(numeric_only=True)
     # IDENT=5 não conta como internação, mas o valor entra
     assert sal.loc["feco_oral", "internacoes"] == 1
     assert sal.loc["feco_oral", "valor_nominal"] == 1200.0

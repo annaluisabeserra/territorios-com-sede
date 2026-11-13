@@ -1,0 +1,64 @@
+name: Atualização mensal de dados
+# Roda o pipeline para todas as UFs ativas (pipeline/config/ufs.yaml), valida e versiona data/processed.
+# Sempre gera um commit (data/processed/_last_run.json), o que mantém os workflows agendados ativos:
+# o GitHub desativa agendamentos de repositórios públicos sem atividade por 60 dias.
+on:
+  schedule:
+    - cron: "17 6 5 * *"   # dia 5 de cada mês, 06:17 UTC (03:17 em Brasília)
+  workflow_dispatch:
+    inputs:
+      uf:
+        description: "Sigla da UF (vazio = todas as ativas)"
+        required: false
+      skip_sih:
+        description: "Pular o SIH (mais rápido)"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      # Extratos DRSAI do SIH (pequenos, sem dados identificáveis agregáveis por pessoa) ficam num Release
+      # permanente; o actions/cache expira em 7 dias e obrigaria a baixar ~1.600 arquivos do DATASUS todo mês.
+      - name: Restaurar extratos do SIH
+        run: |
+          mkdir -p data/raw/sih_extracts
+          if gh release view sih-extracts >/dev/null 2>&1; then
+            gh release download sih-extracts -p 'sih_extracts.tar.gz' -D /tmp && tar xzf /tmp/sih_extracts.tar.gz -C data/raw
+          fi
+      - name: Rodar o pipeline
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.uf }}" ]; then ARGS="$ARGS --uf ${{ inputs.uf }}"; fi
+          if [ "${{ inputs.skip_sih }}" = "true" ]; then ARGS="$ARGS --skip-sih"; fi
+          uv run python -m pipeline.run $ARGS
+      - name: Guardar extratos do SIH
+        if: always()
+        run: |
+          if [ -d data/raw/sih_extracts ] && [ "$(ls -A data/raw/sih_extracts)" ]; then
+            tar czf /tmp/sih_extracts.tar.gz -C data/raw sih_extracts
+            gh release view sih-extracts >/dev/null 2>&1 || gh release create sih-extracts --title "Cache de extratos do SIH" --notes "Gerado automaticamente pelo workflow de dados. Não é uma versão do site." --prerelease
+            gh release upload sih-extracts /tmp/sih_extracts.tar.gz --clobber
+          fi
+      - name: Registrar execução e versionar
+        if: always()
+        run: |
+          uv run python -c "import json,datetime,pathlib; p=pathlib.Path('data/processed/_last_run.json'); p.write_text(json.dumps({'run_at': datetime.datetime.now(datetime.UTC).isoformat(timespec='seconds'), 'run_id': '${{ github.run_id }}', 'status': '${{ job.status }}'}, indent=2))"
+          git config user.name "territorios-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed
+          git commit -m "data: atualização mensal ($(date -u +%Y-%m))" || echo "nada a versionar"
+          git push

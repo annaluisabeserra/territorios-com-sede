@@ -21,9 +21,18 @@ def cases() -> list[dict]:
         (Baseline(100_000.0, 1_000.0, 200.0, 50.0), Params(reduction_pct=50, horizon_years=3, discount_rate=0.10)),
         (Baseline(None, 10.0, None, None), Params()),
         (Baseline(0.0, 0.0, 0.0, 0.0), Params(reduction_pct=100, horizon_years=30, discount_rate=0.0)),
-        (Baseline(1234567.89, 4321.5, 77.25, 31.7), Params(reduction_pct=92, horizon_years=20, discount_rate=0.085,
-                                                            investment=2_500_000, deadweight=0.1, attribution=0.8,
-                                                            drop_off=0.05)),
+        (
+            Baseline(1234567.89, 4321.5, 77.25, 31.7),
+            Params(
+                reduction_pct=92,
+                horizon_years=20,
+                discount_rate=0.085,
+                investment=2_500_000,
+                deadweight=0.1,
+                attribution=0.8,
+                drop_off=0.05,
+            ),
+        ),
     ]
     for b, p in fixed:
         out.append((b, p))
@@ -48,11 +57,22 @@ def cases() -> list[dict]:
         )
         out.append((b, p))
     rows = []
-    ranges = {"discount_rate": (0.04, 0.12), "deadweight": (0.0, 0.3), "attribution": (0.5, 1.0), "drop_off": (0.0, 0.15)}
+    ranges = {
+        "discount_rate": (0.04, 0.12),
+        "deadweight": (0.0, 0.3),
+        "attribution": (0.5, 1.0),
+        "drop_off": (0.0, 0.15),
+    }
     for b, p in out:
         r = calculate(b, p)
-        rows.append({"baseline": asdict(b), "params": asdict(p), "result": r.to_dict(),
-                     "sensitivity": list(sensitivity(b, p, ranges))})
+        rows.append(
+            {
+                "baseline": asdict(b),
+                "params": asdict(p),
+                "result": r.to_dict(),
+                "sensitivity": list(sensitivity(b, p, ranges)),
+            }
+        )
     return rows
 
 

@@ -53,11 +53,14 @@ def stage(uf: config.UF, name: str, fn: Callable[[], SourceResult], status: dict
         meta = OutputMeta(output=path.name, uf=uf.sigla, sources=[res.meta])
         if res.flags:
             meta.status_reason = json.dumps(res.flags, ensure_ascii=False)
+            if res.flags.get("stale"):
+                meta.status = "stale"
         meta.write(path)
         status[name] = {"status": "ok", "rows": int(len(res.data)), "url_kind": res.meta.url_kind, "url": res.meta.url}
         log.info("[%s] %s: ok (%d linhas, %s)", uf.sigla, name, len(res.data), res.meta.url_kind)
     except Exception as exc:  # noqa: BLE001
-        reason = f"{type(exc).__name__}: {exc}"
+        # Motivo curto para os metadados públicos (sem stack trace nem detalhes do ambiente)
+        reason = f"{type(exc).__name__}: {str(exc).splitlines()[0][:300]}"
         prev = read_meta(path)
         if path.exists() and prev:
             prev["status"] = "stale"
@@ -82,10 +85,14 @@ def run_sih(uf: config.UF, status: dict) -> None:
         from pipeline.sources.http import Fetched
 
         cfg = config.load("sources")["datasus_sih"]
-        last = sih.latest_complete_year(uf.sigla)
-        years = list(range(last - int(cfg["years"]) + 1, last + 1))
+        n_years = int(config.load("calculadora")["years_average"])
         scope = sih.ALL_UFS if cfg.get("residence_scope") == "all_ufs" else [uf.sigla]
+        last = sih.latest_complete_year(scope)
+        years = list(range(last - n_years + 1, last + 1))
         ext, missing = sih.load_extracts(years, scope)
+        own = [m for m in missing if m.startswith(f"RD{uf.sigla}")]
+        if own:
+            raise RuntimeError(f"arquivos da própria UF ausentes em anos completos: {own}")
         mun = pd.read_parquet(processed_dir(uf) / "municipios.parquet")
         cw = build_crosswalk(mun["cod_ibge7"].tolist())
         agg, report = sih.aggregate(ext, uf.code, cw)

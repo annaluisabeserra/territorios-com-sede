@@ -13,12 +13,14 @@ def _normalize(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     cols = {c.lower(): c for c in gdf.columns}
     rename = {}
     for want, options in {
-        "nome": ["terrai_nome", "name_ti", "nome"],
+        "codigo_funai": ["terrai_codigo", "code_indigenous_land", "codigo"],
+        "nome": ["terrai_nome", "name_indigenous_land", "name_ti", "nome"],
         "etnia": ["etnia_nome", "etnia"],
         "fase": ["fase_ti", "phase", "fase"],
         "modalidade": ["modalidade_ti", "modalidade", "modality"],
         "area_ha": ["superficie_perimetro_ha", "area_ha", "superficie"],
         "ufs": ["uf_sigla", "abbrev_state", "uf"],
+        "data_ref": ["data_atualizacao", "date"],
         "municipios": ["municipio_nome", "name_muni", "municipio"],
     }.items():
         for opt in options:
@@ -26,8 +28,17 @@ def _normalize(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
                 rename[cols[opt]] = want
                 break
     g = gdf.rename(columns=rename)
-    keep = [c for c in ["nome", "etnia", "fase", "modalidade", "area_ha", "ufs", "municipios"] if c in g.columns]
-    g = g[keep + ["geometry"]]
+    # Lista branca: nenhum campo de coordenação regional, faixa de fronteira, aldeia ou ponto sai daqui.
+    keep = [
+        c
+        for c in ["codigo_funai", "nome", "etnia", "fase", "modalidade", "area_ha", "ufs", "data_ref"]
+        if c in g.columns
+    ]
+    g = g[keep + ["geometry"]].copy()
+    if "codigo_funai" in g:
+        g["codigo_funai"] = g["codigo_funai"].astype("Int64").astype(str)
+    if "data_ref" in g:
+        g["data_ref"] = g["data_ref"].astype("Int64").astype(str)
     if g.crs is None:
         g = g.set_crs(4674)
     return g.to_crs(4326)

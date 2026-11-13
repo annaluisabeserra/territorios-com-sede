@@ -11,11 +11,11 @@
       "fetched_at": "2026-11-13T19:02:18+00:00",
       "sha256": "2a5490870c2bdd2ededfd824a338238a82d38450bb2d96fc76cb67ac084ae2cb",
       "license": "Dados públicos (Ministério das Cidades)",
-      "notes": "Base dos Dados, tabela br_mdr_snis.municipio_agua_esgoto (anos de referência 1995–2022); coberturas acima de 100% limitadas a 100 e perdas fora de 0–100 tratadas como ausentes (ver flags)"
+      "notes": "Base dos Dados, tabela br_mdr_snis.municipio_agua_esgoto (anos de referência 1995–2022); coberturas entre 100% e 105% limitadas a 100, acima de 105% e perdas fora de 0–100 tratadas como ausentes (ver flags)"
     }
   ],
   "status": "ok",
-  "status_reason": "{\"snis_perdas_pct_invalid_to_null\": 60, \"snis_coleta_esgoto_pct_capped\": 30, \"snis_agua_pct_capped\": 0, \"snis_tratamento_coletado_pct_capped\": 14, \"snis_esgoto_pct_capped\": 0, \"snis_tratamento_pct_capped\": 16}",
+  "status_reason": "{\"snis_perdas_pct_invalid_to_null\": 60, \"snis_agua_pct_capped\": 0, \"snis_agua_pct_absurd_to_null\": 0, \"snis_coleta_esgoto_pct_capped\": 6, \"snis_coleta_esgoto_pct_absurd_to_null\": 24, \"snis_esgoto_pct_capped\": 0, \"snis_esgoto_pct_absurd_to_null\": 0, \"snis_tratamento_coletado_pct_capped\": 13, \"snis_tratamento_coletado_pct_absurd_to_null\": 1, \"snis_tratamento_pct_capped\": 3, \"snis_tratamento_pct_absurd_to_null\": 13}",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T19:05:20+00:00"
+  "generated_at": "2026-11-13T19:22:29+00:00"
 }
