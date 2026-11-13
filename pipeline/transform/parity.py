@@ -32,8 +32,14 @@ def index_cases() -> str:
         idx, cov = weighted_index(ds, w, md, tuple(req))
         rows.append({"dims": ds, "weights": w, "min_dims": md, "required": req, "index": idx, "coverage": cov})
     scores = {f"{i:07d}": rng.choice([None, float(rng.randint(0, 20))]) for i in range(60)}
-    return json.dumps({"cases": rows, "rank": {"scores": scores, "expected": rank(scores)}},
-                      separators=(",", ":"), allow_nan=False) + "\n"
+    return (
+        json.dumps(
+            {"cases": rows, "rank": {"scores": scores, "expected": rank(scores)}},
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    )
 
 
 def ranges() -> dict[str, tuple[float, float]]:

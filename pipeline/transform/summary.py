@@ -40,39 +40,49 @@ THERMO_TXT = {
 def municipal_summary(
     nome: str, ind: Mapping[str, float | None], thermo: Mapping[str, dict], extra: Mapping
 ) -> list[str]:
-    parts: list[str] = []
-    pop = ind.get("populacao")
-    if pop:
-        parts.append(f"{nome} tem {num(pop)} moradores, segundo o Censo 2022.")
+    """Frases determinísticas. `extra`: years (ano por indicador), sih_period, esgoto_sem_declaracao."""
+    years = extra.get("years") or {}
 
-    esg = ind.get("censo_esgoto_adequado_pct")
-    if esg is not None:
-        sem = 100 - esg
+    def has(k: str) -> bool:
+        v = ind.get(k)
+        return v is not None and v == v  # exclui NaN
+
+    parts: list[str] = []
+    if has("populacao"):
+        parts.append(f"{nome} tem {num(ind['populacao'])} moradores, segundo o Censo 2022.")
+
+    if has("censo_esgoto_adequado_pct"):
+        sem = 100 - ind["censo_esgoto_adequado_pct"]
         frac = one_in(sem)
         lead = f"{frac.capitalize()} moradores" if frac else f"{pct(sem)} dos moradores"
         parts.append(f"{lead} não têm esgoto adequado (Censo 2022).")
-    elif ind.get("snis_esgoto_pct") is not None:
+    elif has("snis_esgoto_pct"):
+        txt = (
+            f"O prestador de serviço declara atender {pct(ind['snis_esgoto_pct'])} da população com rede de coleta "
+            f"de esgoto (SNIS {years.get('snis_esgoto_pct')})."
+        )
+        if has("snis_esgoto_tratado_pct"):
+            txt += f" Considerando o tratamento, {pct(ind['snis_esgoto_tratado_pct'])} da população tem esgoto coletado e tratado."
+        parts.append(txt)
+    elif extra.get("esgoto_sem_declaracao"):
         parts.append(
-            f"O prestador de serviço declara atender {pct(ind['snis_esgoto_pct'])} da população com coleta de esgoto "
-            f"(SNIS {extra.get('snis_year')})."
+            "Nenhum prestador declarou atendimento de esgoto por rede ao SNIS nos últimos anos, o que em geral "
+            "indica que o município não tem rede coletora."
         )
     else:
         parts.append("Não há dado oficial recente sobre o atendimento de esgoto do município.")
 
-    agua = ind.get("censo_agua_rede_pct")
-    if agua is not None:
-        parts.append(f"{pct(agua)} dos moradores recebem água da rede geral (Censo 2022).")
-    elif ind.get("snis_agua_pct") is not None:
+    if has("censo_agua_rede_pct"):
+        parts.append(f"{pct(ind['censo_agua_rede_pct'])} dos moradores recebem água da rede geral (Censo 2022).")
+    elif has("snis_agua_pct"):
         parts.append(
-            f"O atendimento de água declarado ao SNIS é de {pct(ind['snis_agua_pct'])} ({extra.get('snis_year')})."
+            f"O atendimento de água declarado ao SNIS é de {pct(ind['snis_agua_pct'])} ({years.get('snis_agua_pct')})."
         )
 
-    inter = ind.get("drsai_internacoes")
-    valor = ind.get("drsai_valor_anual")
-    if inter is not None and valor is not None:
+    if has("drsai_internacoes") and has("drsai_valor_anual"):
         parts.append(
-            f"Em média, {num(inter)} pessoas por ano são internadas no SUS por doenças ligadas à falta de saneamento, "
-            f"o que custa {brl(valor)} por ano ({extra.get('sih_period')})."
+            f"Em média, {num(ind['drsai_internacoes'])} pessoas por ano são internadas no SUS por doenças ligadas à "
+            f"falta de saneamento, o que custa {brl(ind['drsai_valor_anual'])} por ano ({extra.get('sih_period')})."
         )
     else:
         parts.append(
@@ -83,6 +93,6 @@ def municipal_summary(
     if ta.get("status") and te.get("status"):
         parts.append(
             f"Pela tendência do SNIS, a meta de água do Marco Legal {THERMO_TXT[ta['status']]}, e a de "
-            f"esgoto {THERMO_TXT[te['status']]}."
+            f"esgoto coletado e tratado {THERMO_TXT[te['status']]}."
         )
     return parts

@@ -5,7 +5,7 @@ import LineChart from "../../../components/LineChart.astro";
 import ThermometerCard from "../../../components/Thermometer.astro";
 import { ficha, indicators, resumo, ufs } from "../../../lib/data";
 import { fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
-import { fmtValue, SOURCE_LABEL } from "../../../lib/indicators";
+import { fmtValue, SOURCE_LABEL, THERMO_CLASS, THERMO_LABEL } from "../../../lib/indicators";
 import type { Ficha } from "../../../lib/types";
 
 export function getStaticPaths() {
@@ -53,6 +53,12 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
         <h1>{f.nome} <span class="uf">{f.uf}</span></h1>
         <p class="meta small">{f.regiao_intermediaria} · {fmtNumber(f.ind.populacao)} moradores {f.semiarido && <span class="tag warn">Semiárido</span>}</p>
         <div class="resumo">{f.resumo.map((p) => <p>{p}</p>)}</div>
+        <ul class="key" aria-label="Principais números">
+          <li><span class="kn">{fmtPct(f.ind.snis_agua_pct)}</span><span class="kl">da população atendida com água</span></li>
+          <li><span class="kn">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "sem rede" : fmtPct(f.ind.snis_esgoto_tratado_pct)}</span><span class="kl">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "nenhum prestador de esgoto declarado" : "com esgoto coletado e tratado"}</span></li>
+          <li><span class:list={["kn", THERMO_CLASS[f.thermometer.esgoto.status]]}>{THERMO_LABEL[f.thermometer.esgoto.status]}</span><span class="kl">na meta de esgoto de 2033</span></li>
+        </ul>
+        <p class="source">SNIS (Ministério das Cidades), {snisYear}{src.snis?.url_kind === "mirror" ? ", cópia pública do dado oficial" : ""}.</p>
         <div class="actions no-print">
           <a class="btn" href={calcUrl}>Calcular a economia</a>
           <a class="btn secondary" href={`/escola/${uf}/${slug}`}>Versão para a escola</a>
@@ -71,24 +77,27 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
     <section id="indicadores" class="section">
       <h2>Como está o saneamento</h2>
       <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Tabela (role para os lados se precisar)">
-        <table>
+        <table class="stack">
           <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana da {f.uf_nome} e do Brasil</caption>
           <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">{f.nome}</th><th scope="col" class="num">Mediana {f.uf}</th><th scope="col" class="num">Mediana Brasil</th><th scope="col">Fonte</th></tr></thead>
           <tbody>
-            {rows.map(([k, s]) => {
+            {rows.filter(([, s]) => ref(s)).map(([k, s]) => {
               const d = IND[k]; const st = stats[k];
               return (
                 <tr>
-                  <th scope="row">{d?.short ?? k}<br /><span class="xsmall muted">{d?.direction === "higher_is_better" ? "quanto maior, melhor" : d?.direction === "higher_is_worse" ? "quanto menor, melhor" : ""}</span></th>
-                  <td class="num">{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
-                  <td class="num">{fmtValue(d, st?.median_uf)}</td>
-                  <td class="num">{fmtValue(d, st?.median_br)}</td>
-                  <td class="xsmall">{ref(s) ? `${SOURCE_LABEL[d?.source ?? ""] ?? d?.source}, ${src[s].reference_period}` : "fonte indisponível nesta atualização"}</td>
+                  <th scope="row" data-label="Indicador">{d?.short ?? k}<br /><span class="xsmall muted">{d?.direction === "higher_is_better" ? "quanto maior, melhor" : d?.direction === "higher_is_worse" ? "quanto menor, melhor" : ""}</span></th>
+                  <td class="num" data-label={f.nome}>{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
+                  <td class="num" data-label={`Mediana ${f.uf}`}>{fmtValue(d, st?.median_uf)}</td>
+                  <td class="num" data-label="Mediana Brasil">{fmtValue(d, st?.median_br)}</td>
+                  <td class="xsmall" data-label="Fonte">{ref(s) ? `${SOURCE_LABEL[d?.source ?? ""] ?? d?.source}, ${src[s].reference_period}` : "fonte indisponível nesta atualização"}</td>
                 </tr>);
             })}
           </tbody>
         </table>
       </div>
+      {rows.some(([, s]) => !ref(s)) && (
+        <p class="small muted">Ainda sem dado nesta atualização (fonte indisponível): {rows.filter(([, s]) => !ref(s)).map(([k]) => IND[k]?.short ?? k).join("; ")}. <a href="/dados#fontes">Por quê?</a></p>
+      )}
       {Object.entries(f.divergence).filter(([, v]) => v.flag).map(([svc, v]) => (
         <div class="callout">
           <strong>Os números de {svc === "agua" ? "água" : "esgoto"} não batem, e isso é informação.</strong>
@@ -197,9 +206,9 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
 
     <section id="fontes" class="section">
       <h2>Fontes, dados e compartilhamento</h2>
-      <ul class="small">
+      <details class="small"><summary>Situação de cada base de dados nesta atualização</summary><ul>
         {Object.entries(src).map(([k, s]) => (<li><strong>{s.name ?? k}</strong>: {s.status === "unavailable" ? "indisponível nesta atualização" : `${s.reference_period}${s.url_kind === "mirror" ? ", via cópia pública rastreável" : ""}${s.status === "stale" ? " (desatualizado)" : ""}`}</li>))}
-      </ul>
+      </ul></details>
       <div class="actions no-print">
         <a class="btn secondary" href={`/data/${uf}/dados/municipios/${slug}.csv`} download>Baixar dados (CSV)</a>
         <a class="btn secondary" href={`/data/${uf}/municipios/${slug}.json`} download>Baixar dados (JSON)</a>
@@ -237,4 +246,18 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .dbar { height: 12px; background: var(--c-sand-100); border-radius: 999px; overflow: hidden; }
   .dbar div { height: 100%; background: var(--c-alert); }
   .num { text-align: right; }
+  .key { list-style: none; padding: 0; margin: var(--s-4) 0 var(--s-1); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+  .key li { background: #fff; border: 1px solid var(--c-line); border-radius: var(--radius); padding: var(--s-3); display: grid; gap: 2px; }
+  .kn { font-family: var(--font-display); font-weight: 800; font-size: var(--fs-xl); color: var(--c-water-900); line-height: 1.1; }
+  .kn.alert { color: var(--c-alert); } .kn.ok { color: var(--c-ok); }
+  .kl { font-size: var(--fs-xs); color: var(--c-ink-soft); }
+  @media (max-width: 640px) {
+    .key .kn { font-size: var(--fs-lg); }
+    table.stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    table.stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px var(--s-3); padding: var(--s-3); border-bottom: 1px solid var(--c-line); }
+    table.stack th, table.stack td { border: 0; padding: 0; text-align: left; background: none; }
+    table.stack th { grid-column: 1 / -1; font-size: var(--fs-md); }
+    table.stack td::before { content: attr(data-label); display: block; font-size: var(--fs-xs); color: var(--c-ink-muted); font-weight: 400; }
+    table.stack td[data-label="Fonte"] { grid-column: 1 / -1; }
+  }
 </style>

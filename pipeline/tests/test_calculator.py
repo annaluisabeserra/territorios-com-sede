@@ -1,6 +1,5 @@
 """Calculadora: casos feitos à mão e propriedades (SPEC §6.4, testes obrigatórios)."""
 
-
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st

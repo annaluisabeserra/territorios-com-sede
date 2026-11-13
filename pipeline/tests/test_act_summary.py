@@ -28,3 +28,26 @@ def test_summary_never_invents():
     assert "Não há dado oficial recente sobre o atendimento de esgoto" in txt
     assert "ainda não foram processados" in txt
     assert one_in(33.3) == "1 em cada 3"
+
+
+def test_summary_uses_each_indicator_year_and_treatment():
+    ind = {"populacao": 1000, "snis_esgoto_pct": 42.2, "snis_esgoto_tratado_pct": 0.0, "snis_agua_pct": 67.8}
+    txt = " ".join(municipal_summary("X", ind, {}, {"years": {"snis_esgoto_pct": 2022, "snis_agua_pct": 2021}}))
+    assert "SNIS 2022" in txt and "(2021)" in txt and "None" not in txt
+    assert "coletado e tratado" in txt
+
+
+def test_summary_no_sewage_declaration():
+    txt = " ".join(municipal_summary("X", {"populacao": 1}, {}, {"esgoto_sem_declaracao": True}))
+    assert "Nenhum prestador declarou" in txt
+
+
+def test_no_sewage_provider_triggers_decentralized_sanitation():
+    r = suggestions({"snis_agua_pct": 90.0}, {"esgoto_sem_declaracao": True})
+    s = next(x for x in r if x["id"] == "saneamento_rural")
+    assert "nenhum prestador" in s["why"]
+
+
+def test_solar_mentions_energy_not_evaluated():
+    r = suggestions({"snis_agua_pct": 50.0}, {})
+    assert "energia não foi avaliado" in next(x for x in r if x["id"] == "unidade_autonoma_solar")["why"]

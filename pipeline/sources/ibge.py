@@ -75,7 +75,16 @@ def municipios(uf: UF) -> SourceResult:
             }
         )
         df = _uf_filter(df, uf)[["cod_ibge7", "nome", "regiao_imediata", "regiao_intermediaria", "microrregiao"]]
-        return SourceResult(_finish(df, uf), make_meta("ibge_municipios", f, "vigente", src.note))
+        # O espelho traz o travessão dos nomes de regiões corrompido como "¿" (ex.: "Ilhéus ¿ Itabuna").
+        # Restauramos o travessão usado pelo IBGE ("Ilhéus - Itabuna"). Correção só de grafia, registrada no meta.
+        for c in ("regiao_imediata", "regiao_intermediaria", "microrregiao"):
+            df[c] = df[c].str.replace(" ¿ ", " - ", regex=False)
+        return SourceResult(
+            _finish(df, uf),
+            make_meta(
+                "ibge_municipios", f, "vigente", src.note + "; caractere '¿' corrigido para '-' nos nomes de regiões"
+            ),
+        )
 
     return try_chain("ibge_municipios", uf, {"official": official, "mirror": mirror})
 
@@ -198,9 +207,9 @@ def lixo(uf: UF) -> SourceResult:
     def mirror(src: SourceURL) -> SourceResult:
         f = fetch_one("censo_lixo", src, "bd_censo2022_destino_lixo.csv.gz", "national")
         df = pd.read_csv(
-            f.path, dtype={"id_municipio": str}, usecols=["id_municipio", "tipo_destino_lixo", "populacao"]
+            f.path, dtype={"id_municipio": str}, usecols=["ano", "id_municipio", "tipo_destino_lixo", "populacao"]
         )
-        df = df.rename(columns={"id_municipio": "cod_ibge7"})
+        df = _only_census_2022(df).rename(columns={"id_municipio": "cod_ibge7"})
         df = _uf_filter(df, uf)
         # "Coletado" é subtotal das duas formas de coleta: exclui as partes para não contar em dobro.
         df = df[~df["tipo_destino_lixo"].isin(LIXO_PARTES_COLETADO)]

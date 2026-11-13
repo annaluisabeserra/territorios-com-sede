@@ -1,6 +1,6 @@
 # Relatório de validação
 
-Gerado em 13/11/2026 19:38 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
+Gerado em 13/11/2026 19:59 UTC por `pipeline/validate/report.py`. Regenerado a cada execução do pipeline.
 
 Este relatório complementa as checagens automáticas (que derrubam o pipeline) com checagens de plausibilidade que exigem leitura humana. Itens marcados **pendente** dependem de fontes que não puderam ser lidas no ambiente de construção (ver `docs/DATA_SOURCES.md`).
 

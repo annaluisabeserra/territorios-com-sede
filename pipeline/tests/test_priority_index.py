@@ -47,7 +47,6 @@ def test_required_dimensions():
     )
 
 
-
 score = st.one_of(st.none(), st.floats(0, 100))
 
 

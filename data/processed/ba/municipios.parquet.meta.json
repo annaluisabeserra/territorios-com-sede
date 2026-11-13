@@ -11,11 +11,11 @@
       "fetched_at": "2026-11-13T19:01:50+00:00",
       "sha256": "15d90a189a7a58bdf21b33821af61e0fa23adc6e0d9f4dac8807119a935f27ac",
       "license": "Dados públicos IBGE (uso livre com citação)",
-      "notes": "Diretório de municípios da Base dos Dados (construído a partir da DTB/IBGE)"
+      "notes": "Diretório de municípios da Base dos Dados (construído a partir da DTB/IBGE); caractere '¿' corrigido para '-' nos nomes de regiões"
     }
   ],
   "status": "ok",
   "status_reason": "",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T19:22:08+00:00"
+  "generated_at": "2026-11-13T19:58:52+00:00"
 }
