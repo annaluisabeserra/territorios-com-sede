@@ -10,11 +10,11 @@ permissions:
   contents: read
 jobs:
   report:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     if: ${{ vars.LEARNING_REPORT_URL != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Baixar agregados do mês
         env:
           LEARNING_REPORT_URL: ${{ vars.LEARNING_REPORT_URL }}

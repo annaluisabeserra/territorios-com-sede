@@ -19,7 +19,7 @@ jobs:
   build:
     # Depois da atualização de dados, só publica se ela terminou com sucesso (nunca dados parciais)
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     outputs:
       cloudflare: ${{ steps.target.outputs.cloudflare }}
@@ -29,13 +29,13 @@ jobs:
       PUBLIC_ASSISTANT_ENABLED: ${{ vars.PUBLIC_ASSISTANT_ENABLED || 'false' }}
       SITE_URL: ${{ vars.SITE_URL || 'https://territorios.institutosdw.org' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -46,19 +46,19 @@ jobs:
       - run: npm --prefix site run build
       - id: target
         run: echo "cloudflare=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: site
           path: site/dist
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist
   cloudflare:
     needs: build
     if: needs.build.outputs.cloudflare == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: site
           path: dist
@@ -70,11 +70,11 @@ jobs:
   github-pages:
     needs: build
     if: needs.build.outputs.cloudflare != 'true' && vars.ENABLE_GITHUB_PAGES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write
     environment:
       name: github-pages
     steps:
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
