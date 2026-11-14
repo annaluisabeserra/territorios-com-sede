@@ -114,7 +114,10 @@ test("conta de impacto mostra camadas separadas, faixa e 'sem dado ainda' em vez
   const s = page.locator("#impacto");
   await expect(s.getByRole("heading", { level: 2 })).toContainText("Quanto custa");
   await expect(s.getByText("Água tratada perdida na distribuição")).toBeVisible();
-  await expect(s.getByText(/R\$ .* a R\$ /).first()).toBeVisible();
-  await expect(s.getByText("sem dado ainda").first()).toBeVisible();
+  // A camada de água depende de colunas do SNIS que só chegam numa atualização de dados recente:
+  // com dado, mostra uma faixa "R$ X a R$ Y"; sem dado, "sem dado ainda". Nunca R$ 0.
+  const agua = s.locator("article", { hasText: "Água tratada perdida" });
+  await expect(agua).toContainText(/R\$ .+ a R\$ |sem dado ainda/);
+  await expect(s.getByText("sem dado ainda").first()).toBeVisible(); // ao menos uma camada ainda sem dado (SIH)
   await expect(s).not.toContainText("R$ 0");
 });
