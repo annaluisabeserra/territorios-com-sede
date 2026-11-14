@@ -1,0 +1,9 @@
+{
+  "output": "sih_drsai.parquet",
+  "uf": "CE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "RuntimeError: falha ao baixar ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/RDDF2512.dbc após 4 tentativas: <urlopen error [Errno 110] Connection timed out>",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T03:03:57+00:00"
+}

@@ -5,17 +5,17 @@
     {
       "source_id": "ipca",
       "name": "IBGE — IPCA (número-índice mensal)",
-      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_ipca/mes_brasil/mes_brasil.csv.gz",
-      "url_kind": "mirror",
-      "reference_period": "até 07/2024",
-      "fetched_at": "2026-11-13T19:02:26+00:00",
-      "sha256": "35c38f342ac21c2d3ca3910a2cff59659cc2f5b7d0c0050b08c54d5dc5888fa1",
+      "url": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json",
+      "url_kind": "official",
+      "reference_period": "até 10/2026",
+      "fetched_at": "2026-11-14T01:51:28+00:00",
+      "sha256": "e70be485d0c0223220dbae585619cc9d57ade3dcb438d33e9448d284e88783d3",
       "license": "Dados públicos",
-      "notes": "Base dos Dados (IBGE). Série termina em 07/2024"
+      "notes": "arquivo de origem mudou desde a última atualização (sha256 anterior 35c38f342ac2…)"
     }
   ],
-  "status": "stale",
-  "status_reason": "{\"stale\": true, \"stale_months\": 28}",
+  "status": "ok",
+  "status_reason": "",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:17:40+00:00"
+  "generated_at": "2026-11-14T02:32:20+00:00"
 }

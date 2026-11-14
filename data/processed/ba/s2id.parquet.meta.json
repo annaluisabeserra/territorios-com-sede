@@ -5,5 +5,5 @@
   "status": "unavailable",
   "status_reason": "SourceUnavailable: MIDR — S2ID (decretos de situação de emergência e calamidade): sem acesso aos domínios gov.br no ambiente de construção e sem espelho público verificado. Referência: Sistema Integrado de Informações sobre Desastres (S2ID) e dados abertos do MIDR",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:16:04+00:00"
+  "generated_at": "2026-11-14T01:57:42+00:00"
 }

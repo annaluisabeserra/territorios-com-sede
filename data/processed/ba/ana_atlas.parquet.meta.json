@@ -8,7 +8,7 @@
       "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ana_atlas_esgotos/municipio/municipio.csv.gz",
       "url_kind": "mirror",
       "reference_period": "2013 (população urbana)",
-      "fetched_at": "2026-11-13T19:02:19+00:00",
+      "fetched_at": "2026-11-14T01:51:27+00:00",
       "sha256": "cb4a016f129eabd1f48abb6a390c1e518ca1f801231fc556da64a10510e31d4d",
       "license": "Dados públicos ANA",
       "notes": "Base dos Dados a partir do Atlas Esgotos (ANA, 2017; referência 2013)"
@@ -17,5 +17,5 @@
   "status": "ok",
   "status_reason": "",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:15:44+00:00"
+  "generated_at": "2026-11-14T01:51:27+00:00"
 }

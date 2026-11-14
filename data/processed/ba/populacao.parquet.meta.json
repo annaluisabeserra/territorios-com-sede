@@ -8,7 +8,7 @@
       "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_idade_sexo/populacao_idade_sexo_bdpro.csv.gz",
       "url_kind": "mirror",
       "reference_period": "2022 (data de referência 01/08/2022)",
-      "fetched_at": "2026-11-13T19:02:02+00:00",
+      "fetched_at": "2026-11-14T01:42:12+00:00",
       "sha256": "4914417dca0210150a44e7cb7916aba5c10b518cd82070ca5d68631a502b5dcb",
       "license": "Dados públicos IBGE",
       "notes": "Base dos Dados a partir da tabela SIDRA 9514 (população por sexo e idade) | SIDRA oficial indisponível: FetchError: todas as URLs falharam:\nhttps://servicodados.ibge.gov.br/api/v3/agregados [tentativa 1]: HTTPSConnectionPool(host='servicodados.ibge.gov.br', port=443): Max retries exceeded with url: /api"
@@ -17,5 +17,5 @@
   "status": "ok",
   "status_reason": "",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:15:34+00:00"
+  "generated_at": "2026-11-14T01:42:12+00:00"
 }

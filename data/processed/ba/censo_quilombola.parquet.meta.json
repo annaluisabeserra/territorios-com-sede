@@ -8,7 +8,7 @@
       "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_quilombola/populacao_grupo_idade_sexo_quilombola.csv.gz",
       "url_kind": "mirror",
       "reference_period": "2022 (data de referência 01/08/2022)",
-      "fetched_at": "2026-11-13T19:02:14+00:00",
+      "fetched_at": "2026-11-14T01:51:23+00:00",
       "sha256": "5eb6418f033d377cf1d39f5ac69b3d525538f75a8c74fb10a88eda6f86ba3cc8",
       "license": "Dados públicos IBGE",
       "notes": "Base dos Dados. Soma de células por idade e sexo; células sob sigilo vêm vazias (total levemente subestimado). Valores são soma de células por idade e sexo: mínimo garantido, não total exato; município com todas as células sob sigilo fica sem dado. | SIDRA oficial indisponível: FetchError: todas as URLs falharam:\nhttps://servicodados.ibge.gov.br/api/v3/agregados [tentativa 1]: HTTPSConnectionPool(host='servicodados.ibge.gov.br', port=443): Max retries exceeded with url: /api"
@@ -17,5 +17,5 @@
   "status": "ok",
   "status_reason": "{\"lower_bound\": true}",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:15:43+00:00"
+  "generated_at": "2026-11-14T01:51:23+00:00"
 }

@@ -8,7 +8,7 @@
       "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/municipalities_2022_simplified.parquet",
       "url_kind": "mirror",
       "reference_period": "2022",
-      "fetched_at": "2026-11-13T19:01:58+00:00",
+      "fetched_at": "2026-11-14T01:39:08+00:00",
       "sha256": "8b1021bf7cd4b5b028b3179c88c968119786d6a930521067d3fde3bf647984c3",
       "license": "Dados públicos IBGE",
       "notes": "geobr v2.0.0 (Ipea), malha municipal IBGE 2022 simplificada"
@@ -17,5 +17,5 @@
   "status": "ok",
   "status_reason": "",
   "pipeline_version": "0.1.0",
-  "generated_at": "2026-11-13T20:15:30+00:00"
+  "generated_at": "2026-11-14T01:39:08+00:00"
 }
