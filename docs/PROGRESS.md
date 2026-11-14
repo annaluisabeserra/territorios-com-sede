@@ -31,6 +31,7 @@ Registro por marco (SPEC §10). Revisões críticas em `docs/REVIEWS/`.
 - Leitores de SISAGUA, S2ID, INCRA, Palmares, CadÚnico e SICONFI.
 - Formulário de retirada sem login (hoje: e-mail e formulário do GitHub).
 - Ações do GitHub fixadas por SHA (exige acesso à API do GitHub).
+- Atualizar as ações do GitHub para as versões que usam Node 24 (checkout, setup-node, upload/download-artifact, upload-pages-artifact, deploy-pages, setup-uv), junto com a configuração do Cloudflare, para testar a publicação de ponta a ponta. O Dependabot já propôs essas atualizações (PRs #1 a #5, fechados por enquanto).
 
 ### Resolvidos depois da entrega inicial
 
