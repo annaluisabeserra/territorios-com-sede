@@ -1,0 +1,21 @@
+{
+  "output": "municipios.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "ibge_municipios",
+      "name": "IBGE — Localidades (lista de municípios)",
+      "url": "https://servicodados.ibge.gov.br/api/v1/localidades/estados/28/municipios",
+      "url_kind": "official",
+      "reference_period": "vigente",
+      "fetched_at": "2026-11-14T11:44:53+00:00",
+      "sha256": "2678c3b209f60db7337e410458f8ce43ea76abae4f0f45a960de33117f5801c5",
+      "license": "Dados públicos IBGE (uso livre com citação)",
+      "notes": ""
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:44:53+00:00"
+}

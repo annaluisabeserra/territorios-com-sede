@@ -1,0 +1,21 @@
+{
+  "output": "malhas.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "ibge_malhas",
+      "name": "IBGE — Malha municipal 2022",
+      "url": "https://servicodados.ibge.gov.br/api/v3/malhas/estados/28?formato=application/vnd.geo+json&qualidade=intermediaria&intrarregiao=municipio",
+      "url_kind": "official",
+      "reference_period": "2022",
+      "fetched_at": "2026-11-14T11:44:54+00:00",
+      "sha256": "ed4ec46239674003552c2a99e016968696ef8b6979dda3cf6042a749475ef2c5",
+      "license": "Dados públicos IBGE",
+      "notes": ""
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:44:55+00:00"
+}

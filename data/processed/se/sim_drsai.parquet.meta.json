@@ -1,0 +1,21 @@
+{
+  "output": "sim_drsai.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "datasus_sim",
+      "name": "DATASUS — SIM, declarações de óbito por residência",
+      "url": "ftp://ftp.datasus.gov.br/dissemin/publicos/SIM/CID10/DORES/DOSE2024.dbc",
+      "url_kind": "official",
+      "reference_period": "2020–2024",
+      "fetched_at": "2026-11-14T11:50:26.362345+00:00",
+      "sha256": "",
+      "license": "Dados públicos Ministério da Saúde",
+      "notes": "óbitos de residentes fora da UF ou sem município: 0"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "{\"years\": [2020, 2021, 2022, 2023, 2024], \"obitos_sem_municipio\": 0}",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:26+00:00"
+}

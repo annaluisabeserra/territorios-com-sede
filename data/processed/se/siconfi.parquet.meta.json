@@ -1,0 +1,21 @@
+{
+  "output": "siconfi.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "siconfi",
+      "name": "Tesouro Nacional — SICONFI, despesa municipal na função Saneamento (DCA Anexo I-E)",
+      "url": "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca?an_exercicio=2025&no_anexo=DCA-Anexo%20I-E&id_ente=2807600",
+      "url_kind": "official",
+      "reference_period": "2025",
+      "fetched_at": "2026-11-14T11:52:38+00:00",
+      "sha256": "689221712bb3a325c0057677fe94d18c52d7ebfd8f02a00b45a28a0853650913",
+      "license": "Dados públicos Tesouro Nacional",
+      "notes": "DCA Anexo I-E, função 17; consultas com erro: 0"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "{\"exercicio\": 2025, \"erros\": 0, \"sem_valor\": 58}",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:52:38+00:00"
+}

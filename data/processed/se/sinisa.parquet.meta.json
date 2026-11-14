@@ -1,0 +1,21 @@
+{
+  "output": "sinisa.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "sinisa",
+      "name": "SINISA — Informações e indicadores municipais de água e esgoto",
+      "url": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/SINISA_ESGOTO_Planilhas_2024.zip",
+      "url_kind": "official",
+      "reference_period": "2024–2024",
+      "fetched_at": "2026-11-14T11:49:29+00:00",
+      "sha256": "66cd24d0abbc81a95da4e41d2b89e287aafcd2c18f1c3ad2b7d7cf9ee011ca67",
+      "license": "Dados públicos (Ministério das Cidades)",
+      "notes": "planilhas: https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/SINISA_ESGOTO_Planilhas_2024.zip. Quebra de série em relação ao SNIS (ver metodologia)."
+    }
+  ],
+  "status": "ok",
+  "status_reason": "{\"indicadores_reconhecidos\": {\"2024:snis_esgoto_pct\": \"código IES0001\", \"2024:snis_tratamento_pct\": \"código IES2003\"}, \"avisos\": [\"2023: página indisponível (todas as URLs falharam:)\", \"2024/agua: nenhuma planilha com indicadores municipais reconhecíveis\", \"2025: página indisponível (todas as URLs falharam:)\"], \"snis_esgoto_pct_capped\": 0, \"snis_esgoto_pct_absurd_to_null\": 0, \"snis_tratamento_pct_capped\": 0, \"snis_tratamento_pct_absurd_to_null\": 1}",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:49:40+00:00"
+}

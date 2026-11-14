@@ -1,0 +1,127 @@
+{
+  "uf": "SE",
+  "errors": [
+    "schema população: [{'column': 'populacao', 'failure_case': 'float64', 'index': None, 'schema_context': 'Column', 'check': \"dtype('int64')\", 'check_number': None}]"
+  ],
+  "warnings": [
+    "18 saltos > 50% ao ano nas séries SNIS (últimos 8 anos)"
+  ],
+  "info": {
+    "municipios": 75,
+    "populacao_total": 2210004,
+    "fontes_indisponiveis": [
+      "censo_agua",
+      "censo_esgoto"
+    ],
+    "saltos_series": [
+      {
+        "cod_ibge7": "2800407",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.638
+      },
+      {
+        "cod_ibge7": "2801702",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.505
+      },
+      {
+        "cod_ibge7": "2802809",
+        "indicador": "snis_agua_pct",
+        "ano": 2020,
+        "variacao_anual": 0.511
+      },
+      {
+        "cod_ibge7": "2804607",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.522
+      },
+      {
+        "cod_ibge7": "2806305",
+        "indicador": "snis_agua_pct",
+        "ano": 2022,
+        "variacao_anual": 0.518
+      },
+      {
+        "cod_ibge7": "2806701",
+        "indicador": "snis_agua_pct",
+        "ano": 2016,
+        "variacao_anual": 0.523
+      },
+      {
+        "cod_ibge7": "2806701",
+        "indicador": "snis_agua_pct",
+        "ano": 2019,
+        "variacao_anual": 0.554
+      },
+      {
+        "cod_ibge7": "2806701",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.898
+      },
+      {
+        "cod_ibge7": "2807006",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.506
+      },
+      {
+        "cod_ibge7": "2807204",
+        "indicador": "snis_agua_pct",
+        "ano": 2019,
+        "variacao_anual": 0.692
+      },
+      {
+        "cod_ibge7": "2807501",
+        "indicador": "snis_agua_pct",
+        "ano": 2021,
+        "variacao_anual": 0.749
+      },
+      {
+        "cod_ibge7": "2800506",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2018,
+        "variacao_anual": 1.052
+      },
+      {
+        "cod_ibge7": "2800506",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2022,
+        "variacao_anual": 0.613
+      },
+      {
+        "cod_ibge7": "2802106",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2016,
+        "variacao_anual": 1.882
+      },
+      {
+        "cod_ibge7": "2802106",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2017,
+        "variacao_anual": 2.039
+      },
+      {
+        "cod_ibge7": "2802908",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2020,
+        "variacao_anual": 0.55
+      },
+      {
+        "cod_ibge7": "2803005",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2021,
+        "variacao_anual": 1.026
+      },
+      {
+        "cod_ibge7": "2804607",
+        "indicador": "snis_esgoto_pct",
+        "ano": 2022,
+        "variacao_anual": 0.964
+      }
+    ]
+  }
+}

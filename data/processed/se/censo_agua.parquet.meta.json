@@ -1,0 +1,9 @@
+{
+  "output": "censo_agua.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: censo_agua: numerador maior que o total (categorias hierárquicas?) em https://servicodados.ibge.gov.br/api/v3/agregados/10341/periodos/2022/variaveis/13550?localidades=N6[N3[28]]&classificacao=1821[all]",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:45:58+00:00"
+}

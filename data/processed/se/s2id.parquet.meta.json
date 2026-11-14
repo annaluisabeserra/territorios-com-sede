@@ -1,0 +1,9 @@
+{
+  "output": "s2id.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: S2ID: nenhum recurso legível. | Dicionário de Dados - Relatório Gerencial - Danos Informados: KeyError: 'coluna não encontrada para (\\'ibge\\', \\'cod(igo)? (do )?municipio\\'); colunas vistas: [\"<html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.<br><br>Your support ID is: 3479536070889264805<br><br><a href=\\'javascript:history. | 1991 a 2025 - Danos Informados - Histórico de Desastres no Brasil: KeyError: 'coluna não encontrada para (\\'ibge\\', \\'cod(igo)? (do )?municipio\\'); colunas vistas: [\"<html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.<br><br>Your support ID is: 3479536070888396177<br><br><a href=\\'javascript:history.",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:30+00:00"
+}

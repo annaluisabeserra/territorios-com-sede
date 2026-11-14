@@ -1,0 +1,21 @@
+{
+  "output": "ucs_uso_sustentavel.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "ucs_uso_sustentavel",
+      "name": "MMA/ICMBio — Unidades de conservação de uso sustentável (RESEX e RDS)",
+      "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_geobr_mapas/unidade_conservacao/unidade_conservacao.csv.gz",
+      "url_kind": "mirror",
+      "reference_period": "cadastro vigente na data do espelho",
+      "fetched_at": "2026-11-14T11:49:52+00:00",
+      "sha256": "4330213fe8d190bc8884838455d6421b48c849f45ac2028183063300bfb4bfbe",
+      "license": "Dados públicos (Cadastro Nacional de Unidades de Conservação)",
+      "notes": "Base dos Dados (geobr/Ipea a partir do CNUC/MMA), polígonos em WKT"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:49:52+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "output": "censo_indigenas.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "censo_indigenas",
+      "name": "IBGE — Censo 2022, pessoas indígenas",
+      "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10168/periodos/2022/variaveis/350?localidades=N6[N3[28]]",
+      "url_kind": "official",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-14T11:50:17+00:00",
+      "sha256": "eccef6e86c88dfb3c8821b3d9b8c01ac19ef6a5ec2932d920ed72ee90af02ee4",
+      "license": "Dados públicos IBGE",
+      "notes": "SIDRA tabela 10168 (Pessoas indígenas, total e diagnosticadas com autismo); variável 350 (Pessoas indígenas)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:17+00:00"
+}

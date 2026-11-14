@@ -1,0 +1,21 @@
+{
+  "output": "censo_renda.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "censo_renda",
+      "name": "IBGE — Censo 2022, rendimento domiciliar per capita",
+      "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10297/periodos/2022/variaveis/13506?localidades=N6[N3[28]]",
+      "url_kind": "official",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-14T11:50:07+00:00",
+      "sha256": "53e823153dfb51e748ca4639a0a361bc87fcb8bbe9b2a6d622305c611477e4d9",
+      "license": "Dados públicos IBGE",
+      "notes": "SIDRA tabela 10297 (Participação percentual na composição do rendimento nominal mensal domiciliar dos moradores em domicílios particulares permanentes ocupados, exclusive os cuja condição no domicílio era pensionista, empregado(a) doméstico(a) ou parente do(a) empregado(a) doméstico(a), por tipo de rendimento); variável 13506 (Massa de rendimento nominal mensal domiciliar per capita dos moradores em domicílios particulares permanentes ocupados, exclusive os cuja condição no domicílio era pensionista, empregado(a) doméstico(a) ou parente do(a) empregado(a) doméstico(a))"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:07+00:00"
+}

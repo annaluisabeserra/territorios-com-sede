@@ -1,0 +1,21 @@
+{
+  "output": "censo_quilombola.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "censo_quilombola",
+      "name": "IBGE — Censo 2022, pessoas quilombolas",
+      "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10101/periodos/2022/variaveis/13344?localidades=N6[N3[28]]",
+      "url_kind": "official",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-14T11:49:04+00:00",
+      "sha256": "9819cb454b94a15e0707f2bf899ced09df2fbd13ff8c772de612809019e55107",
+      "license": "Dados públicos IBGE",
+      "notes": "SIDRA tabela 10101 (Moradores, total e quilombolas, em domicílios com pelo menos um morador quilombola, e domicílios com pelo menos um morador quilombola, por espécie, localização e situação do domicílio); variável 13344 (Moradores em domicílios com pelo menos um morador quilombola)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:49:04+00:00"
+}

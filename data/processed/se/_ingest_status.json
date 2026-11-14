@@ -1,0 +1,146 @@
+{
+  "municipios": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v1/localidades/estados/28/municipios"
+  },
+  "malhas": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v3/malhas/estados/28?formato=application/vnd.geo+json&qualidade=intermediaria&intrarregiao=municipio"
+  },
+  "populacao": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10147/periodos/2022/variaveis/93?localidades=N6[N3[28]]"
+  },
+  "censo_agua": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: censo_agua: numerador maior que o total (categorias hierárquicas?) em https://servicodados.ibge.gov.br/api/v3/agregados/10341/periodos/2022/variaveis/13550?localidades=N6[N3[28]]&classificacao=1821[all]"
+  },
+  "censo_esgoto": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: censo_esgoto: numerador maior que o total (categorias hierárquicas?) em https://servicodados.ibge.gov.br/api/v3/agregados/10053/periodos/2022/variaveis/9598?localidades=N6[N3[28]]&classificacao=11558[all]"
+  },
+  "censo_lixo": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/caracteristica_domicilio_grupo_idade_raca_destino_lixo/caracteristica_domicilio_grupo_idade_raca_destino_lixo_bdpro.csv.gz"
+  },
+  "censo_quilombola": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10101/periodos/2022/variaveis/13344?localidades=N6[N3[28]]"
+  },
+  "censo_raca": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_raca/populacao_grupo_idade_sexo_raca_bdpro.csv.gz"
+  },
+  "semiarido": {
+    "status": "ok",
+    "rows": 30,
+    "url_kind": "mirror",
+    "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/semiarid_2022_simplified.parquet"
+  },
+  "snis": {
+    "status": "ok",
+    "rows": 1885,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_mdr_snis/municipio_agua_esgoto/municipio_agua_esgoto.csv.gz"
+  },
+  "sinisa": {
+    "status": "ok",
+    "rows": 23,
+    "url_kind": "official",
+    "url": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/SINISA_ESGOTO_Planilhas_2024.zip"
+  },
+  "ana_atlas": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ana_atlas_esgotos/municipio/municipio.csv.gz"
+  },
+  "ipca": {
+    "status": "ok",
+    "rows": 562,
+    "url_kind": "official",
+    "url": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json"
+  },
+  "terras_indigenas": {
+    "status": "ok",
+    "rows": 1,
+    "url_kind": "mirror",
+    "url": "https://github.com/ipea/geobr_prep_data/releases/download/v2.0.0/indigenouslands_2024_simplified.parquet"
+  },
+  "ucs_uso_sustentavel": {
+    "status": "ok",
+    "rows": 0,
+    "url_kind": "mirror",
+    "url": "https://storage.googleapis.com/basedosdados-public/one-click-download/br_geobr_mapas/unidade_conservacao/unidade_conservacao.csv.gz"
+  },
+  "censo_renda": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10297/periodos/2022/variaveis/13506?localidades=N6[N3[28]]"
+  },
+  "censo_indigenas": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10168/periodos/2022/variaveis/350?localidades=N6[N3[28]]"
+  },
+  "sim_drsai": {
+    "status": "ok",
+    "rows": 605,
+    "url_kind": "official",
+    "url": "ftp://ftp.datasus.gov.br/dissemin/publicos/SIM/CID10/DORES/DOSE2024.dbc"
+  },
+  "sisagua": {
+    "status": "unavailable",
+    "reason": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+  },
+  "s2id": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: S2ID: nenhum recurso legível. | Dicionário de Dados - Relatório Gerencial - Danos Informados: KeyError: 'coluna não encontrada para (\\'ibge\\', \\'cod(igo)? (do )?municipio\\'); colunas vistas: [\"<html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.<br><br>Your support ID is: 3479536070889264805<br><br><a href=\\'javascript:history. | 1991 a 2025 - Danos Informados - Histórico de Desastres no Brasil: KeyErro"
+  },
+  "monitor_secas": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Monitor de Secas: só 0 meses com shapefile encontrados"
+  },
+  "censo_escolar": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Censo Escolar: nenhum ano legível. | 2025: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2025.zip [tentativa 1]: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer')) | https: | 2024: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2024.zip [tentativa 1]: HTTPSConnectionPool(host='download.inep.gov.br', port=443): Max retri"
+  },
+  "siconfi": {
+    "status": "ok",
+    "rows": 75,
+    "url_kind": "official",
+    "url": "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca?an_exercicio=2025&no_anexo=DCA-Anexo%20I-E&id_ente=2807600"
+  },
+  "incra_quilombolas": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: INCRA — Territórios quilombolas (polígonos e fase do processo): indisponível. Referência: https://certificacao.incra.gov.br/csv_shp/export_shp.py (Acervo Fundiário, camada de áreas quilombolas)"
+  },
+  "palmares_certidoes": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas: indisponível. Referência: https://www.gov.br/palmares/pt-br/departamentos/protecao-preservacao-e-articulacao/certificacao-quilombola"
+  },
+  "cadunico": {
+    "status": "unavailable",
+    "reason": "SourceUnavailable: MDS — CadÚnico (dados agregados por município): ferramentas do MDS sem API pública estável verificada. Referência: VIS Data / Cecad (MDS)"
+  },
+  "sih_drsai": {
+    "status": "ok",
+    "rows": 2039,
+    "url_kind": "official",
+    "url": "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/RDSE2512.dbc"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "output": "monitor_secas.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: Monitor de Secas: só 0 meses com shapefile encontrados",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:31+00:00"
+}

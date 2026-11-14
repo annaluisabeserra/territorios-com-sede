@@ -1,0 +1,9 @@
+{
+  "output": "censo_esgoto.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: censo_esgoto: numerador maior que o total (categorias hierárquicas?) em https://servicodados.ibge.gov.br/api/v3/agregados/10053/periodos/2022/variaveis/9598?localidades=N6[N3[28]]&classificacao=11558[all]",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:48:54+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "output": "sih_drsai.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "datasus_sih",
+      "name": "DATASUS — SIH/SUS, AIH reduzida (RD)",
+      "url": "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/RDSE2512.dbc",
+      "url_kind": "official",
+      "reference_period": "2021–2025 (ano de processamento)",
+      "fetched_at": "2026-11-14T13:32:07.000846+00:00",
+      "sha256": "",
+      "license": "Dados públicos Ministério da Saúde",
+      "notes": "escopo de residência: 27 UFs; arquivos ausentes: 0"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T13:32:07+00:00"
+}

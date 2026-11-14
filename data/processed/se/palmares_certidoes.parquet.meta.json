@@ -1,0 +1,9 @@
+{
+  "output": "palmares_certidoes.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: Fundação Cultural Palmares — Comunidades remanescentes de quilombos certificadas: indisponível. Referência: https://www.gov.br/palmares/pt-br/departamentos/protecao-preservacao-e-articulacao/certificacao-quilombola",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:52:38+00:00"
+}

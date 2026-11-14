@@ -1,0 +1,9 @@
+{
+  "output": "censo_escolar.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "SourceUnavailable: Censo Escolar: nenhum ano legível. | 2025: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2025.zip [tentativa 1]: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer')) | https: | 2024: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2024.zip [tentativa 1]: HTTPSConnectionPool(host='download.inep.gov.br', port=443): Max retries exceeded wit | 2023: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2023.zip [tentativa 1]: HTTPSConnectionPool(host='download.inep.gov.br', port=443): Max retries exceeded wit | 2022: SourceUnavailable: todas as URLs falharam: | https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2022.zip [tentativa 1]: HTTPSConnectionPool(host='download.inep.gov.br', port=443): Max retries exceeded wit",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:57+00:00"
+}

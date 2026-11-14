@@ -1,0 +1,9 @@
+{
+  "output": "sisagua.parquet",
+  "uf": "SE",
+  "sources": [],
+  "status": "unavailable",
+  "status_reason": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:50:28+00:00"
+}

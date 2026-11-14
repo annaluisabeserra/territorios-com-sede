@@ -1,0 +1,21 @@
+{
+  "output": "populacao.parquet",
+  "uf": "SE",
+  "sources": [
+    {
+      "source_id": "censo_populacao",
+      "name": "IBGE — Censo 2022, população residente",
+      "url": "https://servicodados.ibge.gov.br/api/v3/agregados/10147/periodos/2022/variaveis/93?localidades=N6[N3[28]]",
+      "url_kind": "official",
+      "reference_period": "2022 (data de referência 01/08/2022)",
+      "fetched_at": "2026-11-14T11:45:22+00:00",
+      "sha256": "a75b5a9b7bd98962c06b058bd9a490f436cebf25b1ca69477979f0404136dcb0",
+      "license": "Dados públicos IBGE",
+      "notes": "SIDRA tabela 10147 (População residente, total e diagnosticada com autismo, por cor ou raça); variável 93 (População residente)"
+    }
+  ],
+  "status": "ok",
+  "status_reason": "",
+  "pipeline_version": "0.1.0",
+  "generated_at": "2026-11-14T11:45:22+00:00"
+}
