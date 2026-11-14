@@ -38,6 +38,7 @@ SNIS_SERIES = [
     "snis_perdas_pct",
     "snis_coleta_esgoto_pct",
 ]
+CENSO_INCOME_YEAR = 2022  # renda domiciliar per capita do Censo 2022 está em R$ de 2022
 FRESH_YEARS = 2  # valor do SNIS mais antigo que ano_ref − 2 é tratado como desatualizado
 DIVERGENCE_PP = 15.0
 # Nome legível das etapas (quando a fonte está indisponível, o .meta.json não traz o nome)
@@ -216,8 +217,10 @@ def sim_table(inp: Inputs) -> tuple[pd.DataFrame | None, dict]:
         .sum()
         .div(len(years))
     )
+    total = float(core["obitos"].sum() / len(years))
     info = {
         "years": years,
+        "total_uf": total if total >= SMALL_CELL else None,
         "ages": {
             c: [(None if pd.isna(a) else float(a), float(n)) for (_, a), n in g.items()]
             for c, g in ages.groupby(level=0)
@@ -255,6 +258,7 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
             "escolas_sem_agua_potavel_matriculas",
             "escolas_sem_banheiro_matriculas",
             "escolas_sem_esgoto_matriculas",
+            "escolas_sem_agua_potavel_n",
         ],
         "siconfi": ["despesa_saneamento", "despesa_saneamento_ano"],
     }.items():
@@ -716,9 +720,13 @@ def build_uf(uf: config.UF) -> None:
             inp.get("snis"), annual_deflator(ipca, imp_base), imp_cfg["camadas"]["agua_perdida"]["outlier_mult"]
         )
     water = water.reindex(water.index.intersection(tab.index))
-    sih_period = None
+    renda_factor = None
+    if ipca is not None and imp_base:
+        renda_factor = annual_deflator(ipca, imp_base).get(CENSO_INCOME_YEAR)
+    sih_period = sih_years = None
     if hinfo.get("years"):
-        sih_period = f"média {hinfo['years'][0]}–{hinfo['years'][-1]}, em R$ de {hinfo['price_base']}"
+        sih_years = f"média {hinfo['years'][0]}–{hinfo['years'][-1]}"
+        sih_period = f"{sih_years}, em R$ de {hinfo['price_base']}"
 
     resumo_mun = []
     for code, row in tab.iterrows():
@@ -780,6 +788,18 @@ def build_uf(uf: config.UF) -> None:
         "agua_perdida_municipios": int(water["valor_baixo"].notna().sum()) if len(water) else 0,
         "agua_perdida_ano": int(water["year"].max()) if len(water) else None,
         "impacto_price_base": imp_base,
+        # Total estadual de óbitos (núcleo DRSAI): agregado grande o bastante para publicar sem supressão
+        "obitos_drsai_anual": ctx.get("sim", {}).get("total_uf"),
+        "obitos_drsai_periodo": (
+            f"{ctx['sim']['years'][0]}–{ctx['sim']['years'][-1]}" if ctx.get("sim", {}).get("years") else None
+        ),
+        "escolas_publicas": tab["escolas_publicas"].sum(min_count=1) if "escolas_publicas" in tab else None,
+        "escolas_sem_agua_potavel": tab["escolas_sem_agua_potavel_n"].sum(min_count=1)
+        if "escolas_sem_agua_potavel_n" in tab
+        else None,
+        "escolas_sem_agua_potavel_matriculas": tab["escolas_sem_agua_potavel_matriculas"].sum(min_count=1)
+        if "escolas_sem_agua_potavel_matriculas" in tab
+        else None,
     }
     if "snis_esgoto_pct" in tab and "snis_pop_atendida_esgoto" not in tab:
         pass
@@ -876,7 +896,8 @@ def build_uf(uf: config.UF) -> None:
             }
             baseline = Baseline(row["drsai_valor_anual"], row["drsai_dias_anual"], row.get("dias_6_17"), None)
         renda = ind.get("renda_domiciliar_pc")
-        daily_income = renda / 30 if renda is not None and not pd.isna(renda) else None
+        # Renda do Censo (R$ de 2022) levada ao mesmo ano-base dos valores do SUS e da água (revisão 4–6)
+        daily_income = renda / 30 * renda_factor if renda is not None and not pd.isna(renda) and renda_factor else None
         baseline_vet = None
         if health:
             baseline_vet = {
@@ -937,6 +958,7 @@ def build_uf(uf: config.UF) -> None:
                 f"média {ctx['sim']['years'][0]}–{ctx['sim']['years'][-1]}"
                 if ctx.get("sim", {}).get("years")
                 else None,
+                sih_years,
             ),
             "calculator": {
                 "baseline": {
@@ -1004,7 +1026,8 @@ def write_downloads(uf: config.UF, tab: pd.DataFrame, ctx: dict, out_dir: Path, 
         + numeric
         + ["indice_prioridade", "indice_rank"]
     )
-    wide = tab[[c for c in cols if c in tab.columns]].copy()
+    # Sem repetir colunas: o índice também é indicador e entra em `numeric` quando ranqueia (achado do ensaio)
+    wide = tab[[c for c in dict.fromkeys(cols) if c in tab.columns]].copy()
     wide.index.name = "cod_ibge7"
     wide.to_csv(d / f"{uf.slug}_municipios.csv", encoding="utf-8")
     wide.reset_index().to_parquet(d / f"{uf.slug}_municipios.parquet", index=False)

@@ -9,6 +9,7 @@ export function fmtValue(def: Pick<IndicatorDef, "unit"> | undefined, v: Num | u
     case "brl": return fmtBRL(v);
     case "brl_pc": return fmtBRL(v, 2);
     case "rate_10k": return fmtNumber(v, 1);
+    case "rate_100k": return fmtNumber(v, 1);
     case "index": return fmtNumber(v, 0);
     case "lhabdia": return `${fmtNumber(v, 0)} L/hab/dia`;
     case "days": return `${fmtNumber(v, 0)} dias`;
@@ -17,7 +18,7 @@ export function fmtValue(def: Pick<IndicatorDef, "unit"> | undefined, v: Num | u
 }
 
 export function unitLabel(def: Pick<IndicatorDef, "unit">): string {
-  return ({ pct: "% da população", count: "pessoas", rate_10k: "por 10 mil habitantes", brl: "R$ por ano",
+  return ({ pct: "% da população", count: "pessoas", number: "quantidade", rate_10k: "por 10 mil habitantes", rate_100k: "por 100 mil habitantes", brl: "R$ por ano",
     brl_pc: "R$ por habitante por ano", index: "0 a 100", days: "dias por ano", lhabdia: "litros por habitante por dia",
     years: "anos", bool: "" } as Record<string, string>)[def.unit] ?? "";
 }

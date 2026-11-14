@@ -67,6 +67,7 @@ def summarize(chunks, mun7: list[str]) -> pd.DataFrame:
     for _, (name, _) in FLAGS.items():
         out[f"{name}_pct"] = 100 * g[f"{name}_n"] / g[f"{name}_known"].where(g[f"{name}_known"] > 0)
         out[f"{name}_matriculas"] = g[f"{name}_mat"]
+        out[f"{name}_n"] = g[f"{name}_n"]
     return out.reset_index()
 
 

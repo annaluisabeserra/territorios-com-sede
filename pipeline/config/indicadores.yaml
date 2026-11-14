@@ -3,7 +3,7 @@
 #
 # Campos:
 #   label / short: nome completo e curto (pt-BR)
-#   unit: pct | count | rate_10k | brl | brl_pc | years | index | days
+#   unit: pct | count (pessoas) | number (quantidade) | rate_10k | rate_100k | brl | brl_pc | years | index | days
 #   direction: higher_is_better | higher_is_worse | neutral
 #   source: id da fonte (ver docs/DATA_SOURCES.md)
 #   formula: texto em linguagem simples
@@ -429,7 +429,7 @@ indicators:
   obitos_drsai_100mil:
     label: Óbitos por doenças ligadas ao saneamento por 100 mil habitantes
     short: Óbitos DRSAI / 100 mil
-    unit: index
+    unit: rate_100k
     direction: higher_is_worse
     group: saude
     source: datasus_sim
@@ -467,7 +467,7 @@ indicators:
   decretos_seca_5a:
     label: Reconhecimentos de emergência por seca ou estiagem (5 anos)
     short: Decretos de seca
-    unit: count
+    unit: number
     direction: higher_is_worse
     group: clima
     source: s2id
@@ -480,7 +480,7 @@ indicators:
   decretos_chuva_5a:
     label: Reconhecimentos de emergência por chuvas (5 anos)
     short: Decretos de chuva
-    unit: count
+    unit: number
     direction: higher_is_worse
     group: clima
     source: s2id
@@ -492,7 +492,7 @@ indicators:
   seca_meses_12m:
     label: Meses em seca moderada ou pior (últimos 12)
     short: Meses em seca
-    unit: count
+    unit: number
     direction: higher_is_worse
     group: clima
     source: monitor_secas
@@ -505,7 +505,7 @@ indicators:
   seca_classe_max_12m:
     label: Pior classe de seca nos últimos 12 meses (0 = fraca … 4 = excepcional)
     short: Pior seca (12 meses)
-    unit: index
+    unit: number
     direction: higher_is_worse
     group: clima
     source: monitor_secas
@@ -552,7 +552,7 @@ indicators:
 
   despesa_saneamento_pc:
     label: Despesa da prefeitura com saneamento por habitante
-    short: Gasto municipal com saneamento
+    short: Gasto da prefeitura com saneamento, por habitante
     unit: brl_pc
     direction: neutral
     group: contexto

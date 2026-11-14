@@ -39,6 +39,11 @@ def count_decrees(df: pd.DataFrame, uf: UF, mun7: list[str], today: dt.date | No
     last = today.year - 1
     keep = cod.notna() & year.between(last - YEARS + 1, last)
     d = pd.DataFrame({"cod_ibge7": cod[keep], "tipo": classify(df.loc[keep, c_type])})
+    # Arquivo com mais de uma linha por reconhecimento (ex.: uma por dano): conta portarias/protocolos distintos
+    c_id = find_col(df.columns, r"portaria", r"protocolo", r"^n(umero|o)? (do )?(decreto|processo)", required=False)
+    if c_id is not None:
+        d["id"] = df.loc[keep, c_id].astype(str).str.strip()
+        d = d.drop_duplicates(subset=["cod_ibge7", "tipo", "id"])
     out = pd.DataFrame(index=pd.Index(sorted(set(mun7)), name="cod_ibge7"))
     for k in ("seca", "chuva"):
         out[f"decretos_{k}_5a"] = d[d["tipo"] == k].groupby("cod_ibge7").size()
@@ -46,7 +51,7 @@ def count_decrees(df: pd.DataFrame, uf: UF, mun7: list[str], today: dt.date | No
     if d.empty:
         raise SourceUnavailable(f"S2ID: nenhum reconhecimento de {uf.sigla} em {last - YEARS + 1}–{last}")
     out = out.fillna(0).reset_index()
-    return out, {"periodo": f"{last - YEARS + 1}–{last}", "colunas": [str(c_mun), str(c_type), str(c_date)]}
+    return out, {"periodo": f"{last - YEARS + 1}–{last}", "colunas": [str(c_mun), str(c_type), str(c_date), str(c_id)]}
 
 
 def municipal_decrees(uf: UF, mun7: list[str]) -> SourceResult:

@@ -4,7 +4,7 @@ export type Num = number | null;
 export interface IndicatorDef {
   label: string;
   short: string;
-  unit: "pct" | "count" | "rate_10k" | "brl" | "brl_pc" | "years" | "index" | "days" | "lhabdia" | "bool";
+  unit: "pct" | "count" | "number" | "rate_10k" | "rate_100k" | "brl" | "brl_pc" | "years" | "index" | "days" | "lhabdia" | "bool";
   direction: "higher_is_better" | "higher_is_worse" | "lower_is_worse" | "neutral";
   group: string;
   source: string;

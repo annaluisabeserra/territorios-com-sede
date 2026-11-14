@@ -4,7 +4,7 @@ import { DEFAULT_UF, indicators, resumo, ufs } from "../lib/data";
 import { READY, FILTERS, toQuery, type Spec } from "../lib/questions";
 
 const IND = indicators();
-const inds = Object.entries(IND).filter(([k, d]) => ["pct", "count", "rate_10k", "brl_pc", "lhabdia", "index"].includes(d.unit) && !k.startsWith("censo_sem") && !k.startsWith("snis_sem"));
+const inds = Object.entries(IND).filter(([k, d]) => ["pct", "count", "number", "rate_10k", "rate_100k", "brl_pc", "lhabdia", "index"].includes(d.unit) && !k.startsWith("censo_sem") && !k.startsWith("snis_sem"));
 const R = resumo(DEFAULT_UF);
 const regions = [...new Set(R.municipios.map((m) => m.ri))].filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"));
 const base: Spec = { mode: "ranking", ind: "snis_agua_pct", region: "todas", filter: "todos", order: "asc", n: 10 };

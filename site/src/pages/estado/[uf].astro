@@ -68,6 +68,8 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
       <div class="card stat"><p class="n">{fmtNumber(t.municipios ?? n)}</p><p>municípios, {fmtNumber(t.semiarido)} no Semiárido</p><p class="source">IBGE; Sudene</p></div>
       {t.pessoas_sem_esgoto_censo != null && <div class="card stat"><p class="n">{fmtNumber(t.pessoas_sem_esgoto_censo)}</p><p>pessoas sem esgoto adequado</p><p class="source">IBGE, Censo 2022</p></div>}
       {t.drsai_valor_anual != null && <div class="card stat"><p class="n">{fmtBRLShort(t.drsai_valor_anual)}</p><p>por ano em internações do SUS por doenças ligadas ao saneamento</p><p class="source">DATASUS, SIH/SUS, {R.health.period_label}</p></div>}
+      {t.obitos_drsai_anual != null && <div class="card stat"><p class="n">{fmtNumber(t.obitos_drsai_anual)}</p><p>mortes por ano por doenças ligadas ao saneamento</p><p class="source">DATASUS, SIM, média {t.obitos_drsai_periodo}</p></div>}
+      {t.escolas_sem_agua_potavel != null && t.escolas_publicas != null && <div class="card stat"><p class="n">{fmtNumber(t.escolas_sem_agua_potavel)}</p><p>escolas públicas sem água potável, de {fmtNumber(t.escolas_publicas)}{t.escolas_sem_agua_potavel_matriculas != null && `, com ${fmtNumber(t.escolas_sem_agua_potavel_matriculas)} estudantes`}</p><p class="source">INEP, Censo Escolar</p></div>}
       <div class="card stat"><p class="n">{fmtNumber(popLate)}</p><p>pessoas vivem em municípios fora do ritmo da meta de esgoto</p><p class="source">IBGE; SNIS, tendência até {R.snis_year}</p></div>
     </section>
 

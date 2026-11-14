@@ -115,6 +115,7 @@ def test_censo_escolar_public_active_schools_only():
     assert o.loc["2927408", "escolas_publicas"] == 2
     assert o.loc["2927408", "escolas_sem_agua_potavel_pct"] == 50.0
     assert o.loc["2927408", "escolas_sem_agua_potavel_matriculas"] == 100
+    assert o.loc["2927408", "escolas_sem_agua_potavel_n"] == 1
     assert pd.isna(o.loc["2900108", "escolas_sem_agua_potavel_pct"])  # não informado ≠ zero
     assert o.loc["2900108", "escolas_sem_banheiro_pct"] == 100.0
 
@@ -147,3 +148,16 @@ def test_indicator_limitations_are_plain_strings():
     for k, v in config.load("indicadores")["indicators"].items():
         assert all(isinstance(x, str) for x in v["limitations"]), k
         assert isinstance(v["formula"], str), k
+
+
+def test_s2id_counts_distinct_ordinances_when_rows_repeat():
+    df = pd.DataFrame(
+        {
+            "Cod_IBGE": ["2900108"] * 3,
+            "COBRADE": ["Estiagem"] * 3,
+            "Data do Reconhecimento": ["01/02/2024"] * 3,
+            "Portaria": ["123/2024", "123/2024", "456/2024"],  # duas linhas da mesma portaria
+        }
+    )
+    out, _ = s2id.count_decrees(df, BA, MUN, today=dt.date(2026, 11, 1))
+    assert out.set_index("cod_ibge7").loc["2900108", "decretos_seca_5a"] == 2

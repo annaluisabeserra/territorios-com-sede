@@ -5,7 +5,7 @@ import { REPO_URL } from "../lib/site";
 
 const list = ufs().map((u) => ({ ...u, r: resumo(u.slug) }));
 const IND = indicators();
-const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", rate_10k: "por 10 mil hab.", brl: "R$", brl_pc: "R$ por habitante", index: "0 a 100", days: "dias", lhabdia: "litros/hab./dia", bool: "sim/não", years: "anos" };
+const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", rate_10k: "por 10 mil hab.", rate_100k: "por 100 mil hab.", number: "quantidade", brl: "R$", brl_pc: "R$ por habitante", index: "0 a 100", days: "dias", lhabdia: "litros/hab./dia", bool: "sim/não", years: "anos" };
 ---
 <Base title="Dados abertos" description="Baixe os dados por estado e por município, com dicionário, licença e citação.">
   <section class="wrap section">

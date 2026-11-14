@@ -116,6 +116,7 @@ def account(
     price_base: int | None,
     lives: float | None = None,
     lives_ref: str | None = None,
+    days_ref: str | None = None,
 ) -> dict:
     cam = cfg["camadas"]
     b = Baseline(_num(hospital_cost), _num(hospital_days), _num(school_days), _num(daily_income))
@@ -141,7 +142,7 @@ def account(
     layer("saude_sus", h, h, "brl", period, "DATASUS, SIH/SUS")
     layer("trabalho", pr, pr, "brl", period, "DATASUS, SIH/SUS; IBGE, Censo 2022 (renda)")
     layer("vidas", lives, lives, "brl", lives_ref, "DATASUS, SIM; IBGE, Censo 2022 (renda)")
-    layer("escola", b.school_days, b.school_days, "dias", period, "DATASUS, SIH/SUS")
+    layer("escola", b.school_days, b.school_days, "dias", days_ref or period, "DATASUS, SIH/SUS")
     w = water or {}
     layer(
         "agua_perdida",
