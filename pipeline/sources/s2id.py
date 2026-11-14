@@ -64,6 +64,12 @@ def municipal_decrees(uf: UF, mun7: list[str]) -> SourceResult:
         and r["url"].lower().endswith((".csv", ".xlsx", ".xls", ".zip"))
     ]
     cand += [r for r in res if r not in cand and r["url"].lower().endswith((".csv", ".xlsx", ".xls"))]
+    # Dicionários de dados descrevem colunas, não trazem reconhecimentos (o 1º teste pegou um deles)
+    cand = [r for r in cand if "dicionario" not in norm(r["name"] + " " + r["url"])]
+    if not cand:
+        raise SourceUnavailable(
+            f"S2ID: nenhum recurso de dados no conjunto; recursos vistos: {[r['name'] for r in res][:10]}"
+        )
     errors = []
     for i, r in enumerate(cand[:6]):
         ext = "." + r["url"].lower().rsplit(".", 1)[-1]

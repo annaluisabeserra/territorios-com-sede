@@ -48,7 +48,8 @@ censo_populacao:
 censo_quilombola:
   name: IBGE — Censo 2022, pessoas quilombolas
   license: Dados públicos IBGE
-  sidra: { table_hint: 9578, keywords: ["quilombola"], variable_keywords: ["quilombola"] }
+  # "Moradores em domicílios com pelo menos um morador quilombola" inclui não quilombolas: excluída (1º teste real)
+  sidra: { table_hint: 9578, keywords: ["quilombola"], variable_keywords: ["quilombola"], variable_exclude: ["domicilio"] }
   urls:
     - kind: mirror
       url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_ibge_censo_2022/populacao_grupo_idade_sexo_quilombola/populacao_grupo_idade_sexo_quilombola.csv.gz"
@@ -186,7 +187,8 @@ censo_renda:
   license: Dados públicos IBGE
   sidra:
     keywords: ["rendimento"]
-    variable_keywords: ["rendimento", "per capita"]
+    variable_keywords: ["rendimento", "medio", "per capita"]
+    variable_exclude: ["massa", "participacao"]   # massa = soma da renda de todos, não a média (1º teste real)
     units: ["reais"]
   urls: []
 

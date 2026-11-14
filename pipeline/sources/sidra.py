@@ -21,7 +21,10 @@ from pipeline.sources.meta import SourceMeta
 
 API = "https://servicodados.ibge.gov.br/api/v3/agregados"
 CENSUS_YEAR = "2022"
-MISSING_TOKENS = {"-", "X", "..", "...", "", None}
+# Convenção do IBGE: "-" = zero absoluto (não arredondado); "X" = sigilo; ".." = não se aplica; "..." = não
+# disponível. Só os três últimos (e vazio) são ausência: o traço é zero.
+MISSING_TOKENS = {"X", "..", "...", "", None}
+ZERO_TOKENS = {"-"}
 
 
 def norm(text: str) -> str:
@@ -41,9 +44,12 @@ class TableChoice:
     variable_name: str
     classification: int | None
     categories: dict[int, str]
+    levels: dict[int, int] | None = None  # nível de cada categoria (0 = Total), na ordem dos metadados
 
 
 def parse_value(v) -> float | None:
+    if v in ZERO_TOKENS:
+        return 0.0
     if v in MISSING_TOKENS:
         return None
     try:
@@ -69,6 +75,8 @@ def choose_table(
     variable_keywords: list[str],
     classification_keywords: list[str] | None,
     units: tuple[str, ...] = ("pessoas", "habitantes", "moradores"),
+    variable_exclude: list[str] | None = None,
+    hint: int | None = None,
 ) -> TableChoice | None:
     """Escolhe, entre metadados candidatos, a tabela mais simples que atende aos requisitos."""
     ranked = []
@@ -79,8 +87,14 @@ def choose_table(
         levels = m.get("nivelTerritorial", {}).get("Administrativo", [])
         if "N6" not in levels:
             continue
+        excl = [norm(x) for x in (variable_exclude or [])]
         var = next(
-            (v for v in m.get("variaveis", []) if all(norm(k) in norm(v["nome"]) for k in variable_keywords)),
+            (
+                v
+                for v in m.get("variaveis", [])
+                if all(norm(k) in norm(v["nome"]) for k in variable_keywords)
+                and not any(x in norm(v["nome"]) for x in excl)
+            ),
             None,
         )
         if var is None or norm(var.get("unidade", "")) not in set(units):
@@ -98,11 +112,12 @@ def choose_table(
             if cls is None:
                 continue
         n_cls = len(m.get("classificacoes", []))
-        ranked.append((n_cls, int(m["id"]), m, var, cls))
+        ranked.append((0 if hint and int(m["id"]) == int(hint) else 1, n_cls, int(m["id"]), m, var, cls))
     if not ranked:
         return None
-    ranked.sort(key=lambda r: (r[0], r[1]))
-    _, tid, m, var, cls = ranked[0]
+    # A tabela indicada no sources.yaml vence quando atende aos requisitos; depois, a mais simples
+    ranked.sort(key=lambda r: (r[0], r[1], r[2]))
+    _, _, tid, m, var, cls = ranked[0]
     return TableChoice(
         table=tid,
         name=m["nome"],
@@ -110,7 +125,47 @@ def choose_table(
         variable_name=var["nome"],
         classification=int(cls["id"]) if cls else None,
         categories={int(c["id"]): c["nome"] for c in (cls or {}).get("categorias", [])},
+        levels={int(c["id"]): int(c["nivel"]) for c in (cls or {}).get("categorias", []) if c.get("nivel") is not None}
+        or None,
     )
+
+
+def parents(levels: dict[int, int]) -> dict[int, int | None]:
+    """Pai de cada categoria pela ordem dos metadados: a anterior mais próxima com nível menor."""
+    out: dict[int, int | None] = {}
+    stack: list[tuple[int, int]] = []
+    for cid, lvl in levels.items():
+        while stack and stack[-1][1] >= lvl:
+            stack.pop()
+        out[cid] = stack[-1][0] if stack else None
+        stack.append((cid, lvl))
+    return out
+
+
+def drop_nested(selected: set[int], levels: dict[int, int] | None) -> set[int]:
+    """Remove categorias cujo ancestral também foi selecionado (evita contar as mesmas pessoas duas vezes)."""
+    if not levels:
+        return selected
+    par = parents(levels)
+    keep = set()
+    for c in selected:
+        p, nested = par.get(c), False
+        while p is not None:
+            if p in selected:
+                nested = True
+                break
+            p = par.get(p)
+        if not nested:
+            keep.add(c)
+    return keep
+
+
+def leaf_ids(levels: dict[int, int] | None) -> set[int] | None:
+    if not levels:
+        return None
+    par = parents(levels)
+    has_child = {p for p in par.values() if p is not None}
+    return {c for c, lvl in levels.items() if lvl > 0 and c not in has_child}
 
 
 def parse_values(payload: list[dict]) -> pd.DataFrame:
@@ -150,7 +205,9 @@ def _discover(source_id: str) -> TableChoice:
         except Exception:  # noqa: BLE001
             continue
     units = tuple(norm(u) for u in cfg.get("units", ["pessoas", "habitantes", "moradores"]))
-    choice = choose_table(metas, cfg["variable_keywords"], cfg.get("classification_keywords"), units)
+    choice = choose_table(
+        metas, cfg["variable_keywords"], cfg.get("classification_keywords"), units, cfg.get("variable_exclude"), hint
+    )
     if choice is None:
         raise SourceUnavailable(
             f"{source_id}: nenhuma tabela do Censo 2022 no catálogo SIDRA casou com {cfg} "
@@ -186,6 +243,9 @@ def total_from_catalog(source_id: str, uf: UF, value_name: str) -> SourceResult:
     choice = _discover(source_id)
     df, f, url = _values(choice, uf, all_categories=False)
     df = df.groupby("cod_ibge7", as_index=False)["value"].first().rename(columns={"value": value_name})
+    # Tabela que existe mas não traz valor para nenhum município: indisponível, nunca "ok" com tudo vazio
+    if df.empty or df[value_name].notna().sum() == 0:
+        raise SourceUnavailable(f"{source_id}: a tabela {choice.table} não trouxe valores municipais em {url}")
     return SourceResult(df, _meta(source_id, choice, f, url))
 
 
@@ -198,13 +258,20 @@ def share_from_catalog(source_id: str, uf: UF, pct_name: str, absolute_name: str
     numer_keys = [norm(k) for k in cfg["numerator"]]
     df["is_total"] = df["category"].map(lambda c: norm(c) == "total")
     df["is_numer"] = df["category"].map(lambda c: any(k in norm(c) for k in numer_keys))
+    # Tabelas hierárquicas: fica só a categoria mais alta de cada ramo que casou (e as folhas para a conferência)
+    if choice.levels:
+        matched = set(df.loc[df["is_numer"] & ~df["is_total"], "category_id"].dropna().astype(int))
+        top = drop_nested(matched, choice.levels)
+        df["is_numer"] = df["is_numer"] & df["category_id"].isin(top)
     total = df[df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
     numer = df[df["is_numer"] & ~df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
     out = pd.DataFrame({"total": total, "numer": numer}).reset_index()
     # Consistência: numerador ≤ total; soma das categorias-folha ≈ total (detecta subtotais misturados).
     if (out["numer"] > out["total"] * 1.0001).any():
         raise SourceUnavailable(f"{source_id}: numerador maior que o total (categorias hierárquicas?) em {url}")
-    leaves = df[~df["is_total"]].groupby("cod_ibge7")["value"].sum(min_count=1)
+    lf = leaf_ids(choice.levels)
+    leaf_rows = df[~df["is_total"]] if lf is None else df[df["category_id"].isin(lf)]
+    leaves = leaf_rows.groupby("cod_ibge7")["value"].sum(min_count=1)
     ratio = (leaves / total).dropna()
     if len(ratio) and (ratio > 1.02).mean() > 0.5:
         raise SourceUnavailable(f"{source_id}: soma das categorias excede o total (subtotais na tabela {choice.table})")
@@ -214,6 +281,8 @@ def share_from_catalog(source_id: str, uf: UF, pct_name: str, absolute_name: str
     for extra_name, keys in (cfg.get("extra_numerators") or {}).items():
         nk = [norm(k) for k in keys]
         sel = df[~df["is_total"] & df["category"].map(lambda c, nk=nk: any(k in norm(c) for k in nk))]
+        if choice.levels:
+            sel = sel[sel["category_id"].isin(drop_nested(set(sel["category_id"].dropna().astype(int)), choice.levels))]
         en = sel.groupby("cod_ibge7")["value"].sum(min_count=1)
         out[extra_name] = out["cod_ibge7"].map(en) / out["total"] * 100
         cols.append(extra_name)

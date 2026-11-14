@@ -18,7 +18,8 @@ from pipeline.config import UF
 from pipeline.sources.catalog import SourceResult, SourceUnavailable, fetch_one, make_meta, spec
 from pipeline.sources.http import SourceURL
 
-LINK_RE = re.compile(r"""href=["']([^"']+\.zip[^"']*)["']""", re.I)
+LINK_RE = re.compile(r"""href=["']([^"']+)["']""", re.I)
+ANY_HREF = LINK_RE
 
 
 def month_links(html: str, base: str, year: int) -> dict[tuple[int, int], str]:
@@ -26,16 +27,30 @@ def month_links(html: str, base: str, year: int) -> dict[tuple[int, int], str]:
 
     out = {}
     for href in LINK_RE.findall(html):
-        m = re.search(r"(20\d{2})[_\-/]?(0[1-9]|1[0-2])(?!\d)", href) or re.search(
-            r"(0[1-9]|1[0-2])[_\-/](20\d{2})", href
-        )
-        if not m:
+        low = href.lower()
+        # Só links de shapefile: .zip, ou endereços com "shp"/"shape" (download por parâmetros)
+        if not (".zip" in low or "shp" in low or "shape" in low):
             continue
-        a, b = m.groups()
-        y, mo = (int(a), int(b)) if len(a) == 4 else (int(b), int(a))
+        q = re.search(r"[?&]mes=(\d{1,2})", low)
+        qa = re.search(r"[?&]ano=(20\d{2})", low)
+        if q and 1 <= int(q.group(1)) <= 12:
+            y, mo = (int(qa.group(1)) if qa else year), int(q.group(1))
+        else:
+            m = re.search(r"(20\d{2})[_\-/]?(0[1-9]|1[0-2])(?!\d)", href) or re.search(
+                r"(0[1-9]|1[0-2])[_\-/](20\d{2})", href
+            )
+            if not m:
+                continue
+            a, b = m.groups()
+            y, mo = (int(a), int(b)) if len(a) == 4 else (int(b), int(a))
         if y == year:
             out[(y, mo)] = urljoin(base, href)
     return out
+
+
+def sample_links(html: str, n: int = 8) -> list[str]:
+    """Amostra dos links da página, para diagnosticar mudança de layout."""
+    return [h for h in ANY_HREF.findall(html) if not h.startswith(("#", "javascript"))][:n]
 
 
 def severity(gdf: gpd.GeoDataFrame) -> pd.Series:
@@ -62,19 +77,25 @@ def municipal_drought(uf: UF, malha: gpd.GeoDataFrame) -> SourceResult:
     today = dt.date.today()
     links: dict[tuple[int, int], str] = {}
     pages = []
+    seen: list[str] = []
     for year in (today.year, today.year - 1):
         url = s["page_template"].format(ano=year)
         try:
             f = fetch_one(
                 "monitor_secas", SourceURL(url, "official"), f"monitor_secas_{year}.html", "national", max_age_days=7
             )
-            links.update(month_links(f.path.read_text(errors="ignore"), url, year))
+            html = f.path.read_text(errors="ignore")
+            links.update(month_links(html, url, year))
+            seen += sample_links(html)
             pages.append(f)
         except SourceUnavailable:
             continue
     months = sorted(links)[-12:]
     if len(months) < 6:
-        raise SourceUnavailable(f"Monitor de Secas: só {len(months)} meses com shapefile encontrados")
+        raise SourceUnavailable(
+            f"Monitor de Secas: só {len(months)} meses com shapefile encontrados; "
+            f"links vistos na página: {seen[:12]} (a página pode montar os links por JavaScript)"
+        )
     pts = malha[["cod_ibge7", "geometry"]].copy()
     pts["geometry"] = pts.geometry.representative_point()
     pts = gpd.GeoDataFrame(pts, geometry="geometry", crs=malha.crs).set_index("cod_ibge7")

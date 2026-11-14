@@ -42,7 +42,13 @@ def ckan_resources(source_id: str, api_base: str, package: str, cache_tag: str) 
     """Lista de recursos (name, url, format) de um conjunto de dados CKAN."""
     url = f"{api_base.rstrip('/')}/api/3/action/package_show?id={package}"
     f = fetch_one(source_id, SourceURL(url, "official"), f"ckan_{cache_tag}.json", "national", max_age_days=7)
-    data = json.loads(f.path.read_text())
+    text = f.path.read_text(errors="replace")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"a API CKAN de {api_base} não respondeu em JSON (início da resposta: {text[:160]!r})"
+        ) from exc
     if not data.get("success"):
         raise RuntimeError(f"CKAN respondeu sem sucesso para {package}")
     return [

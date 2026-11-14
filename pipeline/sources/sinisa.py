@@ -160,6 +160,19 @@ def parse_sheet(
     return out, used
 
 
+def header_sample(path: Path, n: int = 15) -> list[str]:
+    """Primeiros textos das linhas de cabeçalho da 1ª aba (diagnóstico quando nada é reconhecido)."""
+    try:
+        frames = _frames(path)
+    except Exception as exc:  # noqa: BLE001
+        return [f"(não foi possível abrir: {type(exc).__name__})"]
+    if not frames:
+        return []
+    df = frames[0]
+    cells = [str(v) for v in df.iloc[:8].to_numpy().ravel() if pd.notna(v) and str(v).strip()]
+    return [c[:60] for c in cells[:n]]
+
+
 def read_module(path: Path, indicators: dict, ref_year: int, uf: UF, mun7: list[str]) -> tuple[pd.DataFrame, dict]:
     parts, used = [], {}
     for df in _frames(path):
@@ -201,13 +214,14 @@ def municipal_series(uf: UF, mun7: list[str]) -> SourceResult:  # noqa: F821
         year_parts = []
         for module in ("agua", "esgoto"):
             mod_ind = {k: v for k, v in indicators.items() if v["module"] == module}
-            for link in links[module][:3]:
+            tried = []
+            for i, link in enumerate(links[module][:3]):
                 ext = next((e for e in SHEET_EXT if e in link.lower()), ".xlsx")
                 try:
                     f = fetch_one(
                         "sinisa",
                         SourceURL(link, "official"),
-                        f"sinisa_{ref_year}_{module}{ext}",
+                        f"sinisa_{ref_year}_{module}_{i}{ext}",  # um arquivo por link (antes, todos reusavam o 1º)
                         "national",
                         max_age_days=60,
                     )
@@ -215,6 +229,8 @@ def municipal_series(uf: UF, mun7: list[str]) -> SourceResult:  # noqa: F821
                 except Exception as exc:  # noqa: BLE001 - próximo link
                     errors.append(f"{ref_year}/{module}: {link}: {type(exc).__name__}: {str(exc)[:160]}")
                     continue
+                if not len(part):
+                    tried.append(f"{link} → cabeçalhos: {header_sample(f.path)}")
                 if len(part):
                     year_parts.append(part)
                     used_all.update({f"{ref_year}:{k}": v for k, v in used.items()})
@@ -222,7 +238,10 @@ def municipal_series(uf: UF, mun7: list[str]) -> SourceResult:  # noqa: F821
                     fetched_any = fetched_any or f
                     break
             else:
-                errors.append(f"{ref_year}/{module}: nenhuma planilha com indicadores municipais reconhecíveis")
+                errors.append(
+                    f"{ref_year}/{module}: nenhuma planilha com indicadores municipais reconhecíveis; "
+                    f"links de planilha na página: {links[module][:5]}; tentativas: {tried}"
+                )
         if year_parts:
             y = year_parts[0]
             for p in year_parts[1:]:

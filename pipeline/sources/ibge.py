@@ -145,7 +145,11 @@ def populacao(uf: UF) -> SourceResult:
         df["populacao"] = df["populacao"].round().astype("int64")
         return SourceResult(df, make_meta("censo_populacao", f, CENSUS_PERIOD, src.note))
 
-    return _sidra_first("censo_populacao", uf, {"mirror": mirror}, value_name="populacao")
+    res = _sidra_first("censo_populacao", uf, {"mirror": mirror}, value_name="populacao")
+    # O SIDRA devolve números como texto/decimal ("12345" → 12345.0): contagem de pessoas é inteira.
+    if res.data["populacao"].notna().all():
+        res.data["populacao"] = res.data["populacao"].round().astype("int64")
+    return res
 
 
 def quilombola(uf: UF) -> SourceResult:

@@ -284,7 +284,9 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
 
     q = inp.get("censo_quilombola")
     if q is not None:
-        base = base.join(q.set_index("cod_ibge7")[["pop_quilombola", "pop_quilombola_em_territorio"]])
+        # A fonte oficial (SIDRA) traz o total exato, mas não o recorte "em territórios": colunas opcionais
+        qcols = [c for c in ("pop_quilombola", "pop_quilombola_em_territorio") if c in q.columns]
+        base = base.join(q.set_index("cod_ibge7")[qcols])
         ctx["flags"]["pop_quilombola_lower_bound"] = "lower_bound" in (inp.meta("censo_quilombola") or {}).get(
             "status_reason", ""
         )
@@ -303,7 +305,7 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         both_null = base["pop_quilombola"].isna() & base["pop_cor_indigena"].isna()
         known = base["pop_quilombola"].fillna(0) + base["pop_cor_indigena"].fillna(0)
         base["pct_pop_quilombola_indigena"] = (known / base["populacao"] * 100).where(~both_null)
-    if q is not None:
+    if q is not None and "pct_cells_suppressed" in q.columns:
         base = base.join(
             q.set_index("cod_ibge7")[["pct_cells_suppressed"]].rename(
                 columns={"pct_cells_suppressed": "quilombola_pct_celulas_sigilo"}

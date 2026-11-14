@@ -111,7 +111,7 @@ def run_sih(uf: config.UF, status: dict) -> None:
             json.dumps({**report, "missing_files": missing, "years": years}, ensure_ascii=False, indent=2)
         )
         fake = Fetched(
-            Path(), sih.file_url(uf.sigla, last, 12), "official", "", pd.Timestamp.utcnow().isoformat(), False
+            Path(), sih.file_url(uf.sigla, last, 12), "official", "", pd.Timestamp.now("UTC").isoformat(), False
         )
         meta = make_meta(
             "datasus_sih",

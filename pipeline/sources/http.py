@@ -20,6 +20,14 @@ from pipeline.config import RAW_DIR
 
 log = logging.getLogger(__name__)
 USER_AGENT = "territorios-com-sede-pipeline/0.1 (+https://github.com/institutosdw)"
+BLOCK_MARKERS = (b"Request Rejected", b"The requested URL was rejected", b"Access Denied")
+
+
+def looks_blocked(path: Path) -> bool:
+    """Página de bloqueio de firewall (HTML) devolvida no lugar do arquivo pedido."""
+    with path.open("rb") as fh:
+        head = fh.read(4096)
+    return head.lstrip()[:1] == b"<" and any(m in head for m in BLOCK_MARKERS)
 
 
 @dataclass(frozen=True)
@@ -82,6 +90,12 @@ def fetch(
                     with open(tmp, "wb") as fh:
                         for chunk in r.iter_content(1 << 20):
                             fh.write(chunk)
+                if looks_blocked(tmp):
+                    tmp.unlink(missing_ok=True)
+                    raise RuntimeError(
+                        "o servidor recusou o acesso automatizado (página de bloqueio do firewall); "
+                        "fonte fica indisponível até haver um caminho oficial para download automático"
+                    )
                 tmp.replace(target)
                 digest = sha256_file(target)
                 now = datetime.now(UTC).isoformat(timespec="seconds")

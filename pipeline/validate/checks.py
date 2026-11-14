@@ -93,6 +93,10 @@ def check_populacao(uf: config.UF, mun: pd.DataFrame, rep: Report) -> None:
     if pop is None:
         rep.errors.append("população indisponível")
         return
+    # Contagem vinda do SIDRA como decimal (12345.0) é aceita só se for inteira de fato; 12345.6 continua erro
+    col = pop["populacao"]
+    if pd.api.types.is_float_dtype(col) and col.notna().all() and (col == col.round()).all():
+        pop = pop.assign(populacao=col.astype("int64"))
     try:
         POPULACAO.validate(pop, lazy=True)
     except pa.errors.SchemaErrors as exc:
