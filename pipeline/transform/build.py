@@ -376,6 +376,10 @@ def merge_snis_sinisa(snis: pd.DataFrame | None, sinisa: pd.DataFrame | None) ->
 # --------------------------------------------------------------------------- índice
 
 
+def _int_or_none(v) -> int | None:
+    return None if v is None or pd.isna(v) else int(v)
+
+
 def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame, dict]:
     cfg = config.load("pesos_indice")
     fallbacks = cfg.get("fallbacks", {})
@@ -398,13 +402,19 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
             comps.append(ind)
         dims[dim] = comps
     weights = {k: v["weight"] for k, v in cfg["dimensions"].items()}
+    required = list(cfg.get("required_dimensions", []))
+    min_dims = cfg["min_dimensions_for_rank"]
+    prov_cfg = cfg.get("provisional") or {}
+    missing_required = [d for d in required if not dims.get(d)]
+    provisional = bool(missing_required) and prov_cfg.get("enabled", False) and len(missing_required) < len(required)
+    if provisional:
+        required = [d for d in required if dims.get(d)]
+        min_dims = int(prov_cfg.get("min_dimensions", min_dims))
     rows = {}
     for code in tab.index:
         comp = {ind: pct_cols[ind][code] for ind in pct_cols}
         ds = pidx.dimension_scores(comp, dims)
-        score, coverage = pidx.weighted_index(
-            ds, weights, cfg["min_dimensions_for_rank"], tuple(cfg.get("required_dimensions", []))
-        )
+        score, coverage = pidx.weighted_index(ds, weights, min_dims, tuple(required))
         rows[code] = {
             "indice_prioridade": score,
             "indice_cobertura": coverage,
@@ -412,7 +422,8 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
             **{f"pct__{k}": v for k, v in comp.items()},
         }
     out = pd.DataFrame.from_dict(rows, orient="index")
-    out["indice_rank"] = pd.Series(pidx.rank(out["indice_prioridade"].to_dict()))
+    scores = {k: (None if pd.isna(v) else float(v)) for k, v in out["indice_prioridade"].items()}
+    out["indice_rank"] = pd.Series(pidx.rank(scores), dtype="float64")
     dims_available = [d for d, c in dims.items() if c]
     info = {
         "weights": weights,
@@ -422,8 +433,11 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
         "dims_available": dims_available,
         "dims_missing": [d for d in dims if not dims[d]],
         "fallbacks_used": used_fallbacks,
-        "min_dimensions_for_rank": cfg["min_dimensions_for_rank"],
-        "required_dimensions": cfg.get("required_dimensions", []),
+        # Valores efetivos (o navegador refaz a conta com eles na página de Prioridades)
+        "min_dimensions_for_rank": min_dims,
+        "required_dimensions": required,
+        "provisional": provisional,
+        "provisional_without": missing_required if provisional else [],
         "ranked": int(out["indice_prioridade"].notna().sum()),
     }
     return out, info
@@ -752,7 +766,7 @@ def build_uf(uf: config.UF) -> None:
                 "pct": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},
                 "dims": {k.replace("dim_", ""): row[k] for k in tab.columns if k.startswith("dim_")},
                 "idx": row.get("indice_prioridade"),
-                "rank": row.get("indice_rank"),
+                "rank": _int_or_none(row.get("indice_rank")),
                 "thermo": {
                     "agua": th["agua"]["status"],
                     "esgoto": th["esgoto"]["status"],
@@ -995,7 +1009,7 @@ def build_uf(uf: config.UF) -> None:
             },
             "index": {
                 "score": row.get("indice_prioridade"),
-                "rank": row.get("indice_rank"),
+                "rank": _int_or_none(row.get("indice_rank")),
                 "n_ranked": idx_info["ranked"],
                 "coverage": row.get("indice_cobertura"),
                 "dims": {d: row.get(f"dim_{d}") for d in idx_info["dimensions"]},
@@ -1034,6 +1048,8 @@ def write_downloads(uf: config.UF, tab: pd.DataFrame, ctx: dict, out_dir: Path, 
     )
     # Sem repetir colunas: o índice também é indicador e entra em `numeric` quando ranqueia (achado do ensaio)
     wide = tab[[c for c in dict.fromkeys(cols) if c in tab.columns]].copy()
+    if "indice_rank" in wide:
+        wide["indice_rank"] = wide["indice_rank"].astype("Int64")  # posição inteira no CSV (vazio = fora do ranking)
     wide.index.name = "cod_ibge7"
     wide.to_csv(d / f"{uf.slug}_municipios.csv", encoding="utf-8")
     wide.reset_index().to_parquet(d / f"{uf.slug}_municipios.parquet", index=False)

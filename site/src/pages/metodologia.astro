@@ -101,7 +101,8 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
       <thead><tr><th scope="col">Dimensão</th><th scope="col" class="num">Peso</th><th scope="col">Componentes</th><th scope="col">Situação nesta versão ({R.uf.sigla})</th></tr></thead>
       <tbody>{Object.entries(pesos.dimensions).map(([k, d]: [string, any]) => <tr><th scope="row">{d.label}</th><td class="num">{Math.round(d.weight * 100)}%</td><td class="small">{d.components.map((c: any) => IND[c.indicator]?.short ?? c.indicator).join("; ")}</td><td class="small">{R.index.dims_available.includes(k) ? "com dados" : "sem dados"}</td></tr>)}</tbody>
     </table></div>
-    <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões.</p>
+    <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões, incluindo déficit de acesso e carga de saúde.</p>
+    <p class="text small"><strong>Ranking provisório:</strong> enquanto uma dimensão obrigatória não tiver dados em nenhum município do estado (hoje, a carga de saúde, que depende das internações do SUS), o ranking é calculado com as dimensões disponíveis e aparece com o aviso "provisório". Quando o dado chegar, ele passa a seguir a regra completa. <strong>Faixas:</strong> os 10% primeiros têm prioridade muito alta; até 25%, alta; até 50%, média; a metade final, menor.</p>
 
     <h2 id="agir">Agir: regras das sugestões</h2>
     <div class="table-scroll" tabindex="0" role="region" aria-label="Regras das soluções sugeridas"><table>

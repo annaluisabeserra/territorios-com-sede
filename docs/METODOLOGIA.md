@@ -137,8 +137,14 @@ Mostra quanto o território economizaria reduzindo as DRSAI em X%. **Não estima
 - Cada componente vira percentil dentro da UF (0 = melhor situação, 100 = pior), com empates pela média dos postos.
 - Dimensão = média dos componentes presentes. Índice = média ponderada das dimensões presentes, com os pesos
   renormalizados. **Nada é imputado como zero.**
-- Município com menos de 3 dimensões fica sem posição no ranking. Se a UF inteira não tem 3 dimensões, o índice
-  não é publicado (situação da versão atual: faltam saúde, clima e qualidade da água).
+- Município com menos de 3 dimensões, ou sem as obrigatórias (déficit de acesso e carga de saúde), fica sem posição
+  no ranking. Posição 1 = maior prioridade; empates recebem a mesma posição.
+- **Ranking provisório (ADR-015):** se uma dimensão obrigatória não tem dado em nenhum município da UF (fonte ainda
+  não processada, como o SIH), o ranking sai sem ela, com mínimo de 2 dimensões e o rótulo "provisório" em todas as
+  telas. A ausência é igual para todos os municípios da UF, então não há exclusão seletiva. Quando o dado chega, o
+  ranking volta à regra completa sozinho.
+- **Faixas de prioridade** (mapa, listas e panorama): 10% primeiros = muito alta; até 25% = alta; até 50% = média;
+  metade final = menor. Calculadas sobre os municípios ranqueados da UF.
 - Fallback declarado: se o Censo não estiver disponível para a UF, o déficit de acesso usa o SNIS (sinalizado).
 - Pesos ajustáveis pelo usuário no site; análise de sensibilidade (±10 p.p. por peso, top 20) publicada.
 

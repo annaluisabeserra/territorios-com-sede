@@ -61,3 +61,16 @@ export const SOURCE_LABEL: Record<string, string> = {
   datasus_sim: "DATASUS, SIM", sisagua: "Ministério da Saúde, SISAGUA", s2id: "MIDR, S2ID", monitor_secas: "ANA, Monitor de Secas",
   censo_escolar: "INEP, Censo Escolar", siconfi: "Tesouro Nacional, SICONFI",
 };
+
+/** Faixas de prioridade pela posição no ranking da UF (1º = maior prioridade). Mesmas cores no mapa e nas listas. */
+export const PRIO_CLASSES = [
+  { key: "p10", label: "Prioridade muito alta (10% primeiros)", short: "Muito alta", upTo: 0.1, color: "#9e1b1b" },
+  { key: "p25", label: "Prioridade alta (até 25%)", short: "Alta", upTo: 0.25, color: "#e34a33" },
+  { key: "p50", label: "Prioridade média (até 50%)", short: "Média", upTo: 0.5, color: "#fc8d59" },
+  { key: "p100", label: "Prioridade menor (metade final)", short: "Menor", upTo: 1, color: "#fdd49e" },
+] as const;
+
+export function prioClass(rank: number | null | undefined, n: number): (typeof PRIO_CLASSES)[number] | null {
+  if (rank === null || rank === undefined || !n) return null;
+  return PRIO_CLASSES.find((c) => rank <= Math.ceil(c.upTo * n)) ?? PRIO_CLASSES[PRIO_CLASSES.length - 1];
+}

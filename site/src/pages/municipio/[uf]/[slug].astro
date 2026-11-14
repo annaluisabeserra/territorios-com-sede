@@ -5,8 +5,8 @@ import Locator from "../../../components/Locator.astro";
 import LineChart from "../../../components/LineChart.astro";
 import ThermometerCard from "../../../components/Thermometer.astro";
 import { ficha, indicators, resumo, ufs } from "../../../lib/data";
-import { fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
-import { fmtValue, SOURCE_LABEL, THERMO_CLASS, THERMO_LABEL } from "../../../lib/indicators";
+import { deUF, fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
+import { fmtValue, prioClass, SOURCE_LABEL, THERMO_CLASS, THERMO_LABEL } from "../../../lib/indicators";
 import type { Ficha } from "../../../lib/types";
 
 export function getStaticPaths() {
@@ -63,6 +63,7 @@ const FASE: Record<string, string> = {
   "Encaminhada RI": "encaminhada como reserva indígena", "Em Estudo": "em estudo", "Delimitada": "delimitada",
   "Declarada": "declarada", "Homologada": "homologada", "Regularizada": "regularizada",
 };
+const pc = prioClass(f.index.rank, f.index.n_ranked ?? 0);
 const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.index.dimensions).map(([k, v]) => [k, v.label]));
 ---
 <Base title={title} description={desc} ogImage={`/og/${uf}/${slug}.png`}
@@ -232,16 +233,19 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
     <section id="prioridade" class="section">
       <h2>Posição no índice de prioridade</h2>
       {f.index.score !== null ? (
-        <p class="text">{f.nome} está em <strong>{f.index.rank}º lugar</strong> entre {f.index.n_ranked} municípios da {f.uf_nome} (1º = maior prioridade), com nota {fmtNumber(f.index.score)} de 100.</p>
+        <>
+          <p class="text">{f.nome} está em <strong>{f.index.rank}º lugar</strong> entre {f.index.n_ranked} municípios {deUF(f.uf_nome, f.uf_preposicao)} (1º = maior prioridade), com nota {fmtNumber(f.index.score)} de 100.{pc && <> Faixa: <span class="prio" style={`--c:${pc.color}`}>{pc.short}</span>.</>}</p>
+          {R.index.provisional && <p class="small provisorio"><strong>Ranking provisório.</strong> Ainda sem a dimensão {R.index.provisional_without!.map((d) => dimLabel[d].toLowerCase()).join(" e ")}, que entra quando os dados do SUS forem processados. A posição pode mudar.</p>}
+        </>
       ) : (
-        <p class="text">O índice ainda não pôde ser calculado para a {f.uf_nome}: ele precisa de pelo menos {R.index.min_dimensions_for_rank} das 5 dimensões, e nesta atualização há dados para {R.index.dims_available.length} ({R.index.dims_available.map((d) => dimLabel[d]).join(", ")}). Faltam: {R.index.dims_missing.map((d) => dimLabel[d]).join(", ")}.</p>
+        <p class="text">{f.nome} ainda não entrou no ranking: o índice precisa de pelo menos {R.index.min_dimensions_for_rank} das 5 dimensões{(R.index.required_dimensions?.length ?? 0) > 0 && `, incluindo ${R.index.required_dimensions!.map((d) => dimLabel[d].toLowerCase()).join(" e ")}`}, e faltam dados deste município. Hoje o estado tem dados para {R.index.dims_available.map((d) => dimLabel[d].toLowerCase()).join(", ")}.</p>
       )}
       <div class="dims">
         {Object.entries(f.index.dims).map(([d, v]) => (
           <div class="dim"><span class="small">{dimLabel[d]}</span><div class="dbar" role="img" aria-label={`${dimLabel[d]}: ${v === null ? "sem dado" : fmtNumber(v) + " de 100"}`}>{v !== null && <div style={`width:${v}%`}></div>}</div><span class="small num">{v === null ? "sem dado" : fmtNumber(v)}</span></div>
         ))}
       </div>
-      <p class="xsmall muted">Cada barra vai de 0 a 100 e compara o município com os outros do estado: 0 é a melhor situação e 100, a pior. <a href="/indice">Ajuste os pesos e veja o ranking</a>.</p>
+      <p class="xsmall muted">Cada barra vai de 0 a 100 e compara o município com os outros do estado: 0 é a melhor situação e 100, a pior. <a href={`/indice?uf=${uf}`}>Veja o ranking completo</a> · <a href={`/mapa?uf=${uf}&c=prioridade`}>Veja no mapa</a>.</p>
     </section>
 
     <section id="agir" class="section">

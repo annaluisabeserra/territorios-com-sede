@@ -42,6 +42,8 @@ export interface IndexInfo {
   fallbacks_used: Record<string, string>;
   min_dimensions_for_rank: number;
   required_dimensions?: string[];
+  provisional?: boolean;
+  provisional_without?: string[];
   ranked: number;
 }
 
@@ -82,7 +84,7 @@ export interface Impacto {
 }
 
 export interface Ficha {
-  cod: string; nome: string; slug: string; uf: string; uf_nome: string;
+  cod: string; nome: string; slug: string; uf: string; uf_nome: string; uf_preposicao?: string;
   regiao_imediata: string; regiao_intermediaria: string; semiarido: boolean | null;
   resumo: string[];
   ind: Record<string, Num>;

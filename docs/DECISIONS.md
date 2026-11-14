@@ -70,6 +70,12 @@ Formato: contexto → decisão → alternativas → consequências.
 - **SROI:** deadweight 10%, atribuição 80%, drop-off 5% ao ano, com faixas de sensibilidade (0–30%, 50–100%, 0–15%). Valores conservadores típicos de análises SROI de saneamento; revisão por especialista registrada em Q5.
 - **Desligados por padrão:** atendimento ambulatorial (sem multiplicador com referência) e óbitos (SIM sem causa disponível; abordagem sensível).
 
+## ADR-015. Ranking provisório quando uma dimensão obrigatória falta para a UF inteira
+
+- **Contexto:** o índice exige déficit de acesso e carga de saúde (revisão M3) para evitar exclusão seletiva de municípios. Sem o SIH processado, nenhum município tinha saúde, e nenhum ranking era publicado, embora as outras dimensões estivessem prontas.
+- **Decisão:** se uma dimensão obrigatória não tem dado em **nenhum** município da UF, o ranking é calculado sem ela (mínimo de 2 dimensões, as demais obrigatórias mantidas) e marcado `provisional` no `resumo.json`, com aviso em Prioridades, no mapa, na ficha e no panorama. Se a dimensão existe para parte dos municípios, vale a regra completa (quem não tem fica de fora). Faixas de prioridade por posição: 10%, 25%, 50% e o restante.
+- **Consequências:** gestores veem um ranking já com os dados disponíveis, sabendo que ele é provisório. Junto veio a correção de um defeito anterior: notas ausentes (NaN) recebiam posição e deslocavam os demais municípios.
+
 ## ADR-014. Seis fontes novas com leitores tolerantes a layout (SIM, SISAGUA, S2ID, Monitor de Secas, Censo Escolar, SICONFI)
 
 - **Contexto:** nenhuma dessas fontes é alcançável do ambiente de desenvolvimento nem tem espelho público verificado (a tabela `br_ms_sim.municipio` da Base dos Dados só traz o total de óbitos, sem causa). Os layouts não estão documentados em lugar acessível.

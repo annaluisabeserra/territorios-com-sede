@@ -36,3 +36,15 @@ describe("deUF/emUF", () => {
     expect(deUF("Sergipe")).toBe("de Sergipe");
   });
 });
+
+describe("prioClass", () => {
+  it("divide o ranking em faixas pela posição", async () => {
+    const { prioClass } = await import("./indicators");
+    expect(prioClass(1, 400)?.key).toBe("p10");
+    expect(prioClass(40, 400)?.key).toBe("p10");
+    expect(prioClass(41, 400)?.key).toBe("p25");
+    expect(prioClass(200, 400)?.key).toBe("p50");
+    expect(prioClass(400, 400)?.key).toBe("p100");
+    expect(prioClass(null, 400)).toBeNull();
+  });
+});

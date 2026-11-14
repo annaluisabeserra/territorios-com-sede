@@ -4,7 +4,7 @@ import Base from "../../layouts/Base.astro";
 import StaticMap from "../../components/StaticMap.astro";
 import { resumo, ufs } from "../../lib/data";
 import { deUF, emUF, fmtBRLShort, fmtDate, fmtNumber, fmtPct } from "../../lib/format";
-import { THERMO_COLORS, THERMO_LABEL } from "../../lib/indicators";
+import { PRIO_CLASSES, prioClass, THERMO_COLORS, THERMO_LABEL } from "../../lib/indicators";
 import type { Num, ResumoMunicipio } from "../../lib/types";
 
 export function getStaticPaths() {
@@ -53,6 +53,10 @@ const bigLate = M.filter((m) => m.thermo.esgoto === "atrasado" && m.ind.populaca
 const popLate = sum(M.filter((m) => m.thermo.esgoto === "atrasado").map((m) => m.ind.populacao));
 const popNoData = sum(M.filter((m) => m.thermo.esgoto === "sem_dados").map((m) => m.ind.populacao));
 const sdwHere = M.filter((m) => m.sdw);
+const ranked = M.filter((m) => m.rank != null).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0) || a.nome.localeCompare(b.nome, "pt-BR"));
+const nRanked = ranked.length;
+const prioColors = Object.fromEntries(M.map((m) => [m.cod, prioClass(m.rank, nRanked)?.color ?? "#c9c4ba"]));
+const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.index.dimensions).map(([k, v]) => [k, v.label]));
 const sources = Object.entries(R.sources).filter(([, s]) => s.name && s.status !== "unavailable");
 const missing = Object.values(R.sources).filter((s) => s.name && s.status === "unavailable").map((s) => s.name);
 const statusText: Record<string, string> = { ok: "atualizada", stale: "última versão válida", unavailable: "indisponível" };
@@ -95,6 +99,28 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
         </div>
       </div>
     </section>
+
+    {nRanked > 0 && (
+      <section class="section">
+        <h2>Onde agir primeiro</h2>
+        <p class="text">O ranking de prioridade junta falta de acesso, saúde, vulnerabilidade social, clima e qualidade da água numa nota de 0 a 100. O 1º lugar é onde o investimento em saneamento tende a gerar mais impacto. {nRanked} municípios {deUF(R.uf.nome, R.uf.preposicao)} têm dados para entrar no ranking.</p>
+        {R.index.provisional && <p class="small provisorio"><strong>Ranking provisório.</strong> Ainda sem a dimensão {(R.index.provisional_without ?? []).map((d) => dimLabel[d].toLowerCase()).join(" e ")}, que entra quando os dados do SUS forem processados. As posições podem mudar.</p>}
+        <div class="meta grid">
+          <figure class="card">
+            <StaticMap uf={uf!} values={{}} palette={[]} categorical={prioColors} label={`Mapa ${doEstado}: faixa de prioridade de cada município`} />
+            <figcaption class="small"><ul class="plegend">{PRIO_CLASSES.map((c) => <li><span class="prio" style={`--c:${c.color}`}>{c.short}</span></li>)}<li><span class="prio" style="--c:#c9c4ba">Fora do ranking</span></li></ul></figcaption>
+          </figure>
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Os 15 municípios de maior prioridade">
+            <table>
+              <caption>Os 15 primeiros do ranking</caption>
+              <thead><tr><th scope="col" class="num">Posição</th><th scope="col">Município</th><th scope="col" class="num">Nota</th></tr></thead>
+              <tbody>{ranked.slice(0, 15).map((m) => (<tr><td class="num">{m.rank}º</td><th scope="row"><a href={`/municipio/${uf}/${m.slug}`}>{m.nome}</a><br /><span class="xsmall muted">{m.ri}</span></th><td class="num">{fmtNumber(m.idx)}</td></tr>))}</tbody>
+            </table>
+          </div>
+        </div>
+        <p class="small no-print"><a href={`/indice?uf=${uf}`}>Ver o ranking completo e ajustar os pesos</a> · <a href={`/mapa?uf=${uf}&c=prioridade`}>Ver no mapa interativo</a></p>
+      </section>
+    )}
 
     {bigLate.length > 0 && (
       <section class="section">
@@ -173,6 +199,7 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
   @media (min-width: 52rem) { .meta { grid-template-columns: 1fr 1fr; } }
   .meta figure { margin: 0; }
   .meta :global(svg) { width: 100%; height: auto; max-height: 26rem; }
+  .plegend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); margin: var(--s-2) 0 0; }
   .dot { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%; margin-right: 0.4em; vertical-align: -0.05em; }
   @media print {
     .estado { padding: 0; }
