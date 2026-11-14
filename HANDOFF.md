@@ -109,8 +109,9 @@ Tudo abaixo usa **planos gratuitos**. Nenhum pede cartão de crédito.
    - *Variables* (opcionais): `SITE_URL` (padrão `https://territorios.institutosdw.org`), `PUBLIC_REPO_URL`,
      `PUBLIC_CF_BEACON_TOKEN` (estatísticas sem cookies, passo 3.5).
 4. Rode o workflow **Deploy** (Actions → Deploy → Run workflow). Ele cria o projeto `territorios-com-sede`.
-5. **Plano B sem Cloudflare:** se os secrets não existirem, o mesmo workflow publica no **GitHub Pages**
-   (Settings → Pages → Source: GitHub Actions).
+5. **Plano B sem Cloudflare:** publicar no **GitHub Pages**. Só funciona com repositório público (no plano
+   gratuito). Ative em Settings → Pages → Source: GitHub Actions e crie a variável `ENABLE_GITHUB_PAGES` = `true`.
+   Sem os secrets do Cloudflare e sem essa variável, o Deploy só gera o site e não publica (fica verde).
 
 ### 3.4 Configurar o endereço `territorios.institutosdw.org`
 

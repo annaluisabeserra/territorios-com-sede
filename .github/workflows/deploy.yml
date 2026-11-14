@@ -1,7 +1,8 @@
 name: Deploy
 # Gera data/public a partir de data/processed (ADR-007), constrói o site e publica.
 # Destino padrão: Cloudflare Pages (precisa dos secrets CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID).
-# Sem esses secrets, publica no GitHub Pages (plano de saída, ver HANDOFF.md).
+# GitHub Pages (plano de saída, ver HANDOFF.md) só é usado com a variável ENABLE_GITHUB_PAGES = true
+# e Pages ativado em Settings → Pages (não disponível para repositório privado no plano gratuito).
 on:
   push:
     branches: [main]
@@ -68,7 +69,7 @@ jobs:
           command: pages deploy dist --project-name=territorios-com-sede --branch=main
   github-pages:
     needs: build
-    if: needs.build.outputs.cloudflare != 'true'
+    if: needs.build.outputs.cloudflare != 'true' && vars.ENABLE_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write

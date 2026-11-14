@@ -7,6 +7,10 @@ updates:
     directory: /site
     schedule: { interval: monthly }
     open-pull-requests-limit: 3
+    ignore:
+      # TypeScript 7 ainda não é aceito pelo @astrojs/check (peer ^5 || ^6); rever quando o Astro suportar
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: uv
     directory: /
     schedule: { interval: monthly }
