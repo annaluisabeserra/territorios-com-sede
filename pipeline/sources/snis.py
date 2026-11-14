@@ -27,6 +27,20 @@ EXTRA = {
     "populacao_atendida_agua": "snis_pop_atendida_agua",
     "populacao_atentida_esgoto": "snis_pop_atendida_esgoto",
 }
+# Volumes (1.000 m³/ano) e despesas (R$ nominais) para a camada "água perdida" da conta de impacto (ADR-013).
+for _c in (
+    "volume_agua_produzido",
+    "volume_agua_tratada_importado",
+    "volume_agua_tratada_exportado",
+    "volume_agua_consumido",
+    "volume_servico_agua",
+    "volume_agua_faturado",
+    "volume_esgoto_faturado",
+    "despesa_exploracao",
+    "despesa_energia",
+    "despesa_produto_quimico",
+):
+    EXTRA[_c] = _c
 PCT_CAP = {
     "snis_agua_pct",
     "snis_esgoto_pct",

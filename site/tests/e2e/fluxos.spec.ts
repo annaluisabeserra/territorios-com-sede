@@ -89,3 +89,13 @@ test("panorama estadual: trilha da ficha leva ao estado e o mapa mostra a atuaç
   await expect(page.getByRole("button", { name: /Salvar em PDF/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "São Gonçalo do Amarante" }).first()).toBeVisible();
 });
+
+test("conta de impacto mostra camadas separadas, faixa e 'sem dado ainda' em vez de zero", async ({ page }) => {
+  await page.goto("/municipio/ce/fortaleza");
+  const s = page.locator("#impacto");
+  await expect(s.getByRole("heading", { level: 2 })).toContainText("Quanto custa");
+  await expect(s.getByText("Água tratada perdida na distribuição")).toBeVisible();
+  await expect(s.getByText(/R\$ .* a R\$ /).first()).toBeVisible();
+  await expect(s.getByText("sem dado ainda").first()).toBeVisible();
+  await expect(s).not.toContainText("R$ 0");
+});

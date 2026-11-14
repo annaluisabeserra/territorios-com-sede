@@ -647,6 +647,20 @@ def build_uf(uf: config.UF) -> None:
     }
 
     thermos = {code: thermo_for(code, ctx) for code in tab.index}
+
+    # Conta de impacto (ADR-013): água perdida em R$ do mesmo ano-base do SIH (ou do último ano completo do IPCA)
+    from pipeline.sources.ipca import annual_deflator, last_complete_year
+    from pipeline.transform import impact
+
+    imp_cfg = config.load("impacto")
+    ipca = inp.get("ipca")
+    imp_base = hinfo.get("price_base") or (last_complete_year(ipca) if ipca is not None else None)
+    water = pd.DataFrame()
+    if ipca is not None and imp_base:
+        water = impact.water_losses(
+            inp.get("snis"), annual_deflator(ipca, imp_base), imp_cfg["camadas"]["agua_perdida"]["outlier_mult"]
+        )
+    water = water.reindex(water.index.intersection(tab.index))
     sih_period = None
     if hinfo.get("years"):
         sih_period = f"média {hinfo['years'][0]}–{hinfo['years'][-1]}, em R$ de {hinfo['price_base']}"
@@ -702,6 +716,15 @@ def build_uf(uf: config.UF) -> None:
         "pop_quilombola": tab["pop_quilombola"].sum(min_count=1) if "pop_quilombola" in tab else None,
         "terras_indigenas": int(len(tis_geo)) if tis_geo is not None else None,
         "ucs_uso_sustentavel": int(len(ucs_geo)) if ucs_geo is not None else None,
+        "agua_perdida_m3": float(water["perda_m3"].sum()) if len(water) else None,
+        "agua_perdida_baixo": float(water["valor_baixo"].sum(min_count=1)) if len(water) else None,
+        # Município sem cenário alto entra pelo baixo (conservador)
+        "agua_perdida_alto": float(water["valor_alto"].fillna(water["valor_baixo"]).sum(min_count=1))
+        if len(water)
+        else None,
+        "agua_perdida_municipios": int(water["valor_baixo"].notna().sum()) if len(water) else 0,
+        "agua_perdida_ano": int(water["year"].max()) if len(water) else None,
+        "impacto_price_base": imp_base,
     }
     if "snis_esgoto_pct" in tab and "snis_pop_atendida_esgoto" not in tab:
         pass
@@ -837,6 +860,17 @@ def build_uf(uf: config.UF) -> None:
             "thermometer": th,
             "divergence": div,
             "health": health,
+            "impacto": impact.account(
+                baseline.hospital_cost,
+                baseline.hospital_days,
+                baseline.school_days,
+                daily_income,
+                water.loc[code].to_dict() if code in water.index else None,
+                ind.get("populacao"),
+                imp_cfg,
+                sih_period,
+                imp_base,
+            ),
             "calculator": {
                 "baseline": {
                     "hospital_cost": baseline.hospital_cost,

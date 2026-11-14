@@ -1,4 +1,5 @@
 ---
+import ImpactAccount from "../../../components/ImpactAccount.astro";
 import Base from "../../../layouts/Base.astro";
 import Locator from "../../../components/Locator.astro";
 import LineChart from "../../../components/LineChart.astro";
@@ -89,7 +90,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
 
   <div class="wrap layout">
     <nav class="toc no-print small" aria-label="Nesta página">
-      <a href="#indicadores">Indicadores</a><a href="#meta2033">Meta 2033</a><a href="#saude">Saúde e custo</a>
+      <a href="#indicadores">Indicadores</a><a href="#meta2033">Meta 2033</a><a href="#saude">Saúde e custo</a><a href="#impacto">Quanto custa</a>
       <a href="#comunidades">Comunidades</a><a href="#prioridade">Prioridade</a><a href="#agir">Agir</a><a href="#fontes">Fontes</a>
     </nav>
 
@@ -173,6 +174,14 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <p class="source">Fonte: {srcLine("sih_drsai", "DATASUS, SIH/SUS")}{h && `, ${h.period}`}. Doenças relacionadas ao saneamento ambiental inadequado (DRSAI), núcleo conservador. <a href="/metodologia#drsai">Quais doenças entram</a>.</p>
       <p><a class="btn secondary no-print" href={calcUrl}>Abrir a calculadora com os dados de {f.nome}</a></p>
     </section>
+
+    {f.impacto && (
+      <section id="impacto" class="section">
+        <h2>Quanto custa a falta de saneamento em {f.nome}</h2>
+        <p class="text">Uma casa sem saneamento paga a conta de outro jeito: em internações, em dias sem trabalhar, em aulas perdidas e em água tratada que vaza antes de chegar à torneira. Somamos o que dá para medir.</p>
+        <ImpactAccount impacto={f.impacto} nome={f.nome} />
+      </section>
+    )}
 
     <section id="comunidades" class="section">
       <h2>Comunidades e territórios</h2>

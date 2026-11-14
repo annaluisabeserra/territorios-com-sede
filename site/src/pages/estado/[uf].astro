@@ -109,6 +109,16 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
       </section>
     )}
 
+    {t.agua_perdida_baixo != null && (
+      <section class="section">
+        <h2>Água tratada que se perde no caminho</h2>
+        <p class="text">Em {t.agua_perdida_ano}, {fmtNumber((t.agua_perdida_m3 ?? 0) / 1e6, 0)} milhões de metros cúbicos de água foram captados, tratados e se perderam em vazamentos, ligações irregulares e erros de medição antes de chegar às casas. Daria para encher uma caixa d'água de mil litros {fmtNumber((t.agua_perdida_m3 ?? 0) / 1e6, 0)} milhões de vezes.</p>
+        <div class="nums">
+          <div class="card stat"><p class="n">{fmtBRLShort(t.agua_perdida_baixo)} a {fmtBRLShort(t.agua_perdida_alto)}</p><p>por ano, em R$ de {t.impacto_price_base}</p><p class="source">SNIS {t.agua_perdida_ano}, {t.agua_perdida_municipios} municípios. Estimativa: do custo de energia e produtos químicos ao custo completo de operação por m³. <a href="/metodologia#impacto">Premissas</a></p></div>
+        </div>
+      </section>
+    )}
+
     <section class="section">
       <h2>Por região</h2>
       <p class="text">As regiões intermediárias do IBGE agrupam municípios em torno de uma cidade-polo. Ordenadas pela população.</p>

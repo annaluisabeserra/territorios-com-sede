@@ -70,6 +70,12 @@ Formato: contexto → decisão → alternativas → consequências.
 - **SROI:** deadweight 10%, atribuição 80%, drop-off 5% ao ano, com faixas de sensibilidade (0–30%, 50–100%, 0–15%). Valores conservadores típicos de análises SROI de saneamento; revisão por especialista registrada em Q5.
 - **Desligados por padrão:** atendimento ambulatorial (sem multiplicador com referência) e óbitos (SIM sem causa disponível; abordagem sensível).
 
+## ADR-013. Conta de impacto em camadas, inspirada no True Value
+
+- **Contexto:** a SDW quer medir o potencial de impacto do saneamento em dinheiro, como na metodologia True Value (KPMG), sem inventar números.
+- **Decisão:** conta por município com camadas separadas (`pipeline/config/impacto.yaml`, `pipeline/transform/impact.py`): gasto do SUS (SIH, medido), renda perdida (SIH × renda do Censo, mesma regra da calculadora), água tratada perdida (SNIS, faixa entre custo marginal de energia e químicos e custo completo IN026) e dias de aula (não monetizado). O volume perdido é validado contra o IN049 declarado (folga de 2 pontos). O total só soma camadas com dado e lista as ausentes; camada sem cenário alto entra no total alto pelo valor baixo. Nome público: "inspirado na metodologia True Value", sem sugerir validação da KPMG.
+- **Consequências:** a camada de água já aparece com os dados atuais; saúde e renda aparecem quando o SIH entrar. Óbitos (SIM), ambulatorial e ambiente ficam para depois, com coeficientes revisados pelo especialista em economia da saúde.
+
 ## ADR-012. SINISA continua a série do SNIS, com quebra sinalizada
 
 - **Contexto:** o SNIS termina no ano de referência 2022; o SINISA o substitui e publica planilhas por edição, com nomes de arquivo que mudam e códigos novos de indicador. O gov.br não é alcançável do ambiente de desenvolvimento, só do GitHub Actions.

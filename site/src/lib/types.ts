@@ -71,6 +71,16 @@ export interface Baseline {
   hospital_cost: Num; hospital_days: Num; school_days: Num; daily_income: Num; deaths?: Num; productive_years_lost?: Num;
 }
 
+export interface ImpactoCamada {
+  label: string; pergunta: string; tipo: "observado" | "estimado" | "indicador"; premissa: string | null;
+  baixo: Num; alto: Num; unidade: "brl" | "dias"; referencia: string | null; fonte: string; volume_m3?: number;
+}
+export interface Impacto {
+  camadas: Record<"saude_sus" | "trabalho" | "escola" | "agua_perdida", ImpactoCamada>;
+  total: { baixo: Num; alto: Num; por_pessoa_baixo: Num; por_pessoa_alto: Num; inclui: string[]; faltando: ("saude_sus" | "trabalho" | "agua_perdida")[]; alto_parcial: string[] };
+  price_base: Num;
+}
+
 export interface Ficha {
   cod: string; nome: string; slug: string; uf: string; uf_nome: string;
   regiao_imediata: string; regiao_intermediaria: string; semiarido: boolean | null;
@@ -82,6 +92,7 @@ export interface Ficha {
   series: Record<string, [number, number][]>;
   thermometer: { agua: Thermometer; esgoto: Thermometer };
   divergence: Record<string, { censo: number; snis: number; diff_pp: number; flag: boolean }>;
+  impacto?: Impacto;
   health: null | {
     internacoes: number; valor: number; dias: number; obitos: Num; taxa_10mil: number; custo_per_capita: number;
     dias_6_17: Num; internacoes_menor5: Num; period: string;
