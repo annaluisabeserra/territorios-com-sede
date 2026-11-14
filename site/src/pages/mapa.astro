@@ -10,12 +10,13 @@ const layers = [
   { id: "thermo_agua", label: "Meta 2033: água", kind: "thermo" },
   { id: "thermo_esgoto", label: "Meta 2033: esgoto coletado e tratado", kind: "thermo" },
   { id: "semiarido", label: "Semiárido", kind: "cat" },
+  { id: "sdw", label: "Onde o Instituto SDW atua", kind: "cat" },
 ];
 const list = ufs();
 const R0 = resumo(DEFAULT_UF);
 const preview = Object.fromEntries(R0.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
 // Camadas sem nenhum valor na UF padrão ficam desabilitadas e rotuladas (revisão M4)
-const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" || R0.municipios.some((m) => (id === "indice_prioridade" ? m.idx : m.ind[id]) != null);
+const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" || id === "sdw" || R0.municipios.some((m) => (id === "indice_prioridade" ? m.idx : m.ind[id]) != null);
 ---
 <Base title="Mapa" description="Mapa interativo de água, esgoto, saúde e comunidades de cada município.">
   <link rel="preload" as="fetch" href="/data/ba/resumo.json" crossorigin="anonymous" slot="head" />
@@ -86,6 +87,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
     if (layer === "thermo_agua") return m.thermo.agua;
     if (layer === "thermo_esgoto") return m.thermo.esgoto;
     if (layer === "semiarido") return m.semiarido === null ? null : m.semiarido ? "sim" : "nao";
+    if (layer === "sdw") return m.sdw ? "sim" : "nao";
     if (layer === "indice_prioridade") return m.idx;
     return m.ind[layer] ?? null;
   }
@@ -94,6 +96,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
     const vals = R.municipios.map((m) => valueOf(m, layer));
     if (layer.startsWith("thermo")) return { color: (v: any) => THERMO_COLORS[v] ?? NODATA, legend: Object.keys(THERMO_LABEL).map((k) => ({ c: THERMO_COLORS[k], t: `${THERMO_LABEL[k]} (${vals.filter((v) => v === k).length})` })) };
     if (layer === "semiarido") return { color: (v: any) => (v === "sim" ? "#c8873a" : v === "nao" ? "#e8e1d4" : NODATA), legend: [{ c: "#c8873a", t: "No Semiárido" }, { c: "#e8e1d4", t: "Fora do Semiárido" }] };
+    if (layer === "sdw") return { color: (v: any) => (v === "sim" ? "#0e5c7d" : "#e8e1d4"), legend: [{ c: "#0e5c7d", t: "Município com atuação do Instituto SDW" }, { c: "#e8e1d4", t: "Outros municípios" }] };
     const def = IND[layer];
     const pal = def.direction === "higher_is_better" ? GOOD : BAD;
     if (!vals.some((v) => v !== null)) return { color: () => NODATA, legend: [{ c: NODATA, t: "Sem dado nesta versão para nenhum município" }] };
@@ -118,7 +121,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
     $("legend").innerHTML = `<p class="small"><strong>${layerSel.selectedOptions[0].text}</strong>${def ? ` <span class="muted">(${unitLabel(def)})</span>` : ""}</p><ul>${s.legend.map((l) => `<li><i style="background:${l.c}"></i>${l.t}</li>`).join("")}</ul>`;
     const srcKey = def?.source === "snis" || layer.startsWith("thermo") ? "snis" : def?.source === "datasus_sih" ? "sih_drsai" : layer === "semiarido" ? "semiarido" : def?.source === "ibge_censo2022" ? "censo_lixo" : null;
     const src = srcKey ? R.sources[srcKey] : null;
-    $("desc").textContent = def ? def.formula : layer.startsWith("thermo") ? "Situação de cada município em relação à meta de 2033 do Marco Legal do Saneamento, pela tendência do SNIS." : "Delimitação oficial do Semiárido (Sudene).";
+    $("desc").textContent = def ? def.formula : layer.startsWith("thermo") ? "Situação de cada município em relação à meta de 2033 do Marco Legal do Saneamento, pela tendência do SNIS." : layer === "sdw" ? "Municípios onde o Instituto SDW tem sede ou projetos (informação do próprio Instituto)." : "Delimitação oficial do Semiárido (Sudene).";
     $("source").textContent = src ? `Fonte: ${src.name}, ${src.reference_period ?? ""}${src.status === "unavailable" ? " (indisponível nesta atualização)" : ""}${src.url_kind === "mirror" ? " (cópia pública do dado oficial)" : ""}` : "";
     renderTable();
     history.replaceState(null, "", `?uf=${ufSel.value}&c=${layer}`);
@@ -127,7 +130,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
   function display(m: Resumo["municipios"][number], layer: string) {
     const v = valueOf(m, layer);
     if (layer.startsWith("thermo")) return THERMO_LABEL[v as string] ?? "sem dado";
-    if (layer === "semiarido") return v === "sim" ? "Sim" : v === "nao" ? "Não" : "sem dado";
+    if (layer === "semiarido" || layer === "sdw") return v === "sim" ? "Sim" : v === "nao" ? "Não" : "sem dado";
     return fmtValue(IND[layer], v as number | null);
   }
 

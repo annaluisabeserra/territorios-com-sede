@@ -29,6 +29,13 @@ export function fmtBRLShort(v: number | null | undefined): string {
   return fmtBRL(v);
 }
 
+/** Data ISO → dd/mm/aaaa. Ausente ou inválida vira "sem dado". */
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return NO_DATA;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? NO_DATA : d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
 /** "1 em cada 3" a partir de um percentual (só para frações legíveis). */
 export function oneInN(pct: number | null | undefined): string | null {
   if (pct === null || pct === undefined || pct <= 0 || pct > 100) return null;

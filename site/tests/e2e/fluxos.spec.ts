@@ -79,3 +79,13 @@ test("nenhuma ficha mostra 'None', 'nan' ou caractere corrompido", async ({ page
     expect(text).not.toMatch(/\bNone\b|\bnan%?|¿|undefined|∞/i);
   }
 });
+
+test("panorama estadual: trilha da ficha leva ao estado e o mapa mostra a atuação do Instituto SDW", async ({ page }) => {
+  await page.goto("/municipio/ce/sao-goncalo-do-amarante");
+  await expect(page.getByText("O Instituto SDW está aqui")).toBeVisible();
+  await page.getByRole("navigation", { name: "Trilha" }).getByRole("link", { name: "Ceará" }).click();
+  await expect(page).toHaveURL(/\/estado\/ce/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Água e esgoto no Ceará");
+  await expect(page.getByRole("button", { name: /Salvar em PDF/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "São Gonçalo do Amarante" }).first()).toBeVisible();
+});

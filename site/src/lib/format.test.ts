@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtBRL, fmtPct, fmtNumber, oneInN, fmtBRLShort, NO_DATA } from "./format";
+import { fmtDate, fmtBRL, fmtPct, fmtNumber, oneInN, fmtBRLShort, NO_DATA } from "./format";
 
 describe("formatação pt-BR", () => {
   it("formata moeda e percentual no padrão brasileiro", () => {
@@ -16,5 +16,13 @@ describe("formatação pt-BR", () => {
     expect(fmtBRLShort(12_345_678)).toBe("R$ 12,3 milhões");
     expect(oneInN(33.3)).toBe("1 em cada 3");
     expect(oneInN(1)).toBeNull();
+  });
+});
+
+describe("fmtDate", () => {
+  it("formata em pt-BR e trata ausência", () => {
+    expect(fmtDate("2026-03-05T15:00:00Z")).toBe("05/03/2026");
+    expect(fmtDate(null)).toBe("sem dado");
+    expect(fmtDate("lixo")).toBe("sem dado");
   });
 });

@@ -572,6 +572,18 @@ def build_uf(uf: config.UF) -> None:
     nbrs = neighbors(inp)
     com_by_mun, tis_geo = communities(inp)
     ucs_mun, ucs_geo = ucs_by_municipality(inp)
+    sdw_cfg = config.load("atuacao_sdw")
+    sdw_by_mun: dict[str, list[dict]] = {}
+    for loc in sdw_cfg.get("locais") or []:
+        sdw_by_mun.setdefault(str(loc["municipio"]), []).append(
+            {
+                "localidade": loc.get("localidade"),
+                "papel": loc.get("papel"),
+                "descricao": loc.get("descricao"),
+                "site": sdw_cfg.get("site"),
+                "contato": sdw_cfg.get("contato"),
+            }
+        )
     tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, withdrawn = apply_withdrawals(
         tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, config.load("retiradas")
     )
@@ -613,6 +625,7 @@ def build_uf(uf: config.UF) -> None:
                 "slug": row["slug"],
                 "ri": row["regiao_intermediaria"],
                 "rim": row["regiao_imediata"],
+                "sdw": code in sdw_by_mun,
                 "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao")),
                 "semiarido": row["semiarido"],
                 "ind": ind,
@@ -821,6 +834,7 @@ def build_uf(uf: config.UF) -> None:
                 "dims": {d: row.get(f"dim_{d}") for d in idx_info["dimensions"]},
                 "components": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},
             },
+            "atuacao_sdw": sdw_by_mun.get(code, []),
             "suggestions": act.suggestions(
                 ind,
                 {"semiarido": row["semiarido"], "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao"))},

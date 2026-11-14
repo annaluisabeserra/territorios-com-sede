@@ -31,7 +31,7 @@ export interface ThermoShort { agua: string; esgoto: string; agua_ano: Num; esgo
 export interface ResumoMunicipio {
   cod: string; nome: string; slug: string; ri: string; rim: string; semiarido: boolean | null;
   ind: Record<string, Num>; pct: Record<string, Num>; dims: Record<string, Num>;
-  idx: Num; rank: Num; thermo: ThermoShort;
+  idx: Num; rank: Num; thermo: ThermoShort; sdw?: boolean;
 }
 
 export interface IndexInfo {
@@ -95,6 +95,7 @@ export interface Ficha {
     terras_indigenas: { codigo_funai: string | null; ufs: string | null; data_ref: string | null; nome: string; etnia: string | null; fase: string | null; modalidade: string | null; area_ha_total: Num; pct_da_ti_no_municipio: number }[];
   };
   index: { score: Num; rank: Num; n_ranked: number; coverage: Num; dims: Record<string, Num>; components: Record<string, Num> };
+  atuacao_sdw?: { localidade: string; papel: string; descricao: string; site: string; contato: string }[];
   suggestions: { id: string; title: string; why: string; contact: string }[];
   neighbors: { cod: string; nome: string; slug: string }[];
   generated_at: string;

@@ -62,7 +62,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   <div class="hero">
     <div class="wrap hero-in">
       <div>
-        <nav aria-label="Trilha" class="crumbs small"><a href="/">Início</a> › <a href={`/mapa?uf=${uf}`}>{f.uf_nome}</a> › <span aria-current="page">{f.nome}</span></nav>
+        <nav aria-label="Trilha" class="crumbs small"><a href="/">Início</a> › <a href={`/estado/${uf}`}>{f.uf_nome}</a> › <span aria-current="page">{f.nome}</span></nav>
         <h1>{f.nome} <span class="uf">{f.uf}</span></h1>
         <p class="meta small">{f.regiao_intermediaria} · {fmtNumber(f.ind.populacao)} moradores {f.semiarido && <span class="tag warn">Semiárido</span>}</p>
         <div class="resumo">{f.resumo.map((p) => <p>{p}</p>)}</div>
@@ -221,6 +221,13 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
     </section>
 
     <section id="agir" class="section">
+      {(f.atuacao_sdw?.length ?? 0) > 0 && (
+        <div class="sdw card">
+          <p class="eyebrow">O Instituto SDW está aqui</p>
+          {f.atuacao_sdw!.map((a) => (<><h3>{a.papel}</h3><p>{a.descricao}</p></>))}
+          <p class="small"><a href={f.atuacao_sdw![0].site}>Conheça o trabalho do Instituto</a> · <a href={`mailto:${f.atuacao_sdw![0].contato}`}>{f.atuacao_sdw![0].contato}</a></p>
+        </div>
+      )}
       <h2>Agir: soluções que combinam com este território</h2>
       <div class="grid grid-2">
         {f.suggestions.map((s) => (<div class="card"><h3>{s.title}</h3><p class="small">{s.why}</p></div>))}
@@ -265,6 +272,8 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .kv dd { margin: 0; text-align: right; }
   .tis { padding-left: var(--s-4); }
   .sub { font-size: var(--fs-md); margin-top: var(--s-4); }
+  .sdw { border-left: 6px solid var(--c-water-500); margin-bottom: var(--s-6); background: var(--c-water-100); box-shadow: none; }
+  .sdw h3 { margin-top: var(--s-2); }
   .tis li { margin-bottom: var(--s-2); }
   .dims { display: grid; gap: var(--s-2); max-width: 40rem; margin: var(--s-4) 0; }
   .dim { display: grid; grid-template-columns: 11rem 1fr 4.5rem; gap: var(--s-3); align-items: center; }

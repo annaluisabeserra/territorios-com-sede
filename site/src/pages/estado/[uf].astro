@@ -1,0 +1,174 @@
+---
+// Panorama estadual: números da UF, meta de 2033, regiões intermediárias e fontes. Imprimível (Salvar em PDF).
+import Base from "../../layouts/Base.astro";
+import StaticMap from "../../components/StaticMap.astro";
+import { resumo, ufs } from "../../lib/data";
+import { fmtBRLShort, fmtDate, fmtNumber, fmtPct } from "../../lib/format";
+import { THERMO_COLORS, THERMO_LABEL } from "../../lib/indicators";
+import type { Num, ResumoMunicipio } from "../../lib/types";
+
+export function getStaticPaths() {
+  return ufs().map((u) => ({ params: { uf: u.slug } }));
+}
+
+const { uf } = Astro.params;
+const R = resumo(uf!);
+const t = R.totals;
+const M = R.municipios;
+const n = M.length;
+const article = R.uf.sigla === "BA" ? "na" : R.uf.sigla === "CE" ? "no" : "em";
+
+const statusCounts = (svc: "agua" | "esgoto") =>
+  Object.keys(THERMO_LABEL).map((k) => ({ k, label: THERMO_LABEL[k], n: M.filter((m) => m.thermo[svc] === k).length }));
+const agua = statusCounts("agua");
+const esgoto = statusCounts("esgoto");
+const thermoColors = Object.fromEntries(M.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
+
+const median = (xs: Num[]): Num => {
+  const v = xs.filter((x): x is number => x !== null && x !== undefined && Number.isFinite(x)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const h = Math.floor(v.length / 2);
+  return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
+};
+const sum = (xs: Num[]): number => xs.reduce<number>((a, x) => a + (x ?? 0), 0);
+
+// Tabela por região intermediária do IBGE
+const byRegion = new Map<string, ResumoMunicipio[]>();
+for (const m of M) byRegion.set(m.ri || "sem região", [...(byRegion.get(m.ri || "sem região") ?? []), m]);
+const regions = [...byRegion.entries()]
+  .map(([ri, ms]) => ({
+    ri, n: ms.length, pop: sum(ms.map((m) => m.ind.populacao)),
+    semi: ms.filter((m) => m.semiarido).length,
+    aguaAtr: ms.filter((m) => m.thermo.agua === "atrasado").length,
+    esgAtr: ms.filter((m) => m.thermo.esgoto === "atrasado").length,
+    esgSem: ms.filter((m) => m.thermo.esgoto === "sem_dados").length,
+    lixo: median(ms.map((m) => m.ind.censo_lixo_coletado_pct)),
+  }))
+  .sort((a, b) => b.pop - a.pop);
+
+// Onde mais gente mora fora do ritmo da meta de esgoto
+const bigLate = M.filter((m) => m.thermo.esgoto === "atrasado" && m.ind.populacao != null)
+  .sort((a, b) => (b.ind.populacao ?? 0) - (a.ind.populacao ?? 0)).slice(0, 15);
+const popLate = sum(M.filter((m) => m.thermo.esgoto === "atrasado").map((m) => m.ind.populacao));
+const popNoData = sum(M.filter((m) => m.thermo.esgoto === "sem_dados").map((m) => m.ind.populacao));
+const sdwHere = M.filter((m) => m.sdw);
+const sources = Object.entries(R.sources).filter(([, s]) => s.name && s.status !== "unavailable");
+const missing = Object.values(R.sources).filter((s) => s.name && s.status === "unavailable").map((s) => s.name);
+const statusText: Record<string, string> = { ok: "atualizada", stale: "última versão válida", unavailable: "indisponível" };
+---
+<Base title={`Panorama ${article === "em" ? "de" : article === "na" ? "da" : "do"} ${R.uf.nome}`} description={`Água, esgoto e meta de 2033 nos ${n} municípios ${article === "na" ? "da" : article === "no" ? "do" : "de"} ${R.uf.nome}, com fontes oficiais.`}>
+  <article class="wrap section estado">
+    <p class="eyebrow">Panorama estadual · {R.uf.sigla}</p>
+    <h1>Água e esgoto {article} {R.uf.nome}</h1>
+    <p class="text">Um retrato dos {n} municípios a partir de dados públicos do IBGE, do SNIS e de outras fontes oficiais. Cada número traz a fonte e o ano de referência. Para salvar ou imprimir este panorama, use o botão abaixo.</p>
+    <p class="no-print"><button type="button" class="btn" id="print">Salvar em PDF ou imprimir</button></p>
+
+    <section class="nums" aria-label="Números do estado">
+      <div class="card stat"><p class="n">{fmtNumber(t.populacao)}</p><p>habitantes</p><p class="source">IBGE, Censo 2022</p></div>
+      <div class="card stat"><p class="n">{fmtNumber(t.municipios ?? n)}</p><p>municípios, {fmtNumber(t.semiarido)} no Semiárido</p><p class="source">IBGE; Sudene</p></div>
+      {t.pessoas_sem_esgoto_censo != null && <div class="card stat"><p class="n">{fmtNumber(t.pessoas_sem_esgoto_censo)}</p><p>pessoas sem esgoto adequado</p><p class="source">IBGE, Censo 2022</p></div>}
+      {t.drsai_valor_anual != null && <div class="card stat"><p class="n">{fmtBRLShort(t.drsai_valor_anual)}</p><p>por ano em internações do SUS por doenças ligadas ao saneamento</p><p class="source">DATASUS, SIH/SUS, {R.health.period_label}</p></div>}
+      <div class="card stat"><p class="n">{fmtNumber(popLate)}</p><p>pessoas vivem em municípios fora do ritmo da meta de esgoto</p><p class="source">IBGE; SNIS, tendência até {R.snis_year}</p></div>
+    </section>
+
+    <section class="section">
+      <h2>A meta de 2033</h2>
+      <p class="text">O Marco Legal do Saneamento (Lei 14.026/2020) pede que, até 2033, 99% da população tenha água tratada e 90% tenha esgoto coletado e tratado. Pela tendência de cada município no SNIS, dá para estimar se ele chega lá a tempo. É como olhar a velocidade de um carro e calcular a hora de chegada: a conta só vale se o ritmo continuar o mesmo.</p>
+      <div class="meta grid">
+        <figure class="card">
+          <StaticMap uf={uf!} values={{}} palette={[]} categorical={thermoColors} label={`Mapa ${article === "na" ? "da" : "do"} ${R.uf.nome}: situação de cada município na meta de esgoto de 2033`} />
+          <figcaption class="small">Esgoto coletado e tratado, tendência até {R.snis_year}.</figcaption>
+        </figure>
+        <div>
+          <table>
+            <caption>Municípios por situação na meta</caption>
+            <thead><tr><th scope="col">Situação</th><th scope="col" class="num">Água (99%)</th><th scope="col" class="num">Esgoto (90%)</th></tr></thead>
+            <tbody>
+              {agua.map((a, i) => (<tr><th scope="row"><i class="dot" style={`background:${THERMO_COLORS[a.k]}`}></i>{a.label}</th><td class="num">{a.n}</td><td class="num">{esgoto[i].n}</td></tr>))}
+            </tbody>
+          </table>
+          <p class="small">"Sem dados suficientes" quer dizer que o município não declarou ao SNIS anos bastantes para calcular a tendência. Nesses municípios vivem {fmtNumber(popNoData)} pessoas. A falta de dado também é uma informação: quem não é medido costuma ficar fora dos planos.</p>
+          <p class="source">SNIS (IN055 para água; IN056 × IN016 para esgoto). <a href="/metodologia#termometro">Como calculamos</a></p>
+        </div>
+      </div>
+    </section>
+
+    {bigLate.length > 0 && (
+      <section class="section">
+        <h2>Onde mais gente espera pelo esgoto</h2>
+        <p class="text">Os {bigLate.length} municípios mais populosos que estão fora do ritmo da meta de esgoto.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Municípios mais populosos atrasados na meta de esgoto">
+          <table>
+            <thead><tr><th scope="col">Município</th><th scope="col">Região intermediária</th><th scope="col" class="num">População</th><th scope="col" class="num">Esgoto coletado e tratado</th><th scope="col" class="num">Ano estimado para 90%</th></tr></thead>
+            <tbody>
+              {bigLate.map((m) => (<tr><th scope="row"><a href={`/municipio/${uf}/${m.slug}`}>{m.nome}</a></th><td>{m.ri}</td><td class="num">{fmtNumber(m.ind.populacao)}</td><td class="num">{fmtPct(m.ind.snis_esgoto_tratado_pct)}</td><td class="num">{m.thermo.esgoto_ano ? (m.thermo.esgoto_ano > 2100 ? "depois de 2100" : m.thermo.esgoto_ano) : "sem previsão"}</td></tr>))}
+            </tbody>
+          </table>
+        </div>
+        <p class="source">IBGE, Censo 2022; SNIS, dado mais recente até {R.snis_year}.</p>
+      </section>
+    )}
+
+    <section class="section">
+      <h2>Por região</h2>
+      <p class="text">As regiões intermediárias do IBGE agrupam municípios em torno de uma cidade-polo. Ordenadas pela população.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Resumo por região intermediária">
+        <table>
+          <thead><tr><th scope="col">Região intermediária</th><th scope="col" class="num">Municípios</th><th scope="col" class="num">População</th><th scope="col" class="num">No Semiárido</th><th scope="col" class="num">Atrasados em água</th><th scope="col" class="num">Atrasados em esgoto</th><th scope="col" class="num">Sem dados de esgoto</th><th scope="col" class="num">Lixo coletado (mediana)</th></tr></thead>
+          <tbody>
+            {regions.map((r) => (<tr><th scope="row">{r.ri}</th><td class="num">{r.n}</td><td class="num">{fmtNumber(r.pop)}</td><td class="num">{r.semi}</td><td class="num">{r.aguaAtr}</td><td class="num">{r.esgAtr}</td><td class="num">{r.esgSem}</td><td class="num">{fmtPct(r.lixo)}</td></tr>))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source">IBGE (regiões, população e lixo, Censo 2022); Sudene; SNIS até {R.snis_year}.</p>
+    </section>
+
+    <section class="section">
+      <h2>Povos e comunidades tradicionais</h2>
+      <ul class="text">
+        {t.pop_quilombola != null && <li>{fmtNumber(t.pop_quilombola)} pessoas quilombolas (IBGE, Censo 2022).</li>}
+        {t.terras_indigenas != null && <li>{fmtNumber(t.terras_indigenas)} terras indígenas com polígono oficial da Funai.</li>}
+        {t.ucs_uso_sustentavel != null && <li>{fmtNumber(t.ucs_uso_sustentavel)} unidades de conservação de uso sustentável (ICMBio/MMA).</li>}
+      </ul>
+      <p class="small">Mostramos só contagens por município e polígonos oficiais públicos, nunca a localização exata de comunidades. <a href="/povos-e-comunidades">Leia como tratamos esses dados</a>.</p>
+    </section>
+
+    {sdwHere.length > 0 && (
+      <section class="section">
+        <h2>Onde o Instituto SDW atua {article} {R.uf.nome}</h2>
+        <ul class="text">{sdwHere.map((m) => <li><a href={`/municipio/${uf}/${m.slug}`}>{m.nome}</a></li>)}</ul>
+      </section>
+    )}
+
+    <section class="section fontes">
+      <h2>Fontes desta página</h2>
+      <ul class="small">
+        {sources.map(([, s]) => (<li><strong>{s.name}</strong>{s.reference_period && `, ${s.reference_period}`} · {statusText[s.status] ?? s.status}{s.fetched_at && `, coletada em ${fmtDate(s.fetched_at)}`}</li>))}
+      </ul>
+      {missing.length > 0 && <p class="small">Fontes ainda sem leitura automática nesta versão, que não entram nos números acima: {missing.join("; ")}.</p>}
+      <p class="small">Gerado em {fmtDate(R.generated_at)} pela plataforma Territórios com Sede (Instituto SDW), versão {R.pipeline_version}. Dados abertos em <a href="/dados">/dados</a>.</p>
+    </section>
+  </article>
+</Base>
+<script>
+  document.getElementById("print")?.addEventListener("click", () => window.print());
+</script>
+<style>
+  .nums { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); margin-top: var(--s-6); }
+  .stat .n { font-size: var(--fs-xl); font-weight: 700; margin: 0; }
+  .meta { grid-template-columns: 1fr; gap: var(--s-6); align-items: start; }
+  @media (min-width: 52rem) { .meta { grid-template-columns: 1fr 1fr; } }
+  .meta figure { margin: 0; }
+  .meta :global(svg) { width: 100%; height: auto; max-height: 26rem; }
+  .dot { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%; margin-right: 0.4em; vertical-align: -0.05em; }
+  @media print {
+    .estado { padding: 0; }
+    .estado .section { break-inside: auto; }
+    .estado h2 { break-after: avoid; }
+    .estado tr { break-inside: avoid; }
+    .table-scroll { overflow: visible !important; }
+    .estado a[href^="/"]::after { content: " (territorios.institutosdw.org" attr(href) ")"; font-size: 0.8em; color: #555; }
+    .estado table a[href^="/"]::after { content: none; }
+    .nums { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>

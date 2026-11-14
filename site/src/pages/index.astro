@@ -39,7 +39,7 @@ const list = ufs();
         <figcaption class="small">
           <strong>Meta de esgoto 2033 na {R.uf.nome}: 90% com coleta e tratamento</strong>
           <ul class="legend">{counts.map((c) => <li><i style={`background:${THERMO_COLORS[c.k]}`}></i>{c.label}: {c.n}</li>)}</ul>
-          <span class="source">Esgoto coletado e tratado (SNIS IN056 × IN016), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a></span>
+          <span class="source">Esgoto coletado e tratado (SNIS IN056 × IN016), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a> · <a href={`/estado/${R.uf.slug}`}>Panorama do estado</a></span>
         </figcaption>
       </figure>
     </div>
