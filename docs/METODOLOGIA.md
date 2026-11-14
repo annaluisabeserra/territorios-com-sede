@@ -27,11 +27,18 @@ site em `/metodologia`. Este documento explica as regras gerais e as escolhas me
 - **SNIS** (Sistema Nacional de Informações sobre Saneamento): dados autodeclarados pelos prestadores, série
   1995–2022 (ano de referência). A partir do ano de referência 2023, o Ministério das Cidades substituiu o SNIS pelo
   **SINISA** (Sistema Nacional de Informações em Saneamento Básico), com primeira coleta em 2024 e 5.241 municípios
-  participantes. O SINISA muda conceitos, formulários e denominadores. Enquanto não houver arquivo aberto e estável
-  por município, a série da plataforma termina em 2022, e o `.meta.json` registra isso.
-- **Quebra de série dentro do SNIS:** o ano de referência 2022 usa a população do Censo 2022 como denominador; os
-  anos anteriores usavam estimativas populacionais. Isso pode gerar um degrau em 2022. Quando o SINISA for integrado,
-  a série terá um campo de metodologia e a regressão do termômetro não atravessará a quebra (backlog).
+  participantes. O SINISA muda conceitos, formulários e denominadores.
+- **Integração do SINISA {#sinisa}** (ADR-012): o leitor `pipeline/sources/sinisa.py` abre a página de resultados
+  de cada edição, escolhe as planilhas municipais de água e de esgoto e reconhece as colunas pelo código do
+  indicador ou pelo texto do cabeçalho. Equivalências confirmadas: IN055 → IAG0001, IN056 → IES0001,
+  IN046 → IES2003. Tratamento do esgoto coletado (IN016), perdas (IN049) e consumo (IN022) entram pelo cabeçalho;
+  qual coluna foi usada fica nos metadados. A série junta SNIS (até 2022) e SINISA (anos seguintes); o SINISA
+  nunca sobrescreve um ano do SNIS. Se uma edição não puder ser lida, a série continua com o que houver.
+- **Quebras de série:** o ano de referência 2022 do SNIS usa a população do Censo 2022 como denominador (degrau
+  possível em 2022), e o SINISA muda parte da metodologia a partir de 2023. Uma tendência do termômetro que junta
+  anos dos dois sistemas é marcada como **incerta**, com o motivo escrito na ficha. Cada indicador tem o próprio ano
+  de referência: se o SINISA não trouxer um indicador, os dados do SNIS daquele indicador não passam a contar como
+  desatualizados por causa disso.
 - **Valores fora da faixa:** coberturas entre 100% e 105% (diferença de denominador) são limitadas a 100%; acima de
   105%, e perdas fora de 0–100%, são tratadas como erro de declaração (sem dado). As contagens ficam nos metadados.
 - **Desatualização:** um valor do SNIS com mais de 2 anos de defasagem em relação ao último ano disponível na UF é

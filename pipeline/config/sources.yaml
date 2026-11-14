@@ -101,6 +101,29 @@ snis:
       url: "https://storage.googleapis.com/basedosdados-public/one-click-download/br_mdr_snis/municipio_agua_esgoto/municipio_agua_esgoto.csv.gz"
       note: Base dos Dados, tabela br_mdr_snis.municipio_agua_esgoto (anos de referência 1995–2022)
 
+sinisa:
+  name: SINISA — Informações e indicadores municipais de água e esgoto
+  license: Dados públicos (Ministério das Cidades)
+  official_reference: "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa"
+  # Uma página por edição. O leitor procura nela as planilhas de água e de esgoto; edição ainda não publicada
+  # só gera aviso. Para incluir uma edição nova, acrescente a página aqui.
+  pages:
+    - url: "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/resultados-sinisa-2024"
+      reference_year: 2023
+    - url: "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/resultados-sinisa-2025"
+      reference_year: 2024
+    - url: "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/saneamento/sinisa/resultados-sinisa/resultados-sinisa-2026"
+      reference_year: 2025
+  # Nome interno (o mesmo do SNIS) → código SINISA e, na falta dele, padrão do cabeçalho (texto sem acento, minúsculo).
+  # Códigos confirmados: IAG0001 = IN055, IES0001 = IN056, IES2003 = IN046 (Trata Brasil/GO Associados 2025; ABES 2025).
+  indicators:
+    snis_agua_pct: {module: agua, codes: [IAG0001], header: "atendimento total.*(agua|abastecimento)"}
+    snis_perdas_pct: {module: agua, codes: [], header: "perdas? (na |de )?distribuicao"}
+    snis_consumo_lhabdia: {module: agua, codes: [], header: "consumo medio per capita"}
+    snis_esgoto_pct: {module: esgoto, codes: [IES0001], header: "atendimento total.*(esgot|rede coletora)"}
+    snis_tratamento_pct: {module: esgoto, codes: [IES2003], header: "esgoto tratado.*agua consumida"}
+    snis_tratamento_coletado_pct: {module: esgoto, codes: [], header: "(tratamento d[oe] esgoto coletado|esgoto coletado.*tratad)"}
+
 ana_atlas_esgotos:
   name: ANA — Atlas Esgotos (2013)
   license: Dados públicos ANA

@@ -36,6 +36,29 @@ PCT_CAP = {
 }
 
 
+def clean_series(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """Regras de consistência comuns a SNIS e SINISA. Devolve (dados, flags com as contagens)."""
+    flags: dict = {}
+    # Perdas fora de 0–100 são inconsistências de medição declaradas pelo prestador: viram ausentes.
+    if "snis_perdas_pct" in df.columns:
+        bad = (df["snis_perdas_pct"] < 0) | (df["snis_perdas_pct"] > 100)
+        flags["snis_perdas_pct_invalid_to_null"] = int(bad.sum())
+        df.loc[bad, "snis_perdas_pct"] = float("nan")
+    for col in sorted(PCT_CAP & set(df.columns)):
+        # Até 105%: diferença de denominador (população estimada), limitada a 100.
+        # Acima de 105% ou negativo: erro de declaração, vira ausente (ex.: IN046 de 633%).
+        absurd = (df[col] > 105) | (df[col] < 0)
+        over = (df[col] > 100) & ~absurd
+        flags[f"{col}_capped"] = int(over.sum())
+        flags[f"{col}_absurd_to_null"] = int(absurd.sum())
+        df.loc[over, col] = 100.0
+        df.loc[absurd, col] = float("nan")
+    # Coleta com tratamento (proxy da meta do Marco Legal): IN056 × IN016 / 100
+    if {"snis_esgoto_pct", "snis_tratamento_coletado_pct"} <= set(df.columns):
+        df["snis_esgoto_tratado_pct"] = df["snis_esgoto_pct"] * df["snis_tratamento_coletado_pct"] / 100
+    return df, flags
+
+
 def municipal_series(uf: UF) -> SourceResult:
     def mirror(src: SourceURL) -> SourceResult:
         f = fetch_one("snis", src, "bd_snis_municipio_agua_esgoto.csv.gz", "national", max_age_days=60)
@@ -46,24 +69,7 @@ def municipal_series(uf: UF) -> SourceResult:
         df = df[df["cod_ibge7"].str.startswith(uf.code)]
         # Uma linha por município-ano (a tabela já é agregada por município; garantimos)
         df = df.groupby(["cod_ibge7", "year"], as_index=False).first()
-        flags = {}
-        # Perdas fora de 0–100 são inconsistências de medição declaradas pelo prestador: viram ausentes.
-        if "snis_perdas_pct" in df.columns:
-            bad = (df["snis_perdas_pct"] < 0) | (df["snis_perdas_pct"] > 100)
-            flags["snis_perdas_pct_invalid_to_null"] = int(bad.sum())
-            df.loc[bad, "snis_perdas_pct"] = float("nan")
-        for col in sorted(PCT_CAP & set(df.columns)):
-            # Até 105%: diferença de denominador (população estimada), limitada a 100.
-            # Acima de 105%: erro de declaração, vira ausente (ex.: IN046 de 633%).
-            absurd = df[col] > 105
-            over = (df[col] > 100) & ~absurd
-            flags[f"{col}_capped"] = int(over.sum())
-            flags[f"{col}_absurd_to_null"] = int(absurd.sum())
-            df.loc[over, col] = 100.0
-            df.loc[absurd, col] = float("nan")
-        # Coleta com tratamento (proxy da meta do Marco Legal): IN056 × IN016 / 100
-        if {"snis_esgoto_pct", "snis_tratamento_coletado_pct"} <= set(df.columns):
-            df["snis_esgoto_tratado_pct"] = df["snis_esgoto_pct"] * df["snis_tratamento_coletado_pct"] / 100
+        df, flags = clean_series(df)
         years = f"{int(df['year'].min())}–{int(df['year'].max())}" if len(df) else "sem dados"
         meta = make_meta(
             "snis",

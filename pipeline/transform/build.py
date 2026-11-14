@@ -251,16 +251,24 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
 
     # SNIS: último ano de cada indicador, só se recente (≥ ano_ref − FRESH_YEARS). Valor mais antigo vai para
     # `{col}__antigo` (exibido como "último dado: AAAA") e não entra no índice, no "Agir" nem nas medianas.
-    snis = inp.get("snis")
+    snis = merge_snis_sinisa(inp.get("snis"), inp.get("sinisa"))
     ctx["snis_series"] = {}
+    ctx["snis_ref_by_col"] = {}
     if snis is not None:
         snis = snis.sort_values("year")
         ref = int(snis["year"].max())
         ctx["snis_year_max"] = ref
+        ctx["sinisa_years"] = sorted({int(y) for y in snis.loc[snis["_fonte"] == "sinisa", "year"]})
         for col in SNIS_SERIES + ["snis_consumo_lhabdia"]:
             if col not in snis:
                 continue
             valid = snis.dropna(subset=[col])
+            if valid.empty:
+                continue
+            # Ano de referência por indicador: se o SINISA não trouxer um indicador, ele não "envelhece"
+            # artificialmente os dados do SNIS daquele indicador.
+            ref = int(valid["year"].max())
+            ctx["snis_ref_by_col"][col] = ref
             last = valid.groupby("cod_ibge7").tail(1).set_index("cod_ibge7")
             fresh = last["year"] >= ref - FRESH_YEARS
             base[col] = last[col].where(fresh)
@@ -268,6 +276,7 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
             base[f"{col}__antigo"] = last[col].where(~fresh)
             base[f"{col}__antigo_ano"] = last["year"].where(~fresh)
         # Prestador de esgoto declarado em algum ano recente? (ausência ≠ zero, mas é informação)
+        ref = ctx["snis_ref_by_col"].get("snis_esgoto_pct", ctx["snis_year_max"])
         recent = snis[snis["year"] >= ref - FRESH_YEARS]
         has_esg = recent.dropna(subset=["snis_esgoto_pct"]).groupby("cod_ibge7").size()
         base["snis_esgoto_sem_declaracao"] = ~base.index.isin(has_esg.index)
@@ -282,6 +291,21 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
     if health is not None:
         base = base.join(health)
     return base, ctx
+
+
+def merge_snis_sinisa(snis: pd.DataFrame | None, sinisa: pd.DataFrame | None) -> pd.DataFrame | None:
+    """Série única: SNIS até o último ano dele; SINISA só para anos posteriores (nunca sobrescreve o SNIS)."""
+    if snis is None and sinisa is None:
+        return None
+    parts = []
+    last_snis = None
+    if snis is not None:
+        parts.append(snis.assign(_fonte="snis"))
+        last_snis = int(snis["year"].max())
+    if sinisa is not None and len(sinisa):
+        s = sinisa if last_snis is None else sinisa[sinisa["year"] > last_snis]
+        parts.append(s.assign(_fonte="sinisa"))
+    return pd.concat(parts, ignore_index=True)
 
 
 # --------------------------------------------------------------------------- índice
@@ -546,9 +570,9 @@ def national_medians() -> dict[str, float]:
 
 def thermo_for(code: str, ctx: dict) -> dict:
     out = {}
-    ref = ctx.get("snis_year_max")
     # Esgoto: coleta COM tratamento (IN056 × IN016), porque a meta do Marco Legal exige as duas coisas.
     for service, col in (("agua", "snis_agua_pct"), ("esgoto", "snis_esgoto_tratado_pct")):
+        ref = ctx.get("snis_ref_by_col", {}).get(col, ctx.get("snis_year_max"))
         series = ctx["snis_series"].get(col)
         if series is None or code not in series.index:
             out[service] = thermometer.compute(service, {}, ref).to_dict()
@@ -557,7 +581,20 @@ def thermo_for(code: str, ctx: dict) -> dict:
             out[service] = thermometer.compute(
                 service, {int(y): (None if pd.isna(v) else float(v)) for y, v in row.items()}, ref
             ).to_dict()
+        mark_series_break(out[service], ctx.get("sinisa_years") or [])
     return out
+
+
+def mark_series_break(th: dict, sinisa_years: list[int]) -> None:
+    """Tendência que mistura anos do SNIS e do SINISA: projeção incerta, com o motivo (ADR-012)."""
+    years = th.get("years") or []
+    if not sinisa_years or th.get("status") in ("sem_dados", "atingida"):
+        return
+    first = min(sinisa_years)
+    if any(y < first for y in years) and any(y >= first for y in years):
+        th["uncertain"] = True
+        note = f"a tendência junta anos do SNIS e do SINISA (desde {first}), que mudou parte da metodologia"
+        th["reason"] = f"{th['reason']}; {note}" if th.get("reason") else note
 
 
 def build_uf(uf: config.UF) -> None:
@@ -684,6 +721,7 @@ def build_uf(uf: config.UF) -> None:
         "sources": status,
         "flags": ctx["flags"],
         "snis_year": ctx.get("snis_year_max"),
+        "sinisa_years": ctx.get("sinisa_years", []),
         "health": {"years": hinfo.get("years"), "price_base": hinfo.get("price_base"), "period_label": sih_period},
         "index": idx_info,
         "stats": stats,

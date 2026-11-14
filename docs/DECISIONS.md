@@ -70,6 +70,12 @@ Formato: contexto → decisão → alternativas → consequências.
 - **SROI:** deadweight 10%, atribuição 80%, drop-off 5% ao ano, com faixas de sensibilidade (0–30%, 50–100%, 0–15%). Valores conservadores típicos de análises SROI de saneamento; revisão por especialista registrada em Q5.
 - **Desligados por padrão:** atendimento ambulatorial (sem multiplicador com referência) e óbitos (SIM sem causa disponível; abordagem sensível).
 
+## ADR-012. SINISA continua a série do SNIS, com quebra sinalizada
+
+- **Contexto:** o SNIS termina no ano de referência 2022; o SINISA o substitui e publica planilhas por edição, com nomes de arquivo que mudam e códigos novos de indicador. O gov.br não é alcançável do ambiente de desenvolvimento, só do GitHub Actions.
+- **Decisão:** leitor que descobre as planilhas na página de cada edição (`sources.yaml → sinisa.pages`) e reconhece colunas por código (IAG0001, IES0001, IES2003, equivalências publicadas por Trata Brasil/GO Associados e ABES em 2025) ou por padrão de cabeçalho configurável. Os anos do SINISA só entram depois do último ano do SNIS. Tendências que atravessam a troca de sistema ficam marcadas como incertas, em vez de descartadas: descartar deixaria quase todos os municípios "sem dados" até haver 3 anos de SINISA.
+- **Consequências:** o termômetro volta a refletir dados de 2023 em diante assim que o data-refresh rodar. Se o Ministério mudar o layout das planilhas, a fonte fica "indisponível" ou "última versão válida", sem derrubar o pipeline, e os padrões de cabeçalho podem ser ajustados no YAML sem mexer no código.
+
 ## ADR-011. Supressão de contagens pequenas
 
 - **Decisão:** médias anuais de óbitos hospitalares por DRSAI abaixo de 5 por município são publicadas como "menos de 5" (`null` com explicação). Contagens de pessoas quilombolas com todas as células sob sigilo ficam `null`.

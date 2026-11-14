@@ -21,7 +21,7 @@ import geopandas as gpd
 import pandas as pd
 
 from pipeline import config
-from pipeline.sources import ana, funai, ibge, ipca, sih, snis, ucs
+from pipeline.sources import ana, funai, ibge, ipca, sih, sinisa, snis, ucs
 from pipeline.sources.catalog import SourceResult
 from pipeline.sources.meta import OutputMeta, read_meta
 from pipeline.transform.geo_keys import build_crosswalk
@@ -134,6 +134,8 @@ def ingest(uf: config.UF, skip_sih: bool = False) -> dict:
     stage(uf, "censo_raca", lambda: ibge.raca(uf), status)
     stage(uf, "semiarido", lambda: ibge.semiarido(uf), status)
     stage(uf, "snis", lambda: snis.municipal_series(uf), status)
+    mun7 = pd.read_parquet(processed_dir(uf) / "municipios.parquet")["cod_ibge7"].tolist()
+    stage(uf, "sinisa", lambda: sinisa.municipal_series(uf, mun7), status)
     stage(uf, "ana_atlas", lambda: ana.atlas_esgotos(uf), status)
     stage(uf, "ipca", lambda: ipca.monthly_index(uf), status)
     malha = gpd.read_parquet(processed_dir(uf) / "malhas.parquet")

@@ -52,6 +52,7 @@ export interface Resumo {
   sources: Record<string, SourceStatus>;
   flags: Record<string, boolean>;
   snis_year: Num;
+  sinisa_years?: number[];
   health: { years: number[] | null; price_base: Num; period_label: string | null };
   index: IndexInfo;
   stats: Record<string, { median_uf: Num; median_br: Num; min: Num; max: Num; n: number }>;
