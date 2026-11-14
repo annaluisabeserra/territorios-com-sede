@@ -19,10 +19,10 @@ data/raw/
 .dev.vars
 worker/.wrangler/
 data/public/
-public/data/
+site/public/data/
 *.dbc
 *.dbf
 *.part
 *.pem
 .npmrc
-public/vendor/
+site/public/vendor/
