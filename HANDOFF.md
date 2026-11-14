@@ -102,6 +102,30 @@ Tudo abaixo usa **planos gratuitos**. Nenhum pede cartão de crédito.
 4. Confira o arquivo `docs/VALIDATION_REPORT.md`, que é regenerado: ele mostra o que veio de cada fonte. Faça a
    conferência por amostragem das internações com o TabNet (o relatório explica como).
 
+### 3.2.1 Por que a atualização roda num computador no Brasil
+
+A primeira execução no GitHub (novembro de 2026) mostrou que os servidores oficiais brasileiros (IBGE, FTP do
+DATASUS e outros) não responderam aos computadores do GitHub, que ficam fora do Brasil. Só o Banco Central
+respondeu; o resto veio das cópias públicas ou ficou indisponível. A etapa **Diagnóstico de rede** do workflow
+mostra, a cada execução, quais servidores respondem.
+
+A saída de custo zero é um **runner próprio**: um computador no Brasil (o Mac do Instituto, por exemplo) recebe o
+trabalho do GitHub e o executa. No botão **Run workflow**, a opção "Onde rodar" vem marcada como
+`meu-computador`. Para a execução agendada do dia 5 também usar o computador, crie a variável `DATA_RUNNER` com o
+valor `self-hosted` em Settings → Secrets and variables → Actions → Variables.
+
+Como configurar (uma vez):
+1. GitHub → Settings → Actions → Runners → **New self-hosted runner** → macOS. A página mostra comandos prontos
+   para copiar (baixar, `./config.sh` com um código temporário, `./run.sh`).
+2. Deixe o runner ligado só durante a atualização: rode `./run.sh` antes de clicar em Run workflow e feche com
+   Ctrl+C no fim. Evite instalar como serviço permanente.
+3. **Segurança (repositório público):** em Settings → Actions → General, em "Approval for running fork pull
+   request workflows", escolha **Require approval for all external contributors**. Assim ninguém de fora consegue
+   rodar código no computador do Instituto por meio de um pull request.
+4. Durante a execução, o computador precisa ficar ligado e conectado (no Mac, `caffeinate -i ./run.sh` impede que
+   ele durma). A primeira carga do SIH leva horas; as seguintes baixam só os meses novos, porque os downloads ficam
+   guardados em `data/raw` no próprio computador.
+
 ### 3.3 Publicar o site no Cloudflare Pages (recomendado)
 
 1. Crie uma conta gratuita em cloudflare.com (o site institucional já usa Cloudflare, então pode ser a mesma).

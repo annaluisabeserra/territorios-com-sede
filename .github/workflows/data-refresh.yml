@@ -14,6 +14,11 @@ on:
         description: "Pular o SIH (mais rápido)"
         type: boolean
         default: false
+      onde:
+        description: "Onde rodar (meu-computador = runner no Brasil; os servidores do governo costumam não responder ao GitHub)"
+        type: choice
+        options: [meu-computador, github]
+        default: meu-computador
 permissions:
   contents: write
 concurrency:
@@ -21,12 +26,19 @@ concurrency:
   cancel-in-progress: false
 jobs:
   refresh:
-    runs-on: ubuntu-24.04
+    # Runner no Brasil (self-hosted) quando escolhido no botão, ou na execução agendada se a variável
+    # DATA_RUNNER = self-hosted estiver definida em Settings → Secrets and variables → Actions → Variables.
+    runs-on: ${{ (inputs.onde == 'meu-computador' || (github.event_name == 'schedule' && vars.DATA_RUNNER == 'self-hosted')) && 'self-hosted' || 'ubuntu-24.04' }}
     timeout-minutes: 340
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # No computador próprio, preserva data/raw (cache de downloads e extratos do SIH) entre execuções
+          clean: ${{ runner.environment == 'github-hosted' }}
+      - name: Diagnóstico de rede (quais servidores oficiais respondem daqui)
+        run: bash scripts/diagnostico_rede.sh
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
@@ -36,6 +48,7 @@ jobs:
       - name: Restaurar extratos do SIH
         run: |
           mkdir -p data/raw/sih_extracts
+          if ! command -v gh >/dev/null; then echo "gh não instalado: usando os extratos já guardados neste computador"; exit 0; fi
           if gh release view sih-extracts >/dev/null 2>&1; then
             gh release download sih-extracts -p 'sih_extracts.tar.gz' -D /tmp && tar xzf /tmp/sih_extracts.tar.gz -C data/raw
           fi
@@ -48,6 +61,7 @@ jobs:
       - name: Guardar extratos do SIH
         if: always()
         run: |
+          if ! command -v gh >/dev/null; then echo "gh não instalado: extratos ficam só neste computador"; exit 0; fi
           if [ -d data/raw/sih_extracts ] && [ "$(ls -A data/raw/sih_extracts)" ]; then
             tar czf /tmp/sih_extracts.tar.gz -C data/raw sih_extracts
             gh release view sih-extracts >/dev/null 2>&1 || gh release create sih-extracts --title "Cache de extratos do SIH" --notes "Gerado automaticamente pelo workflow de dados. Não é uma versão do site." --prerelease

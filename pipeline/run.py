@@ -69,7 +69,9 @@ def stage(uf: config.UF, name: str, fn: Callable[[], SourceResult], status: dict
         log.info("[%s] %s: ok (%d linhas, %s)", uf.sigla, name, len(res.data), res.meta.url_kind)
     except Exception as exc:  # noqa: BLE001
         # Motivo curto para os metadados públicos (sem stack trace nem detalhes do ambiente)
-        reason = f"{type(exc).__name__}: {str(exc).splitlines()[0][:300]}"
+        # Todas as linhas (cada URL tentada e o erro dela), numa linha só: sem isso o motivo se perdia
+        lines = [ln.strip() for ln in str(exc).splitlines() if ln.strip()]
+        reason = f"{type(exc).__name__}: {' | '.join(lines)[:1500]}"
         prev = read_meta(path)
         if path.exists() and prev:
             prev["status"] = "stale"

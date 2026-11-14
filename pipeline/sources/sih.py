@@ -197,7 +197,9 @@ def latest_complete_year(scope: list[str], start: int | None = None) -> int:
     """Último ano com o arquivo de dezembro publicado para TODAS as UFs do escopo."""
     import datetime as dt
 
-    y = start or dt.date.today().year
+    # Dezembro do ano corrente nunca está publicado (sai em fevereiro do ano seguinte): começa no ano anterior.
+    # Antes, a primeira tentativa era um arquivo inexistente, o que custava minutos de espera no FTP.
+    y = start or dt.date.today().year - 1
     for year in range(y, y - 4, -1):
         if all(extract(uf, year, 12) is not None for uf in scope):
             return year
