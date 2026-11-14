@@ -50,9 +50,28 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
       <ul>
         <li><strong>Água:</strong> atendimento total de água (SNIS IN055). Mede atendimento pela rede, não potabilidade.</li>
         <li><strong>Esgoto:</strong> esgoto coletado e tratado = IN056 × IN016 ÷ 100. Usar só a coleta (IN056) superestimaria o progresso.</li>
-        <li><strong>Tendência:</strong> regressão linear sobre até 8 anos recentes (mínimo de 3), com o último ponto nos 2 anos mais recentes do SNIS.</li>
+        <li><strong>Tendência:</strong> regressão linear sobre até 8 anos recentes (mínimo de 3), com o último ponto nos 2 anos mais recentes do SNIS/SINISA.</li>
         <li><strong>Classes:</strong> meta atingida (2 anos seguidos acima), no ritmo (projeção até 2033), atrasado, sem dados suficientes. A faixa de anos usa o intervalo de confiança de 95% da tendência; quando ele inclui estagnação, a projeção é marcada como incerta.</li>
       </ul>
+    </div>
+
+    <h2 id="sinisa">SNIS e SINISA</h2>
+    <div class="text">
+      <p>O SNIS reuniu, de 1995 a 2022, o que cada prestador declarava sobre água e esgoto. A partir dos dados de 2023, o Ministério das Cidades trocou o SNIS pelo SINISA, que pergunta de outro jeito e usa outros códigos (o antigo IN055 virou IAG0001; o IN056, IES0001).</p>
+      <p>Juntamos as duas séries para que a linha do tempo continue. É como trocar a balança no meio de uma dieta: o peso segue sendo medido, mas uma diferença pequena entre um ano e outro pode vir da balança nova. Por isso, quando a tendência de um município mistura anos dos dois sistemas, a projeção aparece como <strong>incerta</strong>, com o motivo.</p>
+    </div>
+
+    <h2 id="impacto">Quanto custa a falta de saneamento (conta de impacto)</h2>
+    <div class="text">
+      <p>Inspirada na metodologia True Value, a conta converte em dinheiro efeitos que não aparecem nas contas públicas. Não tem validação da KPMG, autora da metodologia original. Cada camada aparece separada, com fonte e premissa:</p>
+      <ul>
+        <li><strong>Gasto do SUS com internações</strong> (valor medido): média anual paga pelo SIH/SUS por doenças ligadas ao saneamento, corrigida pelo IPCA.</li>
+        <li><strong>Renda perdida com internações</strong> (estimativa): dias de internação × renda domiciliar per capita diária do município (Censo 2022). Mesma regra da calculadora.</li>
+        <li><strong>Água tratada perdida</strong> (estimativa em faixa): volume perdido = produzido + importado − consumido − volume de serviço (numerador do índice de perdas IN049 do SNIS; o volume consumido já inclui a água exportada). O volume calculado precisa reproduzir o IN049 declarado com folga de 2 pontos, senão fica sem dado. Cenário baixo: energia e produtos químicos por m³ produzido. Cenário alto: despesa de exploração por m³ faturado (IN026). Custos por m³ acima de 10 vezes a mediana do estado são tratados como erro de declaração.</li>
+        <li><strong>Renda futura perdida com mortes evitáveis</strong> (estimativa): para cada óbito por doença ligada ao saneamento (SIM), os anos que a pessoa ainda trabalharia, dos 15 aos 65, valorados pela renda per capita do município e trazidos a valor presente a 8,5% ao ano. É a abordagem de capital humano: não atribui valor à vida em si, só à renda que deixa de existir. Municípios com menos de 5 óbitos por ano não são estimados.</li>
+        <li><strong>Dias de aula perdidos</strong> (indicador): dias de internação de 6 a 17 anos. Não é convertido em dinheiro.</li>
+      </ul>
+      <p>O total soma só as camadas com dado e diz quais faltam. Ainda não entram: atendimentos ambulatoriais e efeitos ambientais, que exigem coeficientes revisados por especialistas.</p>
     </div>
 
     <h2 id="drsai">Doenças relacionadas ao saneamento (DRSAI)</h2>
@@ -82,7 +101,8 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
       <thead><tr><th scope="col">Dimensão</th><th scope="col" class="num">Peso</th><th scope="col">Componentes</th><th scope="col">Situação nesta versão ({R.uf.sigla})</th></tr></thead>
       <tbody>{Object.entries(pesos.dimensions).map(([k, d]: [string, any]) => <tr><th scope="row">{d.label}</th><td class="num">{Math.round(d.weight * 100)}%</td><td class="small">{d.components.map((c: any) => IND[c.indicator]?.short ?? c.indicator).join("; ")}</td><td class="small">{R.index.dims_available.includes(k) ? "com dados" : "sem dados"}</td></tr>)}</tbody>
     </table></div>
-    <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões.</p>
+    <p class="text small">Cada componente vira percentil dentro do estado (100 = pior situação). Dimensões e pesos ausentes são reponderados, nunca imputados como zero. O ranking só é publicado com pelo menos {pesos.min_dimensions_for_rank} dimensões, incluindo déficit de acesso e carga de saúde.</p>
+    <p class="text small"><strong>Ranking provisório:</strong> enquanto uma dimensão obrigatória não tiver dados em nenhum município do estado (hoje, a carga de saúde, que depende das internações do SUS), o ranking é calculado com as dimensões disponíveis e aparece com o aviso "provisório". Quando o dado chegar, ele passa a seguir a regra completa. <strong>Faixas:</strong> os 10% primeiros têm prioridade muito alta; até 25%, alta; até 50%, média; a metade final, menor.</p>
 
     <h2 id="agir">Agir: regras das sugestões</h2>
     <div class="table-scroll" tabindex="0" role="region" aria-label="Regras das soluções sugeridas"><table>

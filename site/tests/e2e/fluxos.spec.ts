@@ -60,9 +60,28 @@ test("mapa carrega legenda e tabela alternativa", async ({ page }) => {
   await expect(page.locator("#tbl tbody tr")).toHaveCount(417);
 });
 
-test("índice explica por que não ranqueia quando faltam dimensões", async ({ page }) => {
-  await page.goto("/indice");
-  await expect(page.locator("#state")).toContainText(/ranqueados|ainda não pode ser calculado/);
+test("ranking de prioridade: provisório rotulado, busca, faixa e lista completa", async ({ page }) => {
+  await page.goto("/indice?uf=ba");
+  const state = page.locator("#state");
+  await expect(state).toContainText(/ranqueados|ainda não pode ser calculado/);
+  if (!(await state.innerText()).includes("ranqueados")) return; // sem ranking: a explicação basta
+  if (await page.locator("#state .provisorio").count()) await expect(page.locator("#state .provisorio")).toContainText("provisório");
+  const rows = page.locator("#rank tbody tr");
+  await expect(rows).toHaveCount(50);
+  await expect(rows.first().locator("td").first()).toHaveText("1º");
+  await expect(rows.first().locator(".prio")).toHaveText("Muito alta");
+  await page.locator("#more").click();
+  expect(await rows.count()).toBeGreaterThan(50);
+  await page.locator("#q").fill("juazeiro");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Juazeiro");
+});
+
+test("mapa mostra a camada de prioridade com a posição na tabela", async ({ page }) => {
+  await page.goto("/mapa?uf=ba&c=prioridade");
+  await expect(page.locator("#legend")).toContainText("Prioridade muito alta");
+  await page.locator(".tabled summary").click();
+  await expect(page.locator("#tbl tbody tr").first().locator("td").first()).toContainText(/^1º de \d+/);
 });
 
 test("página da escola e FAQ com 20+ perguntas", async ({ page }) => {
@@ -78,4 +97,24 @@ test("nenhuma ficha mostra 'None', 'nan' ou caractere corrompido", async ({ page
     const text = await page.locator("main").innerText();
     expect(text).not.toMatch(/\bNone\b|\bnan%?|¿|undefined|∞/i);
   }
+});
+
+test("panorama estadual: trilha da ficha leva ao estado e o mapa mostra a atuação do Instituto SDW", async ({ page }) => {
+  await page.goto("/municipio/ce/sao-goncalo-do-amarante");
+  await expect(page.getByText("O Instituto SDW está aqui")).toBeVisible();
+  await page.getByRole("navigation", { name: "Trilha" }).getByRole("link", { name: "Ceará" }).click();
+  await expect(page).toHaveURL(/\/estado\/ce/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Água e esgoto no Ceará");
+  await expect(page.getByRole("button", { name: /Salvar em PDF/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "São Gonçalo do Amarante" }).first()).toBeVisible();
+});
+
+test("conta de impacto mostra camadas separadas, faixa e 'sem dado ainda' em vez de zero", async ({ page }) => {
+  await page.goto("/municipio/ce/fortaleza");
+  const s = page.locator("#impacto");
+  await expect(s.getByRole("heading", { level: 2 })).toContainText("Quanto custa");
+  await expect(s.getByText("Água tratada perdida na distribuição")).toBeVisible();
+  await expect(s.getByText(/R\$ .* a R\$ /).first()).toBeVisible();
+  await expect(s.getByText("sem dado ainda").first()).toBeVisible();
+  await expect(s).not.toContainText("R$ 0");
 });

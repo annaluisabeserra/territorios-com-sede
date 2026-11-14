@@ -35,6 +35,7 @@ class UF:
     slug: str
     active: bool
     preposicao: str = "de"  # "da Bahia", "do Ceará": usado em textos
+    capital: str | None = None  # código IBGE da capital (sonda de fontes por município, ex.: SICONFI)
 
 
 def ufs(active_only: bool = True) -> list[UF]:

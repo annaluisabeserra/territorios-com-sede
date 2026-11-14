@@ -1,0 +1,16 @@
+# Onde o Instituto SDW atua. Arquivo editável pela equipe: acrescente um item por localidade e rode o build.
+# Só informação pública, em nível de município e localidade (nunca endereço de casas ou pessoas).
+# Os textos abaixo foram escritos a partir da especificação do projeto e devem ser confirmados pela equipe.
+site: https://institutosdw.org
+contato: contato@institutosdw.org
+locais:
+  - municipio: "2927408"          # Salvador (BA)
+    localidade: Itacaranha
+    papel: Sede do Instituto SDW e atuação em Itacaranha
+    descricao: >-
+      Educação ambiental com crianças, jovens e lideranças, e ações de água potável e saneamento com a comunidade.
+  - municipio: "2312403"          # São Gonçalo do Amarante (CE)
+    localidade: Croatá
+    papel: Projeto do Instituto SDW em Croatá
+    descricao: >-
+      Educação ambiental e tecnologias sociais de água e saneamento, construídas com a comunidade.

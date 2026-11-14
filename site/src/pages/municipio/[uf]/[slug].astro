@@ -1,11 +1,12 @@
 ---
+import ImpactAccount from "../../../components/ImpactAccount.astro";
 import Base from "../../../layouts/Base.astro";
 import Locator from "../../../components/Locator.astro";
 import LineChart from "../../../components/LineChart.astro";
 import ThermometerCard from "../../../components/Thermometer.astro";
 import { ficha, indicators, resumo, ufs } from "../../../lib/data";
-import { fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
-import { fmtValue, SOURCE_LABEL, THERMO_CLASS, THERMO_LABEL } from "../../../lib/indicators";
+import { deUF, fmtBRL, fmtNumber, fmtPct, fmtBRLShort } from "../../../lib/format";
+import { fmtValue, prioClass, SOURCE_LABEL, THERMO_CLASS, THERMO_LABEL } from "../../../lib/indicators";
 import type { Ficha } from "../../../lib/types";
 
 export function getStaticPaths() {
@@ -24,9 +25,15 @@ const ref = (k: string) => (src[k]?.status === "unavailable" ? null : src[k]);
 // Código SNIS de cada indicador, para a citação ficar verificável (jornalista, revisão M4)
 const SNIS_CODE: Record<string, string> = { snis_agua_pct: "IN055", snis_esgoto_pct: "IN056", snis_esgoto_tratado_pct: "IN056 × IN016",
   snis_tratamento_pct: "IN046", snis_perdas_pct: "IN049", snis_consumo_lhabdia: "IN022" };
+// Equivalentes no SINISA (a partir do ano de referência 2023), quando o código é conhecido.
+const SINISA_CODE: Record<string, string> = { snis_agua_pct: "IAG0001", snis_esgoto_pct: "IES0001", snis_tratamento_pct: "IES2003" };
 const cellSource = (k: string, s: string) => {
   if (!ref(s)) return "fonte indisponível nesta atualização";
-  if (s === "snis") return `SNIS ${f.ind_ano[k] ?? f.ind_antigo?.[k]?.[1] ?? ""}, ${SNIS_CODE[k] ?? ""}`;
+  if (s === "snis") {
+    const y = f.ind_ano[k] ?? f.ind_antigo?.[k]?.[1] ?? null;
+    if (y !== null && (R.sinisa_years ?? []).includes(Number(y))) return `SINISA ${y}${SINISA_CODE[k] ? `, ${SINISA_CODE[k]}` : ""}`;
+    return `SNIS ${y ?? ""}, ${SNIS_CODE[k] ?? ""}`;
+  }
   return `${SOURCE_LABEL[IND[k]?.source ?? ""] ?? IND[k]?.source}, ${src[s].reference_period}`;
 };
 const mirrorNote = (k: string) => (src[k]?.url_kind === "mirror" ? " (cópia pública do dado oficial)" : "");
@@ -39,6 +46,9 @@ const rows = [
   ["censo_agua_rede_pct", "censo_agua"], ["censo_esgoto_adequado_pct", "censo_esgoto"], ["censo_lixo_coletado_pct", "censo_lixo"],
   ["snis_agua_pct", "snis"], ["snis_esgoto_pct", "snis"], ["snis_esgoto_tratado_pct", "snis"], ["snis_tratamento_pct", "snis"], ["snis_perdas_pct", "snis"],
   ["snis_consumo_lhabdia", "snis"], ["drsai_taxa_10mil", "sih_drsai"], ["drsai_custo_per_capita", "sih_drsai"],
+  ["obitos_drsai_100mil", "sim_drsai"], ["sisagua_pct_fora_padrao", "sisagua"], ["sisagua_ecoli_pct_fora", "sisagua"],
+  ["escolas_sem_agua_potavel_pct", "censo_escolar"], ["escolas_sem_banheiro_pct", "censo_escolar"], ["escolas_sem_esgoto_pct", "censo_escolar"],
+  ["seca_meses_12m", "monitor_secas"], ["decretos_seca_5a", "s2id"], ["decretos_chuva_5a", "s2id"], ["despesa_saneamento_pc", "siconfi"],
 ] as const;
 const nbVals = f.neighbors.map((n) => ({ ...n, m: R.municipios.find((x) => x.cod === n.cod)! }));
 const h = f.health;
@@ -53,6 +63,7 @@ const FASE: Record<string, string> = {
   "Encaminhada RI": "encaminhada como reserva indígena", "Em Estudo": "em estudo", "Delimitada": "delimitada",
   "Declarada": "declarada", "Homologada": "homologada", "Regularizada": "regularizada",
 };
+const pc = prioClass(f.index.rank, f.index.n_ranked ?? 0);
 const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.index.dimensions).map(([k, v]) => [k, v.label]));
 ---
 <Base title={title} description={desc} ogImage={`/og/${uf}/${slug}.png`}
@@ -62,7 +73,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   <div class="hero">
     <div class="wrap hero-in">
       <div>
-        <nav aria-label="Trilha" class="crumbs small"><a href="/">Início</a> › <a href={`/mapa?uf=${uf}`}>{f.uf_nome}</a> › <span aria-current="page">{f.nome}</span></nav>
+        <nav aria-label="Trilha" class="crumbs small"><a href="/">Início</a> › <a href={`/estado/${uf}`}>{f.uf_nome}</a> › <span aria-current="page">{f.nome}</span></nav>
         <h1>{f.nome} <span class="uf">{f.uf}</span></h1>
         <p class="meta small">{f.regiao_intermediaria} · {fmtNumber(f.ind.populacao)} moradores {f.semiarido && <span class="tag warn">Semiárido</span>}</p>
         <div class="resumo">{f.resumo.map((p) => <p>{p}</p>)}</div>
@@ -71,7 +82,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <li><span class="kn">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "sem rede" : fmtPct(f.ind.snis_esgoto_tratado_pct)}</span><span class="kl">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "nenhum prestador de esgoto declarado" : "com esgoto coletado e tratado"}</span></li>
           <li><span class:list={["kn", THERMO_CLASS[f.thermometer.esgoto.status]]}>{THERMO_LABEL[f.thermometer.esgoto.status]}</span><span class="kl">na meta de esgoto de 2033</span></li>
         </ul>
-        <p class="source">SNIS (Ministério das Cidades), {snisYear}{src.snis?.url_kind === "mirror" ? ", cópia pública do dado oficial" : ""}.</p>
+        <p class="source">{(R.sinisa_years ?? []).includes(Number(snisYear)) ? "SINISA, sucessor do SNIS" : "SNIS"} (Ministério das Cidades), {snisYear}{src.snis?.url_kind === "mirror" && !(R.sinisa_years ?? []).includes(Number(snisYear)) ? ", cópia pública do dado oficial" : ""}.{(R.sinisa_years ?? []).length > 0 && <> A série junta SNIS (até 2022) e SINISA (desde 2023), que mudou parte da metodologia: compare os anos com cuidado. <a href="/metodologia#sinisa">Entenda</a>.</>}</p>
         <div class="actions no-print">
           <a class="btn" href={calcUrl}>Calcular a economia</a>
           <a class="btn secondary" href={`/escola/${uf}/${slug}`}>Versão para a escola</a>
@@ -83,7 +94,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
 
   <div class="wrap layout">
     <nav class="toc no-print small" aria-label="Nesta página">
-      <a href="#indicadores">Indicadores</a><a href="#meta2033">Meta 2033</a><a href="#saude">Saúde e custo</a>
+      <a href="#indicadores">Indicadores</a><a href="#meta2033">Meta 2033</a><a href="#saude">Saúde e custo</a><a href="#impacto">Quanto custa</a>
       <a href="#comunidades">Comunidades</a><a href="#prioridade">Prioridade</a><a href="#agir">Agir</a><a href="#fontes">Fontes</a>
     </nav>
 
@@ -99,7 +110,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
               return (
                 <tr>
                   <th scope="row" data-label="Indicador">{d?.short ?? k}<br /><span class="xsmall muted">{d?.direction === "higher_is_better" ? "quanto maior, melhor" : d?.direction === "higher_is_worse" ? "quanto menor, melhor" : ""}</span></th>
-                  <td class="num" data-label={f.nome}>{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
+                  <td class="num" data-label={f.nome}>{f.ind[k] === null && f.ind_antigo?.[k] ? <span class="nodata">desatualizado<br /><span class="xsmall">último dado: {fmtValue(d, f.ind_antigo[k][0])} em {f.ind_antigo[k][1]}</span></span> : k === "obitos_drsai_100mil" && f.ind[k] === null && src.sim_drsai && src.sim_drsai.status !== "unavailable" ? <span class="nodata">menos de 5 óbitos por ano<br /><span class="xsmall">não detalhado, por privacidade</span></span> : <strong>{fmtValue(d, f.ind[k])}</strong>}{f.ind_ano[k] && f.ind_ano[k] !== snisYear && <span class="xsmall muted"><br />({f.ind_ano[k]})</span>}{k === "snis_esgoto_pct" && f.ind[k] === null && f.esgoto_sem_declaracao && <span class="xsmall muted"><br />nenhum prestador declarou</span>}</td>
                   <td class="num" data-label={`Mediana ${f.uf}`}>{fmtValue(d, st?.median_uf)}</td>
                   <td class="num" data-label="Mediana Brasil">{fmtValue(d, st?.median_br)}</td>
                   <td class="xsmall" data-label="Fonte">{cellSource(k, s)}</td>
@@ -158,7 +169,13 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <div class="card stat"><p class="n">{fmtBRLShort(h.valor)}</p><p>pagos pelo SUS por ano nessas internações</p></div>
           <div class="card stat"><p class="n">{fmtNumber(h.taxa_10mil, 1)}</p><p>internações por 10 mil habitantes (mediana {f.uf}: {fmtNumber(stats.drsai_taxa_10mil?.median_uf, 1)})</p></div>
         </div>
-      ) : (
+      ) : null}
+      {src.sim_drsai && src.sim_drsai.status !== "unavailable" ? (
+        <p class="text">{f.ind.obitos_drsai_anual != null
+          ? <><strong>{fmtNumber(f.ind.obitos_drsai_anual, 1)} mortes por ano</strong> de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS).</>
+          : <>Menos de 5 mortes por ano de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS). Números tão pequenos não são detalhados, para proteger a privacidade das famílias.</>}</p>
+      ) : null}
+      {h ? null : (
         <div class="card pending">
           <p><strong>Os dados de internações ainda não foram processados nesta versão.</strong></p>
           <p class="small">Eles vêm do sistema de internações do SUS (SIH, DATASUS) e entram na nossa atualização mensal. Quando estiverem disponíveis, esta seção mostrará quantas pessoas são internadas por ano por doenças como diarreia, hepatite A e leptospirose, quanto isso custa ao SUS e quanto o município economizaria com saneamento.</p>
@@ -167,6 +184,14 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <p class="source">Fonte: {srcLine("sih_drsai", "DATASUS, SIH/SUS")}{h && `, ${h.period}`}. Doenças relacionadas ao saneamento ambiental inadequado (DRSAI), núcleo conservador. <a href="/metodologia#drsai">Quais doenças entram</a>.</p>
       <p><a class="btn secondary no-print" href={calcUrl}>Abrir a calculadora com os dados de {f.nome}</a></p>
     </section>
+
+    {f.impacto && (
+      <section id="impacto" class="section">
+        <h2>Quanto custa a falta de saneamento em {f.nome}</h2>
+        <p class="text">Uma casa sem saneamento paga a conta de outro jeito: em internações, em dias sem trabalhar, em aulas perdidas e em água tratada que vaza antes de chegar à torneira. Somamos o que dá para medir.</p>
+        <ImpactAccount impacto={f.impacto} nome={f.nome} />
+      </section>
+    )}
 
     <section id="comunidades" class="section">
       <h2>Comunidades e territórios</h2>
@@ -208,19 +233,29 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
     <section id="prioridade" class="section">
       <h2>Posição no índice de prioridade</h2>
       {f.index.score !== null ? (
-        <p class="text">{f.nome} está em <strong>{f.index.rank}º lugar</strong> entre {f.index.n_ranked} municípios da {f.uf_nome} (1º = maior prioridade), com nota {fmtNumber(f.index.score)} de 100.</p>
+        <>
+          <p class="text">{f.nome} está em <strong>{f.index.rank}º lugar</strong> entre {f.index.n_ranked} municípios {deUF(f.uf_nome, f.uf_preposicao)} (1º = maior prioridade), com nota {fmtNumber(f.index.score)} de 100.{pc && <> Faixa: <span class="prio" style={`--c:${pc.color}`}>{pc.short}</span>.</>}</p>
+          {R.index.provisional && <p class="small provisorio"><strong>Ranking provisório.</strong> Ainda sem a dimensão {R.index.provisional_without!.map((d) => dimLabel[d].toLowerCase()).join(" e ")}, que entra quando os dados do SUS forem processados. A posição pode mudar.</p>}
+        </>
       ) : (
-        <p class="text">O índice ainda não pôde ser calculado para a {f.uf_nome}: ele precisa de pelo menos {R.index.min_dimensions_for_rank} das 5 dimensões, e nesta atualização há dados para {R.index.dims_available.length} ({R.index.dims_available.map((d) => dimLabel[d]).join(", ")}). Faltam: {R.index.dims_missing.map((d) => dimLabel[d]).join(", ")}.</p>
+        <p class="text">{f.nome} ainda não entrou no ranking: o índice precisa de pelo menos {R.index.min_dimensions_for_rank} das 5 dimensões{(R.index.required_dimensions?.length ?? 0) > 0 && `, incluindo ${R.index.required_dimensions!.map((d) => dimLabel[d].toLowerCase()).join(" e ")}`}, e faltam dados deste município. Hoje o estado tem dados para {R.index.dims_available.map((d) => dimLabel[d].toLowerCase()).join(", ")}.</p>
       )}
       <div class="dims">
         {Object.entries(f.index.dims).map(([d, v]) => (
           <div class="dim"><span class="small">{dimLabel[d]}</span><div class="dbar" role="img" aria-label={`${dimLabel[d]}: ${v === null ? "sem dado" : fmtNumber(v) + " de 100"}`}>{v !== null && <div style={`width:${v}%`}></div>}</div><span class="small num">{v === null ? "sem dado" : fmtNumber(v)}</span></div>
         ))}
       </div>
-      <p class="xsmall muted">Cada barra vai de 0 a 100 e compara o município com os outros do estado: 0 é a melhor situação e 100, a pior. <a href="/indice">Ajuste os pesos e veja o ranking</a>.</p>
+      <p class="xsmall muted">Cada barra vai de 0 a 100 e compara o município com os outros do estado: 0 é a melhor situação e 100, a pior. <a href={`/indice?uf=${uf}`}>Veja o ranking completo</a> · <a href={`/mapa?uf=${uf}&c=prioridade`}>Veja no mapa</a>.</p>
     </section>
 
     <section id="agir" class="section">
+      {(f.atuacao_sdw?.length ?? 0) > 0 && (
+        <div class="sdw card">
+          <p class="eyebrow">O Instituto SDW está aqui</p>
+          {f.atuacao_sdw!.map((a) => (<><h3>{a.papel}</h3><p>{a.descricao}</p></>))}
+          <p class="small"><a href={f.atuacao_sdw![0].site}>Conheça o trabalho do Instituto</a> · <a href={`mailto:${f.atuacao_sdw![0].contato}`}>{f.atuacao_sdw![0].contato}</a></p>
+        </div>
+      )}
       <h2>Agir: soluções que combinam com este território</h2>
       <div class="grid grid-2">
         {f.suggestions.map((s) => (<div class="card"><h3>{s.title}</h3><p class="small">{s.why}</p></div>))}
@@ -265,6 +300,8 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .kv dd { margin: 0; text-align: right; }
   .tis { padding-left: var(--s-4); }
   .sub { font-size: var(--fs-md); margin-top: var(--s-4); }
+  .sdw { border-left: 6px solid var(--c-water-500); margin-bottom: var(--s-6); background: var(--c-water-100); box-shadow: none; }
+  .sdw h3 { margin-top: var(--s-2); }
   .tis li { margin-bottom: var(--s-2); }
   .dims { display: grid; gap: var(--s-2); max-width: 40rem; margin: var(--s-4) 0; }
   .dim { display: grid; grid-template-columns: 11rem 1fr 4.5rem; gap: var(--s-3); align-items: center; }

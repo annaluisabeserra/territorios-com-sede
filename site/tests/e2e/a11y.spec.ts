@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const PAGES = ["/", "/municipio/ba/salvador", "/municipio/ba/pau-brasil", "/mapa", "/calculadora", "/perguntas", "/indice",
+const PAGES = ["/", "/municipio/ba/salvador", "/municipio/ba/pau-brasil", "/mapa", "/calculadora", "/perguntas", "/indice", "/dados/sql", "/estado/ba", "/estado/ce", "/municipio/ce/sao-goncalo-do-amarante",
   "/busca?q=juazeiro", "/metodologia", "/faq", "/sobre", "/dados", "/escola", "/escola/ba/salvador", "/povos-e-comunidades"];
 
 for (const path of PAGES) {

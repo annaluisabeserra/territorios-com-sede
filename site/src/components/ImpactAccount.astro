@@ -1,0 +1,52 @@
+---
+// Conta de impacto potencial (ADR-013): camadas separadas, faixa baixo–alto, premissas e fontes visíveis.
+import { fmtBRLShort, fmtNumber } from "../lib/format";
+import type { Impacto } from "../lib/types";
+
+interface Props { impacto: Impacto; nome: string }
+const { impacto, nome } = Astro.props;
+const c = impacto.camadas;
+const t = impacto.total;
+const brl = (lo: number | null, hi: number | null) =>
+  lo === null ? "sem dado" : hi === null ? `pelo menos ${fmtBRLShort(lo)}` : Math.abs(hi - lo) < 1 ? fmtBRLShort(lo) : `${fmtBRLShort(lo)} a ${fmtBRLShort(hi)}`;
+const order = ["saude_sus", "trabalho", "vidas", "agua_perdida", "escola"] as const;
+const LABEL_TIPO: Record<string, string> = { observado: "valor medido", estimado: "estimativa", indicador: "não convertido em dinheiro" };
+---
+<div class="impacto">
+  {t.baixo !== null ? (
+    <div class="card total">
+      <p class="eyebrow">Por ano, com as camadas que já têm dado</p>
+      <p class="n">{brl(t.baixo, t.alto)}</p>
+      {t.por_pessoa_baixo !== null && <p>ou {brl(t.por_pessoa_baixo, t.por_pessoa_alto)} por habitante de {nome}</p>}
+      <p class="xsmall muted">Valores em R$ de {impacto.price_base}. Estimativa: veja as premissas de cada camada.{t.faltando.length > 0 && ` Ainda sem dado: ${t.faltando.map((k) => c[k].label.charAt(0).toLowerCase() + c[k].label.slice(1)).join(", ")}.`}</p>
+    </div>
+  ) : (
+    <p class="text">Ainda não há dados suficientes para estimar este custo em {nome}.</p>
+  )}
+  <div class="grid layers">
+    {order.map((k) => {
+      const l = c[k];
+      const has = l.baixo !== null;
+      return (
+        <article class:list={["card layer", { empty: !has }]}>
+          <p class="eyebrow">{LABEL_TIPO[l.tipo]}</p>
+          <h3>{l.label}</h3>
+          <p class="v">{!has ? "sem dado ainda" : l.unidade === "dias" ? `${fmtNumber(l.baixo, 0)} dias por ano` : brl(l.baixo, l.alto)}</p>
+          <p class="small">{l.pergunta}{k === "agua_perdida" && l.volume_m3 ? `: ${fmtNumber(l.volume_m3 / 1e6, 1)} milhões de m³ em ${l.referencia}` : ""}.</p>
+          {l.premissa && <details class="xsmall"><summary>Premissa</summary><p>{l.premissa}</p></details>}
+          <p class="source">{l.fonte}{l.referencia ? `, ${l.referencia}` : ""}</p>
+        </article>
+      );
+    })}
+  </div>
+  <p class="xsmall muted">Inspirado na metodologia True Value, que converte em dinheiro efeitos que não aparecem nas contas públicas. Cada camada é mostrada separada para que se veja de onde vem cada parte. <a href="/metodologia#impacto">Como calculamos</a>.</p>
+</div>
+<style>
+  .total { border-left: 6px solid var(--c-water-500); margin-bottom: var(--s-4); }
+  .total .n { font-size: var(--fs-xl); font-weight: 700; margin: var(--s-2) 0; }
+  .layers { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--s-4); }
+  .layer h3 { margin: var(--s-1) 0; font-size: var(--fs-md); }
+  .layer .v { font-size: var(--fs-lg); font-weight: 700; margin: var(--s-2) 0; }
+  .layer.empty .v { color: var(--c-ink-muted); font-weight: 400; font-size: var(--fs-md); }
+  details summary { cursor: pointer; }
+</style>

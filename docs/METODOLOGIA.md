@@ -27,11 +27,18 @@ site em `/metodologia`. Este documento explica as regras gerais e as escolhas me
 - **SNIS** (Sistema Nacional de Informações sobre Saneamento): dados autodeclarados pelos prestadores, série
   1995–2022 (ano de referência). A partir do ano de referência 2023, o Ministério das Cidades substituiu o SNIS pelo
   **SINISA** (Sistema Nacional de Informações em Saneamento Básico), com primeira coleta em 2024 e 5.241 municípios
-  participantes. O SINISA muda conceitos, formulários e denominadores. Enquanto não houver arquivo aberto e estável
-  por município, a série da plataforma termina em 2022, e o `.meta.json` registra isso.
-- **Quebra de série dentro do SNIS:** o ano de referência 2022 usa a população do Censo 2022 como denominador; os
-  anos anteriores usavam estimativas populacionais. Isso pode gerar um degrau em 2022. Quando o SINISA for integrado,
-  a série terá um campo de metodologia e a regressão do termômetro não atravessará a quebra (backlog).
+  participantes. O SINISA muda conceitos, formulários e denominadores.
+- **Integração do SINISA {#sinisa}** (ADR-012): o leitor `pipeline/sources/sinisa.py` abre a página de resultados
+  de cada edição, escolhe as planilhas municipais de água e de esgoto e reconhece as colunas pelo código do
+  indicador ou pelo texto do cabeçalho. Equivalências confirmadas: IN055 → IAG0001, IN056 → IES0001,
+  IN046 → IES2003. Tratamento do esgoto coletado (IN016), perdas (IN049) e consumo (IN022) entram pelo cabeçalho;
+  qual coluna foi usada fica nos metadados. A série junta SNIS (até 2022) e SINISA (anos seguintes); o SINISA
+  nunca sobrescreve um ano do SNIS. Se uma edição não puder ser lida, a série continua com o que houver.
+- **Quebras de série:** o ano de referência 2022 do SNIS usa a população do Censo 2022 como denominador (degrau
+  possível em 2022), e o SINISA muda parte da metodologia a partir de 2023. Uma tendência do termômetro que junta
+  anos dos dois sistemas é marcada como **incerta**, com o motivo escrito na ficha. Cada indicador tem o próprio ano
+  de referência: se o SINISA não trouxer um indicador, os dados do SNIS daquele indicador não passam a contar como
+  desatualizados por causa disso.
 - **Valores fora da faixa:** coberturas entre 100% e 105% (diferença de denominador) são limitadas a 100%; acima de
   105%, e perdas fora de 0–100%, são tratadas como erro de declaração (sem dado). As contagens ficam nos metadados.
 - **Desatualização:** um valor do SNIS com mais de 2 anos de defasagem em relação ao último ano disponível na UF é
@@ -108,6 +115,21 @@ Mostra quanto o território economizaria reduzindo as DRSAI em X%. **Não estima
 - **Paridade:** a mesma conta roda em Python (pipeline) e em TypeScript (site), com igualdade exata verificada em
   204 casos.
 
+## Fontes complementares (ADR-014) {#complementares}
+
+- **Óbitos (SIM/DATASUS):** causa básica da declaração de óbito, por município de residência, grupos de CID do
+  núcleo conservador de DRSAI (os mesmos do SIH), média dos últimos 5 anos consolidados. Abaixo de 5 óbitos por ano
+  o valor não é publicado. A idade alimenta a camada "vidas" da conta de impacto.
+- **Qualidade da água (SISAGUA):** controle mensal do prestador, parâmetros básicos, último ano completo. Mede a
+  água da rede, não a de poços, cisternas ou carros-pipa.
+- **Clima (S2ID e Monitor de Secas):** reconhecimentos federais de emergência por seca/estiagem e por chuvas nos
+  últimos 5 anos completos; meses em seca moderada ou pior nos últimos 12 mapas do Monitor de Secas, pela classe no
+  ponto representativo do município (um ponto garantidamente dentro do polígono municipal).
+- **Escolas (Censo Escolar/INEP):** escolas públicas em atividade sem água potável, sem banheiro ou sem nenhum
+  esgotamento, e matrículas nelas. Autodeclarado pela escola.
+- **Gasto municipal (SICONFI):** despesa liquidada na função 17 (Saneamento), DCA Anexo I-E, por habitante, em R$
+  do exercício. Não inclui investimentos de companhias estaduais nem do governo federal.
+
 ## Índice de prioridade territorial
 
 - Cinco dimensões com pesos padrão: déficit de acesso (30%), carga de saúde (25%), vulnerabilidade social (20%),
@@ -115,8 +137,14 @@ Mostra quanto o território economizaria reduzindo as DRSAI em X%. **Não estima
 - Cada componente vira percentil dentro da UF (0 = melhor situação, 100 = pior), com empates pela média dos postos.
 - Dimensão = média dos componentes presentes. Índice = média ponderada das dimensões presentes, com os pesos
   renormalizados. **Nada é imputado como zero.**
-- Município com menos de 3 dimensões fica sem posição no ranking. Se a UF inteira não tem 3 dimensões, o índice
-  não é publicado (situação da versão atual: faltam saúde, clima e qualidade da água).
+- Município com menos de 3 dimensões, ou sem as obrigatórias (déficit de acesso e carga de saúde), fica sem posição
+  no ranking. Posição 1 = maior prioridade; empates recebem a mesma posição.
+- **Ranking provisório (ADR-015):** se uma dimensão obrigatória não tem dado em nenhum município da UF (fonte ainda
+  não processada, como o SIH), o ranking sai sem ela, com mínimo de 2 dimensões e o rótulo "provisório" em todas as
+  telas. A ausência é igual para todos os municípios da UF, então não há exclusão seletiva. Quando o dado chega, o
+  ranking volta à regra completa sozinho.
+- **Faixas de prioridade** (mapa, listas e panorama): 10% primeiros = muito alta; até 25% = alta; até 50% = média;
+  metade final = menor. Calculadas sobre os municípios ranqueados da UF.
 - Fallback declarado: se o Censo não estiver disponível para a UF, o déficit de acesso usa o SNIS (sinalizado).
 - Pesos ajustáveis pelo usuário no site; análise de sensibilidade (±10 p.p. por peso, top 20) publicada.
 

@@ -3,13 +3,13 @@
 #
 # Campos:
 #   label / short: nome completo e curto (pt-BR)
-#   unit: pct | count | rate_10k | brl | brl_pc | years | index | days
+#   unit: pct | count (pessoas) | number (quantidade) | rate_10k | rate_100k | brl | brl_pc | years | index | days
 #   direction: higher_is_better | higher_is_worse | neutral
 #   source: id da fonte (ver docs/DATA_SOURCES.md)
 #   formula: texto em linguagem simples
 #   limitations: lista
 #   map: true se vira camada do mapa; palette: sequential | diverging
-#   group: acesso | saude | servico | contexto | indice | meta
+#   group: acesso | saude | servico | qualidade | clima | contexto | indice | meta
 indicators:
   populacao:
     label: População residente
@@ -411,4 +411,154 @@ indicators:
     formula: Pessoas indígenas residentes no município, pelo critério do IBGE (cor ou raça indígena ou que se consideram indígenas).
     limitations:
       - Lida do SIDRA no GitHub Actions; no espelho usado no desenvolvimento só existe "cor ou raça indígena".
+    map: false
+
+  obitos_drsai_anual:
+    label: Óbitos por doenças ligadas ao saneamento (média anual)
+    short: Óbitos por DRSAI
+    unit: count
+    direction: higher_is_worse
+    group: saude
+    source: datasus_sim
+    formula: Média anual de óbitos de residentes com causa básica no núcleo conservador de DRSAI (diarreias, hepatite A, leptospirose, esquistossomose, verminoses), SIM, últimos 5 anos consolidados.
+    limitations:
+      - Média abaixo de 5 óbitos por ano não é publicada (proteção de privacidade).
+      - Depende da qualidade do preenchimento da causa básica na declaração de óbito.
+    map: false
+
+  obitos_drsai_100mil:
+    label: Óbitos por doenças ligadas ao saneamento por 100 mil habitantes
+    short: Óbitos DRSAI / 100 mil
+    unit: rate_100k
+    direction: higher_is_worse
+    group: saude
+    source: datasus_sim
+    formula: Média anual de óbitos por DRSAI ÷ população (Censo 2022) × 100.000.
+    limitations:
+      - Só calculado onde a média anual é de 5 óbitos ou mais.
+    map: false
+
+  sisagua_pct_fora_padrao:
+    label: Amostras de água fora do padrão de potabilidade (SISAGUA)
+    short: Água fora do padrão
+    unit: pct
+    direction: higher_is_worse
+    group: qualidade
+    source: sisagua
+    formula: Amostras com resultado fora do padrão ÷ amostras analisadas × 100, parâmetros básicos (turbidez, cloro residual, cor, pH, coliformes, E. coli), controle mensal do prestador, último ano completo.
+    limitations:
+      - Informado pelo prestador; municípios sem abastecimento por rede ou sem envio ficam sem dado.
+      - Mede a água da rede, não a de poços, cisternas ou carros-pipa.
+    map: true
+    palette: sequential
+
+  sisagua_ecoli_pct_fora:
+    label: Análises com presença de E. coli na água distribuída (SISAGUA)
+    short: E. coli na água
+    unit: pct
+    direction: higher_is_worse
+    group: qualidade
+    source: sisagua
+    formula: Análises de Escherichia coli fora do padrão (presença) ÷ análises de E. coli × 100, controle mensal, último ano completo.
+    limitations:
+      - E. coli indica contaminação fecal recente. Poucas análises tornam o percentual instável.
+    map: false
+
+  decretos_seca_5a:
+    label: Reconhecimentos de emergência por seca ou estiagem (5 anos)
+    short: Decretos de seca
+    unit: number
+    direction: higher_is_worse
+    group: clima
+    source: s2id
+    formula: Número de reconhecimentos federais de situação de emergência ou calamidade por seca ou estiagem nos últimos 5 anos completos (S2ID).
+    limitations:
+      - Depende de o município pedir o reconhecimento; um município pode viver a seca sem decreto.
+    map: true
+    palette: sequential
+
+  decretos_chuva_5a:
+    label: Reconhecimentos de emergência por chuvas (5 anos)
+    short: Decretos de chuva
+    unit: number
+    direction: higher_is_worse
+    group: clima
+    source: s2id
+    formula: Reconhecimentos federais por inundação, enxurrada, alagamento ou chuvas intensas nos últimos 5 anos completos (S2ID).
+    limitations:
+      - Depende de o município pedir o reconhecimento.
+    map: false
+
+  seca_meses_12m:
+    label: Meses em seca moderada ou pior (últimos 12)
+    short: Meses em seca
+    unit: number
+    direction: higher_is_worse
+    group: clima
+    source: monitor_secas
+    formula: Meses, entre os 12 últimos mapas do Monitor de Secas (ANA), em que o ponto representativo do município estava em área de seca moderada (S1) ou mais grave.
+    limitations:
+      - O ponto representativo resume o município inteiro; municípios grandes podem ter áreas em situações diferentes.
+    map: true
+    palette: sequential
+
+  seca_classe_max_12m:
+    label: Pior classe de seca nos últimos 12 meses (0 = fraca … 4 = excepcional)
+    short: Pior seca (12 meses)
+    unit: number
+    direction: higher_is_worse
+    group: clima
+    source: monitor_secas
+    formula: Maior classe (S0 a S4) do Monitor de Secas no ponto representativo do município nos últimos 12 mapas. Sem seca no período = sem valor.
+    limitations: []
+    map: false
+
+  escolas_sem_agua_potavel_pct:
+    label: Escolas públicas sem água potável
+    short: Escolas sem água potável
+    unit: pct
+    direction: higher_is_worse
+    group: acesso
+    source: censo_escolar
+    formula: Escolas públicas em atividade que declararam não ter água potável ÷ escolas públicas em atividade × 100 (Censo Escolar, INEP).
+    limitations:
+      - Autodeclarado pela escola. Não mede regularidade do abastecimento.
+    map: true
+    palette: sequential
+
+  escolas_sem_banheiro_pct:
+    label: Escolas públicas sem banheiro
+    short: Escolas sem banheiro
+    unit: pct
+    direction: higher_is_worse
+    group: acesso
+    source: censo_escolar
+    formula: Escolas públicas em atividade sem banheiro ÷ escolas públicas em atividade × 100 (Censo Escolar).
+    limitations:
+      - Autodeclarado pela escola.
+    map: false
+
+  escolas_sem_esgoto_pct:
+    label: Escolas públicas sem nenhum tipo de esgotamento
+    short: Escolas sem esgoto
+    unit: pct
+    direction: higher_is_worse
+    group: acesso
+    source: censo_escolar
+    formula: Escolas públicas em atividade que declararam esgotamento sanitário inexistente ÷ escolas públicas em atividade × 100 (Censo Escolar).
+    limitations:
+      - "Fossa conta como esgotamento, então o indicador mostra só a ausência total."
+    map: false
+
+  despesa_saneamento_pc:
+    label: Despesa da prefeitura com saneamento por habitante
+    short: Gasto da prefeitura com saneamento, por habitante
+    unit: brl_pc
+    direction: neutral
+    group: contexto
+    source: siconfi
+    formula: Despesa liquidada na função 17 (Saneamento) declarada no SICONFI (DCA Anexo I-E) ÷ população (Censo 2022). R$ do exercício, sem correção.
+    limitations:
+      - Só a despesa da prefeitura. Investimentos de companhias estaduais e do governo federal não entram.
+      - Município sem declaração no ano fica sem dado.
     map: false

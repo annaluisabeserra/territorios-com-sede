@@ -112,3 +112,11 @@ def test_withdrawals_remove_information_everywhere():
     assert [t["nome"] for t in tm["2900108"]] == ["B"] and list(tg["codigo_funai"]) == ["1"]
     assert ug.empty and "2900207" not in um
     assert pd.isna(tab.loc["2900207", "pop_quilombola"]) and tab.loc["2900108", "pop_quilombola"] == 10.0
+
+
+def test_sdw_presence_is_published_for_configured_municipalities(built):
+    cfg = config.load("atuacao_sdw")
+    codes = {str(loc["municipio"]) for loc in cfg["locais"] if str(loc["municipio"]).startswith(built.code)}
+    resumo = json.loads((config.PUBLIC_DIR / built.slug / "resumo.json").read_text())
+    flagged = {m["cod"] for m in resumo["municipios"] if m.get("sdw")}
+    assert flagged == codes

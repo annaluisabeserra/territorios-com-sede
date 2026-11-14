@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { ufs } from "../lib/data";
 
 interface Props {
   title: string;
@@ -15,6 +16,7 @@ const url = canonical ?? `${site}${Astro.url.pathname}`;
 const image = ogImage ? `${site}${ogImage}` : `${site}/og/default.png`;
 const fullTitle = title === "Territórios com Sede" ? title : `${title} · Territórios com Sede`;
 const beacon = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
+const ufList = ufs();
 const nav = [
   { href: "/mapa", label: "Mapa" },
   { href: "/calculadora", label: "Calculadora" },
@@ -87,6 +89,7 @@ const path = Astro.url.pathname;
           <p class="small">Uma iniciativa do <a href="https://institutosdw.org">Instituto SDW</a>. Dados públicos, metodologia aberta, código livre.</p>
         </div>
         <ul class="small links">
+          <li>Panorama: {ufList.map((u, i) => (<>{i > 0 && " · "}<a href={`/estado/${u.slug}`}>{u.name}</a></>))}</li>
           <li><a href="/metodologia">Metodologia</a></li>
           <li><a href="/faq">Perguntas frequentes</a></li>
           <li><a href="/povos-e-comunidades">Povos e comunidades tradicionais</a></li>

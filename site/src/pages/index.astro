@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 import StaticMap from "../components/StaticMap.astro";
 import { DEFAULT_UF, resumo, ufs } from "../lib/data";
-import { fmtBRLShort, fmtNumber } from "../lib/format";
+import { deUF, emUF, fmtBRLShort, fmtNumber } from "../lib/format";
 import { THERMO_COLORS, THERMO_LABEL } from "../lib/indicators";
 
 const R = resumo(DEFAULT_UF);
@@ -19,6 +19,11 @@ const candidates = [
 const thermoColors = Object.fromEntries(R.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
 const counts = Object.keys(THERMO_LABEL).map((k) => ({ k, label: THERMO_LABEL[k], n: R.municipios.filter((m) => m.thermo.esgoto === k).length }));
 const list = ufs();
+const states = list.map((u) => {
+  const r = resumo(u.slug);
+  return { slug: u.slug, nome: u.name, pop: r.totals.populacao ?? 0, n: r.municipios.length,
+    late: r.totals.esgoto_atrasados ?? 0, noData: r.totals.esgoto_sem_dados ?? 0 };
+});
 ---
 <Base title="Territórios com Sede">
   <section class="hero">
@@ -33,21 +38,38 @@ const list = ufs();
         </form>
       </div>
       <figure class="map">
-        <a href="/mapa" aria-label="Abrir o mapa interativo da Bahia">
-          <StaticMap uf={DEFAULT_UF} values={{}} palette={[]} categorical={thermoColors} label="Mapa da Bahia: situação de cada município em relação à meta de esgoto de 2033" />
+        <a href="/mapa" aria-label={`Abrir o mapa interativo ${deUF(R.uf.nome, R.uf.preposicao)}`}>
+          <StaticMap uf={DEFAULT_UF} values={{}} palette={[]} categorical={thermoColors} label={`Mapa ${deUF(R.uf.nome, R.uf.preposicao)}: situação de cada município em relação à meta de esgoto de 2033`} />
         </a>
         <figcaption class="small">
-          <strong>Meta de esgoto 2033 na {R.uf.nome}: 90% com coleta e tratamento</strong>
+          <strong>Meta de esgoto 2033 {emUF(R.uf.nome, R.uf.preposicao)}: 90% com coleta e tratamento</strong>
           <ul class="legend">{counts.map((c) => <li><i style={`background:${THERMO_COLORS[c.k]}`}></i>{c.label}: {c.n}</li>)}</ul>
-          <span class="source">Esgoto coletado e tratado (SNIS IN056 × IN016), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a></span>
+          <span class="source">Esgoto coletado e tratado (SNIS IN056 × IN016), tendência até {R.snis_year}. <a href="/mapa">Abrir mapa interativo</a> · <a href={`/estado/${R.uf.slug}`}>Panorama do estado</a></span>
         </figcaption>
       </figure>
     </div>
   </section>
 
-  <section class="wrap numbers" aria-label="Números da Bahia">
+  <section class="wrap numbers" aria-label={`Números ${deUF(R.uf.nome, R.uf.preposicao)}`}>
     {candidates.map((c) => (<div class="card"><p class="n">{c.value}</p><p>{c.text}</p><p class="source">{c.src} · <a href={c.href ?? "/metodologia#termometro"}>{c.href ? "ver a lista" : "como calculamos"}</a></p></div>))}
   </section>
+
+  {list.length > 1 && (
+    <section class="wrap section" aria-labelledby="estados-h">
+      <h2 id="estados-h">Escolha o estado</h2>
+      <p class="text">{list.length} estados, {fmtNumber(states.reduce((a, s) => a + s.n, 0))} municípios. Cada panorama pode ser salvo em PDF.</p>
+      <ul class="ufcards">
+        {states.map((s) => (
+          <li class="card">
+            <h3><a href={`/estado/${s.slug}`}>{s.nome}</a></h3>
+            <p class="small">{fmtNumber(s.pop)} habitantes · {s.n} municípios</p>
+            <p class="small"><strong>{s.late}</strong> fora do ritmo da meta de esgoto{s.noData > 0 && <>, <strong>{s.noData}</strong> sem dados suficientes</>}</p>
+            <p class="xsmall"><a href={`/estado/${s.slug}`}>Panorama</a> · <a href={`/mapa?uf=${s.slug}`}>Mapa</a></p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   <section class="wrap section verbs">
     <h2>Três verbos para mudar o mapa</h2>
@@ -66,9 +88,7 @@ const list = ufs();
       <p><a href="/sobre">Conheça o projeto</a> · <a href="/perguntas">Faça uma pergunta aos dados</a> · <a href="/escola">Leve para a sala de aula</a></p>
     </div>
   </section>
-  {list.length > 1 && (
-    <section class="wrap section"><h2>Estados disponíveis</h2><ul class="ufs">{list.map((u) => <li><a href={`/mapa?uf=${u.slug}`}>{u.name}</a></li>)}</ul></section>
-  )}
+
 </Base>
 <style>
   .hero { background: radial-gradient(1200px 500px at 80% 0%, var(--c-water-100), transparent), var(--c-sand-50); padding: var(--s-7) 0 var(--s-6); }
@@ -86,6 +106,9 @@ const list = ufs();
   .numbers { display: grid; gap: var(--s-4); margin-top: calc(-1 * var(--s-4)); }
   @media (min-width: 720px) { .numbers { grid-template-columns: repeat(3, 1fr); } }
   .numbers .n { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--c-water-900); margin: 0 0 var(--s-2); line-height: 1.05; }
+  .ufcards { list-style: none; padding: 0; display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+  .ufcards h3 { margin: 0 0 var(--s-2); font-size: var(--fs-lg); }
+  .ufcards p { margin: var(--s-1) 0; }
   .verb { text-decoration: none; color: inherit; transition: transform .15s; }
   .verb:hover { transform: translateY(-2px); border-color: var(--c-water-500); }
   .verb h3 { color: var(--c-water-950); }

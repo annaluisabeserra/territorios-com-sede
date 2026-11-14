@@ -9,6 +9,7 @@ export function fmtValue(def: Pick<IndicatorDef, "unit"> | undefined, v: Num | u
     case "brl": return fmtBRL(v);
     case "brl_pc": return fmtBRL(v, 2);
     case "rate_10k": return fmtNumber(v, 1);
+    case "rate_100k": return fmtNumber(v, 1);
     case "index": return fmtNumber(v, 0);
     case "lhabdia": return `${fmtNumber(v, 0)} L/hab/dia`;
     case "days": return `${fmtNumber(v, 0)} dias`;
@@ -17,7 +18,7 @@ export function fmtValue(def: Pick<IndicatorDef, "unit"> | undefined, v: Num | u
 }
 
 export function unitLabel(def: Pick<IndicatorDef, "unit">): string {
-  return ({ pct: "% da população", count: "pessoas", rate_10k: "por 10 mil habitantes", brl: "R$ por ano",
+  return ({ pct: "% da população", count: "pessoas", number: "quantidade", rate_10k: "por 10 mil habitantes", rate_100k: "por 100 mil habitantes", brl: "R$ por ano",
     brl_pc: "R$ por habitante por ano", index: "0 a 100", days: "dias por ano", lhabdia: "litros por habitante por dia",
     years: "anos", bool: "" } as Record<string, string>)[def.unit] ?? "";
 }
@@ -57,4 +58,19 @@ export const THERMO_COLORS: Record<string, string> = {
 export const SOURCE_LABEL: Record<string, string> = {
   ibge_censo2022: "IBGE, Censo 2022", snis: "SNIS (Ministério das Cidades)", datasus_sih: "DATASUS, SIH/SUS",
   ana_atlas_esgotos: "ANA, Atlas Esgotos", derivado: "Cálculo da plataforma", sudene_semiarido: "Sudene",
+  datasus_sim: "DATASUS, SIM", sisagua: "Ministério da Saúde, SISAGUA", s2id: "MIDR, S2ID", monitor_secas: "ANA, Monitor de Secas",
+  censo_escolar: "INEP, Censo Escolar", siconfi: "Tesouro Nacional, SICONFI",
 };
+
+/** Faixas de prioridade pela posição no ranking da UF (1º = maior prioridade). Mesmas cores no mapa e nas listas. */
+export const PRIO_CLASSES = [
+  { key: "p10", label: "Prioridade muito alta (10% primeiros)", short: "Muito alta", upTo: 0.1, color: "#9e1b1b" },
+  { key: "p25", label: "Prioridade alta (até 25%)", short: "Alta", upTo: 0.25, color: "#e34a33" },
+  { key: "p50", label: "Prioridade média (até 50%)", short: "Média", upTo: 0.5, color: "#fc8d59" },
+  { key: "p100", label: "Prioridade menor (metade final)", short: "Menor", upTo: 1, color: "#fdd49e" },
+] as const;
+
+export function prioClass(rank: number | null | undefined, n: number): (typeof PRIO_CLASSES)[number] | null {
+  if (rank === null || rank === undefined || !n) return null;
+  return PRIO_CLASSES.find((c) => rank <= Math.ceil(c.upTo * n)) ?? PRIO_CLASSES[PRIO_CLASSES.length - 1];
+}

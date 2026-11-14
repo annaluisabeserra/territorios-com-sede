@@ -10,26 +10,29 @@ para publicar, como a plataforma se mantém sozinha e o que ainda precisa de dec
 ## 1. O que foi construído
 
 Uma plataforma na internet que mostra, para cada município, como estão a água, o esgoto e a saúde, quanto custa
-não ter saneamento e onde agir primeiro. Nesta entrega: **os 417 municípios da Bahia** e, como prova de que funciona
-para qualquer estado, **os 184 municípios do Ceará** (incluindo São Gonçalo do Amarante, onde fica Croatá).
+não ter saneamento e onde agir primeiro. Nesta entrega: **os 1.794 municípios dos 9 estados do Nordeste**
+(Maranhão, Piauí, Ceará, Rio Grande do Norte, Paraíba, Pernambuco, Alagoas, Sergipe e Bahia), incluindo Salvador
+(Itacaranha) e São Gonçalo do Amarante (Croatá), onde o Instituto SDW atua. A Bahia foi o primeiro estado; o Ceará,
+a prova de que a plataforma funciona para qualquer estado; os outros 7 entraram só pela configuração.
 
 | Página | O que faz |
 |---|---|
-| Início | Manifesto, mapa da Bahia, busca e três números do estado |
-| Ficha do município (601) | Resumo em linguagem simples, indicadores com comparação, termômetro 2033, saúde, comunidades, sugestões de soluções, fontes, downloads e card para redes sociais |
+| Início | Manifesto, mapa da Bahia, busca, três números do estado e um card por estado com acesso ao panorama e ao mapa |
+| Ficha do município (1.794) | Resumo em linguagem simples, indicadores com comparação, termômetro 2033, saúde (internações e óbitos), "Quanto custa" (conta de impacto em camadas), comunidades, atuação do Instituto SDW, sugestões de soluções, fontes, downloads e card para redes sociais |
+| Panorama estadual (`/estado/{uf}`, 9 estados) | Números do estado, meta de 2033, municípios mais populosos atrasados, tabela por região, água perdida, fontes; botão "Salvar em PDF" |
 | Mapa | Camadas de água, esgoto, perdas, metas de 2033, Semiárido, terras indígenas e reservas extrativistas, com tabela alternativa |
 | Calculadora | Quanto o município economizaria reduzindo doenças ligadas à água (com modo SROI) |
 | Perguntas | Monte perguntas aos dados por menus; 12 perguntas prontas |
 | Prioridades | Índice de prioridade com pesos ajustáveis |
 | Escola | Página de cada município para estudantes e 3 roteiros para professores |
-| Dados abertos | Downloads em CSV e Parquet, dicionário, licença e citação |
+| Dados abertos | Downloads em CSV e Parquet, dicionário, licença, citação e consulta SQL no navegador (`/dados/sql`) |
 | Metodologia, FAQ (24 perguntas), Sobre, Povos e comunidades tradicionais | Transparência e participação |
 
 Prints: `docs/img/home.png`, `docs/img/ficha-celular.png`, `docs/img/mapa.png`, `docs/img/calculadora.png`,
 `docs/img/perguntas.png`.
 
-**Qualidade verificada:** 77 testes do pipeline, 416 testes do site (inclui a conferência de que a calculadora dá
-exatamente o mesmo resultado em Python e no navegador, em 248 casos), 54 testes de navegação em computador e
+**Qualidade verificada (atualizado na expansão para o Nordeste):** 149 testes do pipeline, 418 testes do site (inclui a conferência de que a calculadora dá
+exatamente o mesmo resultado em Python e no navegador, em 248 casos), 66 testes de navegação em computador e
 celular com verificação automática de acessibilidade, e nota Lighthouse de 90 ou mais (celular) nas quatro
 categorias em todas as páginas medidas.
 
@@ -186,12 +189,13 @@ Resumo (detalhes em `docs/DATA_SOURCES.md` e na página Dados abertos):
 |---|---|
 | IBGE: municípios, malhas, população 2022, destino do lixo, quilombolas, cor ou raça | Em uso (cópia pública rastreável) |
 | SNIS 1995–2022 (água, esgoto, tratamento, perdas) | Em uso (cópia pública) |
-| SINISA (sucessor do SNIS, a partir de 2023) | Indisponível: sem arquivo aberto estável por município |
+| SINISA (sucessor do SNIS, a partir de 2023) | Leitor pronto (ADR-012); entra no GitHub Actions. A troca de sistema é sinalizada nas projeções |
 | DATASUS SIH (internações) | Programado; entra na primeira execução no GitHub Actions |
 | Censo 2022: água, esgoto, renda, pessoas indígenas | Programado (descoberta automática no SIDRA); entra no GitHub Actions |
 | IPCA | Em uso, mas a cópia termina em 07/2024; a fonte oficial (Banco Central) entra no GitHub Actions |
 | FUNAI terras indígenas, reservas extrativistas e RDS (CNUC), Semiárido, ANA Atlas Esgotos | Em uso (cópias públicas) |
-| SISAGUA, S2ID, INCRA, Palmares, CadÚnico, SICONFI | Indisponíveis, com motivo registrado; precisam de leitor próprio |
+| SIM (óbitos), SISAGUA (qualidade da água), S2ID (decretos), Monitor de Secas, Censo Escolar, SICONFI | Leitores prontos (ADR-014); entram no GitHub Actions. Testados só com dados sintéticos: o primeiro data-refresh é o teste com os arquivos oficiais |
+| INCRA, Palmares, CadÚnico | Indisponíveis, com motivo registrado; precisam de leitor próprio |
 
 **Limitações conhecidas:** dados do SNIS são autodeclarados pelos prestadores; a população quilombola da cópia
 pública é um mínimo (sigilo do IBGE); o termômetro é uma projeção linear indicativa; a calculadora não estima o
@@ -220,8 +224,11 @@ A lista completa está em `docs/QUESTIONS.md`. As mais importantes:
 
 ### Fase 1: os 27 estados
 
+- **Feito:** os 9 estados do Nordeste, só pela configuração. O primeiro data-refresh depois da ativação traz os
+  dados dos 7 estados novos; até lá, CI e deploy pulam esses estados com um aviso. O SICONFI faz uma consulta por
+  município (1.794 no Nordeste), o que acrescenta cerca de 25 minutos à atualização mensal.
 - **O que fazer:** acrescentar as UFs em `pipeline/config/ufs.yaml` (sigla, código, número de municípios,
-  população do Censo 2022, preposição). Nenhuma mudança de código: o Ceará foi rodado assim nesta entrega.
+  população do Censo 2022, preposição, capital). Nenhuma mudança de código.
 - **Tempo estimado do pipeline:** sem o SIH, cerca de 1 minuto por UF depois que os arquivos nacionais estão em
   cache. A primeira carga do SIH é a parte pesada (estimativa de várias horas; dividir em execuções por grupos de
   UFs). Depois, cada mês baixa só os meses novos.
@@ -229,12 +236,13 @@ A lista completa está em `docs/QUESTIONS.md`. As mais importantes:
   municípios (ficha, página da escola, card, JSON e CSV) passaria disso. Plano: juntar os CSVs por UF em um arquivo
   compactado e gerar os cards em lotes ou sob demanda. O repositório cresce cerca de 1,6 MB por UF por atualização;
   guardar o histórico antigo em Releases em vez de commits.
-- Fazer leitores para SISAGUA, S2ID, INCRA, Palmares, CadÚnico e SICONFI, e integrar o SINISA (com marcação de
-  mudança de metodologia na série).
+- Fazer leitores para INCRA, Palmares e CadÚnico. (SINISA, SIM, SISAGUA, S2ID, Monitor de Secas, Censo Escolar e
+  SICONFI já têm leitor; conferir o primeiro resultado de cada um no `.meta.json`.)
 
 ### Fase 2: relatórios estaduais em PDF e alertas
 
-- Relatório por UF gerado no build (a partir das mesmas fichas), pronto para PPAs 2028–2031.
+- Relatório por UF: **feito** como panorama estadual imprimível (`/estado/{uf}`). Próximo passo: folha A4 por
+  município para reuniões.
 - Alertas por e-mail ou RSS quando um município muda de situação no termômetro ou recebe novos dados.
 
 ### Fase 3: projetos SDW com linha de base e monitoramento
@@ -283,6 +291,8 @@ de gasto na Anthropic); a pergunta é enviada à Anthropic, nos Estados Unidos (
 | Fontes oficiais (IBGE, DATASUS, Ministério das Cidades, FUNAI, BCB) | Dados | Mudança de endereço ou formato | Endereços centralizados em `sources.yaml`; a última versão válida é mantida e marcada |
 | OpenFreeMap (mapa de fundo) | Opcional | Fora do ar | O mapa funciona sem mapa de fundo (padrão) |
 | unpkg (Decap CMS) | Página de edição | Fora do ar ou adulteração | Integridade verificada (SRI); dá para servir o arquivo do próprio site ou editar direto no GitHub |
+| jsDelivr (DuckDB da consulta SQL) | Página `/dados/sql`, só quando a pessoa clica | Fora do ar | Os downloads em CSV e Parquet continuam funcionando; dá para hospedar os arquivos do DuckDB num bucket gratuito (R2) e trocar o endereço em `site/src/pages/dados/sql.astro` |
+| APIs do Tesouro (SICONFI), OpenDataSUS e MIDR (CKAN), INEP, ANA Monitor de Secas | Dados | Mudança de endereço ou de formato | Leitores reconhecem colunas pelo nome; falha vira "indisponível" com as colunas vistas no `.meta.json`, sem derrubar o pipeline |
 | Anthropic (assistente) | Opcional e pago por uso | Custo | Desligado por padrão, com teto rígido; a camada de provedor permite trocar ou remover |
 
 ---

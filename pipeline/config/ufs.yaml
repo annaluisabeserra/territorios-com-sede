@@ -14,6 +14,7 @@ ufs:
     active: true
     slug: ba
     preposicao: da
+    capital: "2927408"
   CE:
     code: "23"
     name: Ceará
@@ -23,3 +24,74 @@ ufs:
     active: true
     slug: ce
     preposicao: do
+    capital: "2304400"
+  MA:
+    code: "21"
+    name: Maranhão
+    region: Nordeste
+    expected_municipalities: 217
+    census2022_population: 6775805
+    active: true
+    slug: ma
+    preposicao: do
+    capital: "2111300"
+  PI:
+    code: "22"
+    name: Piauí
+    region: Nordeste
+    expected_municipalities: 224
+    census2022_population: 3271199
+    active: true
+    slug: pi
+    preposicao: do
+    capital: "2211001"
+  RN:
+    code: "24"
+    name: Rio Grande do Norte
+    region: Nordeste
+    expected_municipalities: 167
+    census2022_population: 3302729
+    active: true
+    slug: rn
+    preposicao: do
+    capital: "2408102"
+  PB:
+    code: "25"
+    name: Paraíba
+    region: Nordeste
+    expected_municipalities: 223
+    census2022_population: 3974687
+    active: true
+    slug: pb
+    preposicao: da
+    capital: "2507507"
+  PE:
+    code: "26"
+    name: Pernambuco
+    region: Nordeste
+    expected_municipalities: 185
+    census2022_population: 9058931
+    active: true
+    slug: pe
+    preposicao: de
+    capital: "2611606"
+  AL:
+    code: "27"
+    name: Alagoas
+    region: Nordeste
+    expected_municipalities: 102
+    census2022_population: 3127683
+    active: true
+    slug: al
+    preposicao: de
+    capital: "2704302"
+  SE:
+    code: "28"
+    name: Sergipe
+    region: Nordeste
+    expected_municipalities: 75
+    census2022_population: 2210004
+    active: true
+    slug: se
+    preposicao: de
+    capital: "2800308"

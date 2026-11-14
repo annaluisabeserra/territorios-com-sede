@@ -81,7 +81,8 @@ def weighted_index(
 
 def rank(scores: Mapping[str, float | None]) -> dict[str, int | None]:
     """Posição 1 = maior prioridade. Empates recebem a mesma posição (ranking de competição)."""
-    present = sorted(((k, v) for k, v in scores.items() if v is not None), key=lambda kv: (-kv[1], kv[0]))
+    # NaN (vindo do pandas) também é ausência: sem isso, município sem nota ganhava posição e deslocava os demais
+    present = sorted(((k, v) for k, v in scores.items() if v is not None and v == v), key=lambda kv: (-kv[1], kv[0]))
     out: dict[str, int | None] = {k: None for k in scores}
     prev, pos = None, 0
     for i, (k, v) in enumerate(present, start=1):

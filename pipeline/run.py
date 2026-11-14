@@ -21,7 +21,7 @@ import geopandas as gpd
 import pandas as pd
 
 from pipeline import config
-from pipeline.sources import ana, funai, ibge, ipca, sih, snis, ucs
+from pipeline.sources import ana, escolar, funai, ibge, ipca, s2id, secas, siconfi, sih, sim, sinisa, sisagua, snis, ucs
 from pipeline.sources.catalog import SourceResult
 from pipeline.sources.meta import OutputMeta, read_meta
 from pipeline.transform.geo_keys import build_crosswalk
@@ -134,6 +134,8 @@ def ingest(uf: config.UF, skip_sih: bool = False) -> dict:
     stage(uf, "censo_raca", lambda: ibge.raca(uf), status)
     stage(uf, "semiarido", lambda: ibge.semiarido(uf), status)
     stage(uf, "snis", lambda: snis.municipal_series(uf), status)
+    mun7 = pd.read_parquet(processed_dir(uf) / "municipios.parquet")["cod_ibge7"].tolist()
+    stage(uf, "sinisa", lambda: sinisa.municipal_series(uf, mun7), status)
     stage(uf, "ana_atlas", lambda: ana.atlas_esgotos(uf), status)
     stage(uf, "ipca", lambda: ipca.monthly_index(uf), status)
     malha = gpd.read_parquet(processed_dir(uf) / "malhas.parquet")
@@ -143,7 +145,13 @@ def ingest(uf: config.UF, skip_sih: bool = False) -> dict:
     stage(uf, "censo_indigenas", lambda: ibge.indigenas(uf), status)
     from pipeline.sources.catalog import declared_unavailable
 
-    for sid in ("sisagua", "s2id", "incra_quilombolas", "palmares_certidoes", "cadunico", "siconfi"):
+    stage(uf, "sim_drsai", lambda: sim.municipal_deaths(uf, mun7), status)
+    stage(uf, "sisagua", lambda: sisagua.municipal_quality(uf, mun7), status)
+    stage(uf, "s2id", lambda: s2id.municipal_decrees(uf, mun7), status)
+    stage(uf, "monitor_secas", lambda: secas.municipal_drought(uf, malha), status)
+    stage(uf, "censo_escolar", lambda: escolar.municipal_schools(uf, mun7), status)
+    stage(uf, "siconfi", lambda: siconfi.municipal_spending(uf, mun7, uf.capital), status)
+    for sid in ("incra_quilombolas", "palmares_certidoes", "cadunico"):
         stage(uf, sid, lambda sid=sid: declared_unavailable(sid), status)
     if skip_sih:
         status["sih_drsai"] = {"status": "skipped"}
@@ -166,6 +174,10 @@ def main(argv: list[str] | None = None) -> int:
     ufs = [config.uf(s) for s in args.uf] if args.uf else config.ufs()
     failures = 0
     for uf in ufs:
+        if args.only_build and not (config.PROCESSED_DIR / uf.slug / "municipios.parquet").exists():
+            # UF recém-ativada ainda sem dados processados (entram no próximo data-refresh): não derruba CI e deploy
+            log.warning("[%s] sem dados processados ainda; pulada no --only-build", uf.sigla)
+            continue
         try:
             if not args.only_build:
                 status = ingest(uf, skip_sih=args.skip_sih)

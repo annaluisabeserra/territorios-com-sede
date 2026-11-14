@@ -38,6 +38,7 @@ SNIS_SERIES = [
     "snis_perdas_pct",
     "snis_coleta_esgoto_pct",
 ]
+CENSO_INCOME_YEAR = 2022  # renda domiciliar per capita do Censo 2022 está em R$ de 2022
 FRESH_YEARS = 2  # valor do SNIS mais antigo que ano_ref − 2 é tratado como desatualizado
 DIVERGENCE_PP = 15.0
 # Nome legível das etapas (quando a fonte está indisponível, o .meta.json não traz o nome)
@@ -194,6 +195,41 @@ def health_tables(inp: Inputs, pop: pd.Series) -> tuple[pd.DataFrame | None, dic
     return out, info
 
 
+def sim_table(inp: Inputs) -> tuple[pd.DataFrame | None, dict]:
+    """Óbitos por DRSAI (núcleo conservador, causa básica): média anual, com supressão de contagens pequenas.
+
+    Também devolve, por município, a distribuição média anual de idades, usada na camada "vidas" da conta de
+    impacto. Município com média abaixo de SMALL_CELL fica sem valor e sem distribuição (ADR-011).
+    """
+    sim = inp.get("sim_drsai")
+    if sim is None or sim.empty:
+        return None, {}
+    from pipeline.transform.cid import core_groups
+
+    years = sorted(int(y) for y in sim["year"].unique())
+    core = sim[sim["group"].isin(core_groups())]
+    avg = core.groupby("cod_ibge7")["obitos"].sum() / len(years)
+    small = avg < SMALL_CELL
+    out = pd.DataFrame({"obitos_drsai_anual": avg.where(~small)})
+    ages = (
+        core[core["cod_ibge7"].isin(avg.index[~small])]
+        .groupby(["cod_ibge7", "age"], dropna=False)["obitos"]
+        .sum()
+        .div(len(years))
+    )
+    total = float(core["obitos"].sum() / len(years))
+    info = {
+        "years": years,
+        "total_uf": total if total >= SMALL_CELL else None,
+        "ages": {
+            c: [(None if pd.isna(a) else float(a), float(n)) for (_, a), n in g.items()]
+            for c, g in ages.groupby(level=0)
+        },
+        "suppressed": int(small.sum()),
+    }
+    return out, info
+
+
 # --------------------------------------------------------------------------- tabela de indicadores
 
 
@@ -211,10 +247,33 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         "ana_atlas": ["ana_coleta_tratamento_pct", "ana_solucao_individual_pct", "ana_sem_atendimento_pct"],
         "censo_renda": ["renda_domiciliar_pc"],
         "censo_indigenas": ["pop_indigena"],
+        "sisagua": ["sisagua_pct_fora_padrao", "sisagua_ecoli_pct_fora", "sisagua_amostras"],
+        "s2id": ["decretos_seca_5a", "decretos_chuva_5a"],
+        "monitor_secas": ["seca_meses_12m", "seca_classe_max_12m"],
+        "censo_escolar": [
+            "escolas_publicas",
+            "escolas_sem_agua_potavel_pct",
+            "escolas_sem_banheiro_pct",
+            "escolas_sem_esgoto_pct",
+            "escolas_sem_agua_potavel_matriculas",
+            "escolas_sem_banheiro_matriculas",
+            "escolas_sem_esgoto_matriculas",
+            "escolas_sem_agua_potavel_n",
+        ],
+        "siconfi": ["despesa_saneamento", "despesa_saneamento_ano"],
     }.items():
         df = inp.get(name)
         if df is not None:
             base = base.join(df.set_index("cod_ibge7")[[c for c in cols if c in df.columns]])
+    if "despesa_saneamento" in base:
+        base["despesa_saneamento_pc"] = base["despesa_saneamento"] / base["populacao"]
+        ctx["siconfi_ano"] = (
+            int(base["despesa_saneamento_ano"].max()) if base["despesa_saneamento_ano"].notna().any() else None
+        )
+    sim_t, ctx["sim"] = sim_table(inp)
+    if sim_t is not None:
+        base = base.join(sim_t)
+        base["obitos_drsai_100mil"] = base["obitos_drsai_anual"] / base["populacao"] * 100_000
     if "censo_agua_rede_pct" in base:
         base["censo_sem_agua_rede_pct"] = 100 - base["censo_agua_rede_pct"]
     if "censo_esgoto_adequado_pct" in base:
@@ -231,7 +290,13 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         )
     r = inp.get("censo_raca")
     if r is not None:
-        base = base.join(r.set_index("cod_ibge7")[["pop_cor_indigena"]])
+        r = r.set_index("cod_ibge7")
+        if "pop_soma_cor_raca" in r:
+            # Inconsistência pontual da fonte (ver validação): sem cor ou raça nesses municípios, nunca um valor errado
+            bad = r["pop_soma_cor_raca"] > base["populacao"].reindex(r.index) * 1.001
+            r.loc[bad, "pop_cor_indigena"] = float("nan")
+            ctx["flags"]["raca_descartada"] = sorted(r.index[bad].tolist())
+        base = base.join(r[["pop_cor_indigena"]])
     if "pop_quilombola" in base and "pop_cor_indigena" in base:
         # Limite inferior com as partes conhecidas (revisão M4: a presença indígena não pode sumir porque a
         # contagem quilombola está sob sigilo). Desconhecido só se as duas partes forem desconhecidas.
@@ -251,16 +316,24 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
 
     # SNIS: último ano de cada indicador, só se recente (≥ ano_ref − FRESH_YEARS). Valor mais antigo vai para
     # `{col}__antigo` (exibido como "último dado: AAAA") e não entra no índice, no "Agir" nem nas medianas.
-    snis = inp.get("snis")
+    snis = merge_snis_sinisa(inp.get("snis"), inp.get("sinisa"))
     ctx["snis_series"] = {}
+    ctx["snis_ref_by_col"] = {}
     if snis is not None:
         snis = snis.sort_values("year")
         ref = int(snis["year"].max())
         ctx["snis_year_max"] = ref
+        ctx["sinisa_years"] = sorted({int(y) for y in snis.loc[snis["_fonte"] == "sinisa", "year"]})
         for col in SNIS_SERIES + ["snis_consumo_lhabdia"]:
             if col not in snis:
                 continue
             valid = snis.dropna(subset=[col])
+            if valid.empty:
+                continue
+            # Ano de referência por indicador: se o SINISA não trouxer um indicador, ele não "envelhece"
+            # artificialmente os dados do SNIS daquele indicador.
+            ref = int(valid["year"].max())
+            ctx["snis_ref_by_col"][col] = ref
             last = valid.groupby("cod_ibge7").tail(1).set_index("cod_ibge7")
             fresh = last["year"] >= ref - FRESH_YEARS
             base[col] = last[col].where(fresh)
@@ -268,6 +341,7 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
             base[f"{col}__antigo"] = last[col].where(~fresh)
             base[f"{col}__antigo_ano"] = last["year"].where(~fresh)
         # Prestador de esgoto declarado em algum ano recente? (ausência ≠ zero, mas é informação)
+        ref = ctx["snis_ref_by_col"].get("snis_esgoto_pct", ctx["snis_year_max"])
         recent = snis[snis["year"] >= ref - FRESH_YEARS]
         has_esg = recent.dropna(subset=["snis_esgoto_pct"]).groupby("cod_ibge7").size()
         base["snis_esgoto_sem_declaracao"] = ~base.index.isin(has_esg.index)
@@ -284,7 +358,26 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
     return base, ctx
 
 
+def merge_snis_sinisa(snis: pd.DataFrame | None, sinisa: pd.DataFrame | None) -> pd.DataFrame | None:
+    """Série única: SNIS até o último ano dele; SINISA só para anos posteriores (nunca sobrescreve o SNIS)."""
+    if snis is None and sinisa is None:
+        return None
+    parts = []
+    last_snis = None
+    if snis is not None:
+        parts.append(snis.assign(_fonte="snis"))
+        last_snis = int(snis["year"].max())
+    if sinisa is not None and len(sinisa):
+        s = sinisa if last_snis is None else sinisa[sinisa["year"] > last_snis]
+        parts.append(s.assign(_fonte="sinisa"))
+    return pd.concat(parts, ignore_index=True)
+
+
 # --------------------------------------------------------------------------- índice
+
+
+def _int_or_none(v) -> int | None:
+    return None if v is None or pd.isna(v) else int(v)
 
 
 def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame, dict]:
@@ -309,13 +402,19 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
             comps.append(ind)
         dims[dim] = comps
     weights = {k: v["weight"] for k, v in cfg["dimensions"].items()}
+    required = list(cfg.get("required_dimensions", []))
+    min_dims = cfg["min_dimensions_for_rank"]
+    prov_cfg = cfg.get("provisional") or {}
+    missing_required = [d for d in required if not dims.get(d)]
+    provisional = bool(missing_required) and prov_cfg.get("enabled", False) and len(missing_required) < len(required)
+    if provisional:
+        required = [d for d in required if dims.get(d)]
+        min_dims = int(prov_cfg.get("min_dimensions", min_dims))
     rows = {}
     for code in tab.index:
         comp = {ind: pct_cols[ind][code] for ind in pct_cols}
         ds = pidx.dimension_scores(comp, dims)
-        score, coverage = pidx.weighted_index(
-            ds, weights, cfg["min_dimensions_for_rank"], tuple(cfg.get("required_dimensions", []))
-        )
+        score, coverage = pidx.weighted_index(ds, weights, min_dims, tuple(required))
         rows[code] = {
             "indice_prioridade": score,
             "indice_cobertura": coverage,
@@ -323,7 +422,8 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
             **{f"pct__{k}": v for k, v in comp.items()},
         }
     out = pd.DataFrame.from_dict(rows, orient="index")
-    out["indice_rank"] = pd.Series(pidx.rank(out["indice_prioridade"].to_dict()))
+    scores = {k: (None if pd.isna(v) else float(v)) for k, v in out["indice_prioridade"].items()}
+    out["indice_rank"] = pd.Series(pidx.rank(scores), dtype="float64")
     dims_available = [d for d, c in dims.items() if c]
     info = {
         "weights": weights,
@@ -333,8 +433,11 @@ def compute_index(tab: pd.DataFrame, available: set[str]) -> tuple[pd.DataFrame,
         "dims_available": dims_available,
         "dims_missing": [d for d in dims if not dims[d]],
         "fallbacks_used": used_fallbacks,
-        "min_dimensions_for_rank": cfg["min_dimensions_for_rank"],
-        "required_dimensions": cfg.get("required_dimensions", []),
+        # Valores efetivos (o navegador refaz a conta com eles na página de Prioridades)
+        "min_dimensions_for_rank": min_dims,
+        "required_dimensions": required,
+        "provisional": provisional,
+        "provisional_without": missing_required if provisional else [],
         "ranked": int(out["indice_prioridade"].notna().sum()),
     }
     return out, info
@@ -546,9 +649,9 @@ def national_medians() -> dict[str, float]:
 
 def thermo_for(code: str, ctx: dict) -> dict:
     out = {}
-    ref = ctx.get("snis_year_max")
     # Esgoto: coleta COM tratamento (IN056 × IN016), porque a meta do Marco Legal exige as duas coisas.
     for service, col in (("agua", "snis_agua_pct"), ("esgoto", "snis_esgoto_tratado_pct")):
+        ref = ctx.get("snis_ref_by_col", {}).get(col, ctx.get("snis_year_max"))
         series = ctx["snis_series"].get(col)
         if series is None or code not in series.index:
             out[service] = thermometer.compute(service, {}, ref).to_dict()
@@ -557,7 +660,20 @@ def thermo_for(code: str, ctx: dict) -> dict:
             out[service] = thermometer.compute(
                 service, {int(y): (None if pd.isna(v) else float(v)) for y, v in row.items()}, ref
             ).to_dict()
+        mark_series_break(out[service], ctx.get("sinisa_years") or [])
     return out
+
+
+def mark_series_break(th: dict, sinisa_years: list[int]) -> None:
+    """Tendência que mistura anos do SNIS e do SINISA: projeção incerta, com o motivo (ADR-012)."""
+    years = th.get("years") or []
+    if not sinisa_years or th.get("status") in ("sem_dados", "atingida"):
+        return
+    first = min(sinisa_years)
+    if any(y < first for y in years) and any(y >= first for y in years):
+        th["uncertain"] = True
+        note = f"a tendência junta anos do SNIS e do SINISA (desde {first}), que mudou parte da metodologia"
+        th["reason"] = f"{th['reason']}; {note}" if th.get("reason") else note
 
 
 def build_uf(uf: config.UF) -> None:
@@ -572,6 +688,18 @@ def build_uf(uf: config.UF) -> None:
     nbrs = neighbors(inp)
     com_by_mun, tis_geo = communities(inp)
     ucs_mun, ucs_geo = ucs_by_municipality(inp)
+    sdw_cfg = config.load("atuacao_sdw")
+    sdw_by_mun: dict[str, list[dict]] = {}
+    for loc in sdw_cfg.get("locais") or []:
+        sdw_by_mun.setdefault(str(loc["municipio"]), []).append(
+            {
+                "localidade": loc.get("localidade"),
+                "papel": loc.get("papel"),
+                "descricao": loc.get("descricao"),
+                "site": sdw_cfg.get("site"),
+                "contato": sdw_cfg.get("contato"),
+            }
+        )
     tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, withdrawn = apply_withdrawals(
         tab, com_by_mun, tis_geo, ucs_mun, ucs_geo, config.load("retiradas")
     )
@@ -598,9 +726,27 @@ def build_uf(uf: config.UF) -> None:
     }
 
     thermos = {code: thermo_for(code, ctx) for code in tab.index}
-    sih_period = None
+
+    # Conta de impacto (ADR-013): água perdida em R$ do mesmo ano-base do SIH (ou do último ano completo do IPCA)
+    from pipeline.sources.ipca import annual_deflator, last_complete_year
+    from pipeline.transform import impact
+
+    imp_cfg = config.load("impacto")
+    ipca = inp.get("ipca")
+    imp_base = hinfo.get("price_base") or (last_complete_year(ipca) if ipca is not None else None)
+    water = pd.DataFrame()
+    if ipca is not None and imp_base:
+        water = impact.water_losses(
+            inp.get("snis"), annual_deflator(ipca, imp_base), imp_cfg["camadas"]["agua_perdida"]["outlier_mult"]
+        )
+    water = water.reindex(water.index.intersection(tab.index))
+    renda_factor = None
+    if ipca is not None and imp_base:
+        renda_factor = annual_deflator(ipca, imp_base).get(CENSO_INCOME_YEAR)
+    sih_period = sih_years = None
     if hinfo.get("years"):
-        sih_period = f"média {hinfo['years'][0]}–{hinfo['years'][-1]}, em R$ de {hinfo['price_base']}"
+        sih_years = f"média {hinfo['years'][0]}–{hinfo['years'][-1]}"
+        sih_period = f"{sih_years}, em R$ de {hinfo['price_base']}"
 
     resumo_mun = []
     for code, row in tab.iterrows():
@@ -613,13 +759,14 @@ def build_uf(uf: config.UF) -> None:
                 "slug": row["slug"],
                 "ri": row["regiao_intermediaria"],
                 "rim": row["regiao_imediata"],
+                "sdw": code in sdw_by_mun,
                 "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao")),
                 "semiarido": row["semiarido"],
                 "ind": ind,
                 "pct": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},
                 "dims": {k.replace("dim_", ""): row[k] for k in tab.columns if k.startswith("dim_")},
                 "idx": row.get("indice_prioridade"),
-                "rank": row.get("indice_rank"),
+                "rank": _int_or_none(row.get("indice_rank")),
                 "thermo": {
                     "agua": th["agua"]["status"],
                     "esgoto": th["esgoto"]["status"],
@@ -652,6 +799,27 @@ def build_uf(uf: config.UF) -> None:
         "pop_quilombola": tab["pop_quilombola"].sum(min_count=1) if "pop_quilombola" in tab else None,
         "terras_indigenas": int(len(tis_geo)) if tis_geo is not None else None,
         "ucs_uso_sustentavel": int(len(ucs_geo)) if ucs_geo is not None else None,
+        "agua_perdida_m3": float(water["perda_m3"].sum()) if len(water) else None,
+        "agua_perdida_baixo": float(water["valor_baixo"].sum(min_count=1)) if len(water) else None,
+        # Município sem cenário alto entra pelo baixo (conservador)
+        "agua_perdida_alto": float(water["valor_alto"].fillna(water["valor_baixo"]).sum(min_count=1))
+        if len(water)
+        else None,
+        "agua_perdida_municipios": int(water["valor_baixo"].notna().sum()) if len(water) else 0,
+        "agua_perdida_ano": int(water["year"].max()) if len(water) else None,
+        "impacto_price_base": imp_base,
+        # Total estadual de óbitos (núcleo DRSAI): agregado grande o bastante para publicar sem supressão
+        "obitos_drsai_anual": ctx.get("sim", {}).get("total_uf"),
+        "obitos_drsai_periodo": (
+            f"{ctx['sim']['years'][0]}–{ctx['sim']['years'][-1]}" if ctx.get("sim", {}).get("years") else None
+        ),
+        "escolas_publicas": tab["escolas_publicas"].sum(min_count=1) if "escolas_publicas" in tab else None,
+        "escolas_sem_agua_potavel": tab["escolas_sem_agua_potavel_n"].sum(min_count=1)
+        if "escolas_sem_agua_potavel_n" in tab
+        else None,
+        "escolas_sem_agua_potavel_matriculas": tab["escolas_sem_agua_potavel_matriculas"].sum(min_count=1)
+        if "escolas_sem_agua_potavel_matriculas" in tab
+        else None,
     }
     if "snis_esgoto_pct" in tab and "snis_pop_atendida_esgoto" not in tab:
         pass
@@ -671,6 +839,7 @@ def build_uf(uf: config.UF) -> None:
         "sources": status,
         "flags": ctx["flags"],
         "snis_year": ctx.get("snis_year_max"),
+        "sinisa_years": ctx.get("sinisa_years", []),
         "health": {"years": hinfo.get("years"), "price_base": hinfo.get("price_base"), "period_label": sih_period},
         "index": idx_info,
         "stats": stats,
@@ -747,7 +916,8 @@ def build_uf(uf: config.UF) -> None:
             }
             baseline = Baseline(row["drsai_valor_anual"], row["drsai_dias_anual"], row.get("dias_6_17"), None)
         renda = ind.get("renda_domiciliar_pc")
-        daily_income = renda / 30 if renda is not None and not pd.isna(renda) else None
+        # Renda do Censo (R$ de 2022) levada ao mesmo ano-base dos valores do SUS e da água (revisão 4–6)
+        daily_income = renda / 30 * renda_factor if renda is not None and not pd.isna(renda) and renda_factor else None
         baseline_vet = None
         if health:
             baseline_vet = {
@@ -786,6 +956,30 @@ def build_uf(uf: config.UF) -> None:
             "thermometer": th,
             "divergence": div,
             "health": health,
+            "impacto": impact.account(
+                baseline.hospital_cost,
+                baseline.hospital_days,
+                baseline.school_days,
+                daily_income,
+                water.loc[code].to_dict() if code in water.index else None,
+                ind.get("populacao"),
+                imp_cfg,
+                sih_period,
+                imp_base,
+                impact.lives_value(
+                    ctx.get("sim", {}).get("ages", {}).get(code, []),
+                    daily_income,
+                    float(calc_cfg["discount_rate"]),
+                    int(imp_cfg["camadas"]["vidas"]["idade_inicio"]),
+                    int(imp_cfg["camadas"]["vidas"]["idade_fim"]),
+                )
+                if code in ctx.get("sim", {}).get("ages", {})
+                else None,
+                f"média {ctx['sim']['years'][0]}–{ctx['sim']['years'][-1]}"
+                if ctx.get("sim", {}).get("years")
+                else None,
+                sih_years,
+            ),
             "calculator": {
                 "baseline": {
                     "hospital_cost": baseline.hospital_cost,
@@ -815,12 +1009,13 @@ def build_uf(uf: config.UF) -> None:
             },
             "index": {
                 "score": row.get("indice_prioridade"),
-                "rank": row.get("indice_rank"),
+                "rank": _int_or_none(row.get("indice_rank")),
                 "n_ranked": idx_info["ranked"],
                 "coverage": row.get("indice_cobertura"),
                 "dims": {d: row.get(f"dim_{d}") for d in idx_info["dimensions"]},
                 "components": {k.replace("pct__", ""): row[k] for k in tab.columns if k.startswith("pct__")},
             },
+            "atuacao_sdw": sdw_by_mun.get(code, []),
             "suggestions": act.suggestions(
                 ind,
                 {"semiarido": row["semiarido"], "esgoto_sem_declaracao": bool(row.get("snis_esgoto_sem_declaracao"))},
@@ -851,7 +1046,10 @@ def write_downloads(uf: config.UF, tab: pd.DataFrame, ctx: dict, out_dir: Path, 
         + numeric
         + ["indice_prioridade", "indice_rank"]
     )
-    wide = tab[[c for c in cols if c in tab.columns]].copy()
+    # Sem repetir colunas: o índice também é indicador e entra em `numeric` quando ranqueia (achado do ensaio)
+    wide = tab[[c for c in dict.fromkeys(cols) if c in tab.columns]].copy()
+    if "indice_rank" in wide:
+        wide["indice_rank"] = wide["indice_rank"].astype("Int64")  # posição inteira no CSV (vazio = fora do ranking)
     wide.index.name = "cod_ibge7"
     wide.to_csv(d / f"{uf.slug}_municipios.csv", encoding="utf-8")
     wide.reset_index().to_parquet(d / f"{uf.slug}_municipios.parquet", index=False)

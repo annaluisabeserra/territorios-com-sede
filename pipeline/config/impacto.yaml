@@ -1,0 +1,42 @@
+# Conta de impacto potencial (inspirada na metodologia True Value, sem validação da KPMG). Ver ADR-013.
+# Cada camada é publicada separada, com faixa (baixo–alto) e premissas. Nenhum valor é somado sem a
+# camada estar disponível; o total só soma camadas com dado e diz quais ficaram de fora.
+camadas:
+  saude_sus:
+    label: Gasto do SUS com internações
+    pergunta: Quanto o SUS paga por ano em internações por doenças ligadas ao saneamento
+    tipo: observado          # valor medido (SIH), sem faixa
+  trabalho:
+    label: Renda perdida com internações
+    pergunta: Quantos dias de trabalho as famílias perdem, em dinheiro
+    tipo: estimado
+    premissa: >-
+      Cada dia de internação vale um dia da renda domiciliar per capita do município (Censo 2022). Para
+      crianças, conta como o dia de um adulto acompanhante. Mesma regra da calculadora.
+  vidas:
+    label: Renda futura perdida com mortes evitáveis
+    pergunta: Quanto as famílias deixam de receber com as mortes por doenças ligadas ao saneamento
+    tipo: estimado
+    premissa: >-
+      Cada óbito (SIM, causa básica no núcleo conservador de doenças ligadas ao saneamento) conta os anos que a
+      pessoa ainda trabalharia, dos 15 aos 65 anos, valorados pela renda domiciliar per capita do município e
+      trazidos a valor presente com a taxa social de desconto de 8,5% ao ano. É a abordagem de capital humano,
+      a mais conservadora: não atribui valor à vida em si. Município com menos de 5 óbitos por ano não é
+      estimado, para proteger a privacidade.
+    idade_inicio: 15
+    idade_fim: 65
+  escola:
+    label: Dias de aula perdidos
+    pergunta: Quantos dias de aula crianças e adolescentes de 6 a 17 anos passam internados
+    tipo: indicador          # não monetizado
+  agua_perdida:
+    label: Água tratada perdida na distribuição
+    pergunta: Quanto custa a água que é tratada e se perde antes de chegar às casas
+    tipo: estimado
+    premissa: >-
+      Volume perdido = produzido + importado − exportado − consumido − volume de serviço (SNIS AG006, AG018,
+      AG019, AG010, AG024). Cenário baixo: só energia e produtos químicos por m³ produzido (custo de produzir
+      mais um metro cúbico). Cenário alto: despesa de exploração por m³ faturado (SNIS IN026), que inclui
+      pessoal e serviços.
+    # Custo por m³ acima de N vezes a mediana da UF é tratado como erro de declaração (sem dado).
+    outlier_mult: 10

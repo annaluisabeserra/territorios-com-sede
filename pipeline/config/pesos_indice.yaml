@@ -6,6 +6,12 @@ min_dimensions_for_rank: 3
 # Dimensões obrigatórias para entrar no ranking (revisão M3): sem elas, a exclusão por dado faltante não seria
 # aleatória (ex.: vulnerabilidade ausente onde o Censo tem sigilo total).
 required_dimensions: [acesso, saude]
+# Ranking provisório (ADR-015): se uma dimensão obrigatória não tem dado em NENHUM município da UF (fonte ainda não
+# processada, ex.: SIH), o ranking sai sem ela, rotulado como provisório, com este mínimo de dimensões. A ausência
+# é igual para todos os municípios da UF, então não há exclusão seletiva. Ao chegar o dado, vira o definitivo.
+provisional:
+  enabled: true
+  min_dimensions: 2
 # Fallbacks: se o indicador principal estiver indisponível para a UF inteira, usa o substituto (e sinaliza).
 fallbacks:
   censo_sem_agua_rede_pct: snis_sem_agua_pct
@@ -36,11 +42,13 @@ dimensions:
     components:
       - { indicator: decretos_seca_5a, direction: higher_is_worse }
       - { indicator: decretos_chuva_5a, direction: higher_is_worse }
+      - { indicator: seca_meses_12m, direction: higher_is_worse }
   qualidade:
     label: Qualidade da água
     weight: 0.10
     components:
       - { indicator: sisagua_pct_fora_padrao, direction: higher_is_worse }
+      - { indicator: sisagua_ecoli_pct_fora, direction: higher_is_worse }
 sensitivity:
   delta_points: 10   # variação de ±10 pontos percentuais em cada peso
   top_n: 20

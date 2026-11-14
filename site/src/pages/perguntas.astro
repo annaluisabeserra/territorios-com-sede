@@ -4,7 +4,7 @@ import { DEFAULT_UF, indicators, resumo, ufs } from "../lib/data";
 import { READY, FILTERS, toQuery, type Spec } from "../lib/questions";
 
 const IND = indicators();
-const inds = Object.entries(IND).filter(([k, d]) => ["pct", "count", "rate_10k", "brl_pc", "lhabdia", "index"].includes(d.unit) && !k.startsWith("censo_sem") && !k.startsWith("snis_sem"));
+const inds = Object.entries(IND).filter(([k, d]) => ["pct", "count", "number", "rate_10k", "rate_100k", "brl_pc", "lhabdia", "index"].includes(d.unit) && !k.startsWith("censo_sem") && !k.startsWith("snis_sem"));
 const R = resumo(DEFAULT_UF);
 const regions = [...new Set(R.municipios.map((m) => m.ri))].filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"));
 const base: Spec = { mode: "ranking", ind: "snis_agua_pct", region: "todas", filter: "todos", order: "asc", n: 10 };
@@ -24,7 +24,7 @@ const list = ufs();
         <select id="ind">{inds.map(([k, d]) => <option value={k} selected={k === base.ind}>{d.short}</option>)}</select>
         <span>em</span>
         <label class="visually-hidden" for="uf">Estado</label>
-        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+        <select id="uf">{list.map((u) => <option value={u.slug} selected={u.slug === DEFAULT_UF}>{u.name}</option>)}</select>
         <label class="visually-hidden" for="region">Região intermediária</label>
         <select id="region"><option value="todas">todas as regiões</option>{regions.map((r) => <option value={r}>região de {r}</option>)}</select>
         <span>,</span>

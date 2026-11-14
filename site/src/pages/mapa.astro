@@ -6,16 +6,18 @@ import { THERMO_COLORS } from "../lib/indicators";
 
 const IND = indicators();
 const layers = [
+  { id: "prioridade", label: "Ranking de prioridade (posição)", kind: "cat" },
   ...Object.entries(IND).filter(([, d]) => d.map).map(([k, d]) => ({ id: k, label: d.short, kind: "ind" })),
   { id: "thermo_agua", label: "Meta 2033: água", kind: "thermo" },
   { id: "thermo_esgoto", label: "Meta 2033: esgoto coletado e tratado", kind: "thermo" },
   { id: "semiarido", label: "Semiárido", kind: "cat" },
+  { id: "sdw", label: "Onde o Instituto SDW atua", kind: "cat" },
 ];
 const list = ufs();
 const R0 = resumo(DEFAULT_UF);
 const preview = Object.fromEntries(R0.municipios.map((m) => [m.cod, THERMO_COLORS[m.thermo.esgoto]]));
 // Camadas sem nenhum valor na UF padrão ficam desabilitadas e rotuladas (revisão M4)
-const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" || R0.municipios.some((m) => (id === "indice_prioridade" ? m.idx : m.ind[id]) != null);
+const hasData = (id: string) => (id === "prioridade" ? R0.municipios.some((m) => m.rank != null) : false) || id.startsWith("thermo") || id === "semiarido" || id === "sdw" || R0.municipios.some((m) => (id === "indice_prioridade" ? m.idx : m.ind[id]) != null);
 ---
 <Base title="Mapa" description="Mapa interativo de água, esgoto, saúde e comunidades de cada município.">
   <link rel="preload" as="fetch" href="/data/ba/resumo.json" crossorigin="anonymous" slot="head" />
@@ -24,7 +26,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
       <h1>Mapa</h1>
       <div class="field">
         <label for="uf">Estado</label>
-        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+        <select id="uf">{list.map((u) => <option value={u.slug} selected={u.slug === DEFAULT_UF}>{u.name}</option>)}</select>
       </div>
       <div class="field">
         <label for="layer">O que mostrar</label>
@@ -63,7 +65,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
 </Base>
 <script>
   import type * as ML from "maplibre-gl";
-  import { classOf, fmtValue, GOOD, BAD, NODATA, quantileBreaks, THERMO_COLORS, THERMO_LABEL, unitLabel } from "../lib/indicators";
+  import { classOf, fmtValue, GOOD, BAD, NODATA, PRIO_CLASSES, prioClass, quantileBreaks, THERMO_COLORS, THERMO_LABEL, unitLabel } from "../lib/indicators";
   import { fmtNumber } from "../lib/format";
   import type { IndicatorDef, Resumo } from "../lib/types";
 
@@ -75,7 +77,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
   let IND: Record<string, IndicatorDef> = {};
   let R: Resumo;
   let geo: any;
-  let sortKey = "v", sortDir = -1;
+  let sortKey = "v", sortDir = -1, lastLayer = "";
 
   // O MapLibre (~300 KB comprimido) só carrega sob demanda: botão no celular, ociosidade no desktop.
   let maplibregl: typeof ML;
@@ -86,14 +88,25 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
     if (layer === "thermo_agua") return m.thermo.agua;
     if (layer === "thermo_esgoto") return m.thermo.esgoto;
     if (layer === "semiarido") return m.semiarido === null ? null : m.semiarido ? "sim" : "nao";
+    if (layer === "sdw") return m.sdw ? "sim" : "nao";
     if (layer === "indice_prioridade") return m.idx;
+    if (layer === "prioridade") return m.rank;
     return m.ind[layer] ?? null;
   }
+
+  const nRanked = () => R.municipios.filter((m) => m.rank != null).length;
 
   function scale(layer: string) {
     const vals = R.municipios.map((m) => valueOf(m, layer));
     if (layer.startsWith("thermo")) return { color: (v: any) => THERMO_COLORS[v] ?? NODATA, legend: Object.keys(THERMO_LABEL).map((k) => ({ c: THERMO_COLORS[k], t: `${THERMO_LABEL[k]} (${vals.filter((v) => v === k).length})` })) };
     if (layer === "semiarido") return { color: (v: any) => (v === "sim" ? "#c8873a" : v === "nao" ? "#e8e1d4" : NODATA), legend: [{ c: "#c8873a", t: "No Semiárido" }, { c: "#e8e1d4", t: "Fora do Semiárido" }] };
+    if (layer === "prioridade") {
+      const n = nRanked();
+      const legend: { c: string; t: string }[] = PRIO_CLASSES.map((c) => ({ c: c.color as string, t: `${c.label}: ${vals.filter((v) => prioClass(v as number | null, n)?.key === c.key).length}` }));
+      legend.push({ c: NODATA, t: `Fora do ranking por falta de dados: ${vals.filter((v) => v === null).length}` });
+      return { color: (v: any) => prioClass(v, n)?.color ?? NODATA, legend };
+    }
+    if (layer === "sdw") return { color: (v: any) => (v === "sim" ? "#0e5c7d" : "#e8e1d4"), legend: [{ c: "#0e5c7d", t: "Município com atuação do Instituto SDW" }, { c: "#e8e1d4", t: "Outros municípios" }] };
     const def = IND[layer];
     const pal = def.direction === "higher_is_better" ? GOOD : BAD;
     if (!vals.some((v) => v !== null)) return { color: () => NODATA, legend: [{ c: NODATA, t: "Sem dado nesta versão para nenhum município" }] };
@@ -107,6 +120,9 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
 
   function paint() {
     const layer = layerSel.value;
+    // No ranking, a tabela abre do 1º ao último; nos indicadores, do maior para o menor
+    if (layer !== lastLayer && sortKey === "v") sortDir = layer === "prioridade" ? 1 : -1;
+    lastLayer = layer;
     const s = scale(layer);
     const byCod = new Map(R.municipios.map((m) => [m.cod, m]));
     for (const f of geo?.features ?? []) {
@@ -118,7 +134,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
     $("legend").innerHTML = `<p class="small"><strong>${layerSel.selectedOptions[0].text}</strong>${def ? ` <span class="muted">(${unitLabel(def)})</span>` : ""}</p><ul>${s.legend.map((l) => `<li><i style="background:${l.c}"></i>${l.t}</li>`).join("")}</ul>`;
     const srcKey = def?.source === "snis" || layer.startsWith("thermo") ? "snis" : def?.source === "datasus_sih" ? "sih_drsai" : layer === "semiarido" ? "semiarido" : def?.source === "ibge_censo2022" ? "censo_lixo" : null;
     const src = srcKey ? R.sources[srcKey] : null;
-    $("desc").textContent = def ? def.formula : layer.startsWith("thermo") ? "Situação de cada município em relação à meta de 2033 do Marco Legal do Saneamento, pela tendência do SNIS." : "Delimitação oficial do Semiárido (Sudene).";
+    $("desc").textContent = def ? def.formula : layer === "prioridade" ? `Posição de cada município no ranking de prioridade do estado (1º = onde o investimento em saneamento gera mais impacto), com os pesos padrão.${R.index.provisional ? ` Ranking provisório: ainda sem a dimensão ${(R.index.provisional_without ?? []).map((d) => R.index.dimensions[d].label.toLowerCase()).join(" e ")}.` : ""} Para mudar os pesos, use a página Prioridades.` : layer.startsWith("thermo") ? "Situação de cada município em relação à meta de 2033 do Marco Legal do Saneamento, pela tendência do SNIS." : layer === "sdw" ? "Municípios onde o Instituto SDW tem sede ou projetos (informação do próprio Instituto)." : "Delimitação oficial do Semiárido (Sudene).";
     $("source").textContent = src ? `Fonte: ${src.name}, ${src.reference_period ?? ""}${src.status === "unavailable" ? " (indisponível nesta atualização)" : ""}${src.url_kind === "mirror" ? " (cópia pública do dado oficial)" : ""}` : "";
     renderTable();
     history.replaceState(null, "", `?uf=${ufSel.value}&c=${layer}`);
@@ -127,7 +143,8 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
   function display(m: Resumo["municipios"][number], layer: string) {
     const v = valueOf(m, layer);
     if (layer.startsWith("thermo")) return THERMO_LABEL[v as string] ?? "sem dado";
-    if (layer === "semiarido") return v === "sim" ? "Sim" : v === "nao" ? "Não" : "sem dado";
+    if (layer === "semiarido" || layer === "sdw") return v === "sim" ? "Sim" : v === "nao" ? "Não" : "sem dado";
+    if (layer === "prioridade") { const n = nRanked(); const c = prioClass(v as number | null, n); return v === null ? "fora do ranking" : `${v}º de ${n} · ${c?.short ?? ""}`; }
     return fmtValue(IND[layer], v as number | null);
   }
 

@@ -70,6 +70,32 @@ Formato: contexto → decisão → alternativas → consequências.
 - **SROI:** deadweight 10%, atribuição 80%, drop-off 5% ao ano, com faixas de sensibilidade (0–30%, 50–100%, 0–15%). Valores conservadores típicos de análises SROI de saneamento; revisão por especialista registrada em Q5.
 - **Desligados por padrão:** atendimento ambulatorial (sem multiplicador com referência) e óbitos (SIM sem causa disponível; abordagem sensível).
 
+## ADR-015. Ranking provisório quando uma dimensão obrigatória falta para a UF inteira
+
+- **Contexto:** o índice exige déficit de acesso e carga de saúde (revisão M3) para evitar exclusão seletiva de municípios. Sem o SIH processado, nenhum município tinha saúde, e nenhum ranking era publicado, embora as outras dimensões estivessem prontas.
+- **Decisão:** se uma dimensão obrigatória não tem dado em **nenhum** município da UF, o ranking é calculado sem ela (mínimo de 2 dimensões, as demais obrigatórias mantidas) e marcado `provisional` no `resumo.json`, com aviso em Prioridades, no mapa, na ficha e no panorama. Se a dimensão existe para parte dos municípios, vale a regra completa (quem não tem fica de fora). Faixas de prioridade por posição: 10%, 25%, 50% e o restante.
+- **Consequências:** gestores veem um ranking já com os dados disponíveis, sabendo que ele é provisório. Junto veio a correção de um defeito anterior: notas ausentes (NaN) recebiam posição e deslocavam os demais municípios.
+
+## ADR-014. Seis fontes novas com leitores tolerantes a layout (SIM, SISAGUA, S2ID, Monitor de Secas, Censo Escolar, SICONFI)
+
+- **Contexto:** nenhuma dessas fontes é alcançável do ambiente de desenvolvimento nem tem espelho público verificado (a tabela `br_ms_sim.municipio` da Base dos Dados só traz o total de óbitos, sem causa). Os layouts não estão documentados em lugar acessível.
+- **Decisão:** leitores que rodam no GitHub Actions e descobrem os arquivos pela própria fonte: FTP do DATASUS (SIM, arquivos DORES por UF de residência), API CKAN do OpenDataSUS (SISAGUA) e do MIDR (S2ID), página "Dados SIG" do Monitor de Secas, arquivo anual de microdados do INEP e API do SICONFI. As colunas são reconhecidas pelo nome (`pipeline/sources/tabular.py`); se não forem encontradas, a fonte fica "indisponível" com a lista das colunas vistas no `.meta.json`, sem derrubar o pipeline. Cada leitor tem teste com dados sintéticos.
+- **Escolhas de método:** SIM pela causa básica e mesmos grupos de CID do SIH, com supressão abaixo de 5 óbitos/ano; SISAGUA = % de amostras fora do padrão (todos os parâmetros básicos) e % de análises de E. coli; S2ID = reconhecimentos dos últimos 5 anos completos; Monitor de Secas = classe no ponto representativo do município nos últimos 12 mapas; Censo Escolar só escolas públicas em atividade; SICONFI = despesa liquidada na função 17. Camada "vidas" da conta de impacto pela abordagem de capital humano (renda dos 15 aos 65 anos, desconto de 8,5%), sem valor estatístico da vida.
+- **Consultas SQL no navegador:** DuckDB-WASM carregado do jsDelivr só quando a pessoa clica (os arquivos do motor passam de 25 MB, limite do Cloudflare Pages). Lê os CSV abertos, porque o Parquet exigiria baixar uma extensão de um segundo servidor; o carregamento automático de extensões fica desligado.
+- **Consequências:** o primeiro data-refresh é o teste com os arquivos oficiais; ajustes de padrão de coluna devem ir para os leitores com novo teste. Com SISAGUA, S2ID e Monitor de Secas, o índice passa a ter dados nas cinco dimensões.
+
+## ADR-013. Conta de impacto em camadas, inspirada no True Value
+
+- **Contexto:** a SDW quer medir o potencial de impacto do saneamento em dinheiro, como na metodologia True Value (KPMG), sem inventar números.
+- **Decisão:** conta por município com camadas separadas (`pipeline/config/impacto.yaml`, `pipeline/transform/impact.py`): gasto do SUS (SIH, medido), renda perdida (SIH × renda do Censo, mesma regra da calculadora), água tratada perdida (SNIS, faixa entre custo marginal de energia e químicos e custo completo IN026) e dias de aula (não monetizado). O volume perdido é validado contra o IN049 declarado (folga de 2 pontos). O total só soma camadas com dado e lista as ausentes; camada sem cenário alto entra no total alto pelo valor baixo. Nome público: "inspirado na metodologia True Value", sem sugerir validação da KPMG.
+- **Consequências:** a camada de água já aparece com os dados atuais; saúde e renda aparecem quando o SIH entrar. Óbitos (SIM), ambulatorial e ambiente ficam para depois, com coeficientes revisados pelo especialista em economia da saúde.
+
+## ADR-012. SINISA continua a série do SNIS, com quebra sinalizada
+
+- **Contexto:** o SNIS termina no ano de referência 2022; o SINISA o substitui e publica planilhas por edição, com nomes de arquivo que mudam e códigos novos de indicador. O gov.br não é alcançável do ambiente de desenvolvimento, só do GitHub Actions.
+- **Decisão:** leitor que descobre as planilhas na página de cada edição (`sources.yaml → sinisa.pages`) e reconhece colunas por código (IAG0001, IES0001, IES2003, equivalências publicadas por Trata Brasil/GO Associados e ABES em 2025) ou por padrão de cabeçalho configurável. Os anos do SINISA só entram depois do último ano do SNIS. Tendências que atravessam a troca de sistema ficam marcadas como incertas, em vez de descartadas: descartar deixaria quase todos os municípios "sem dados" até haver 3 anos de SINISA.
+- **Consequências:** o termômetro volta a refletir dados de 2023 em diante assim que o data-refresh rodar. Se o Ministério mudar o layout das planilhas, a fonte fica "indisponível" ou "última versão válida", sem derrubar o pipeline, e os padrões de cabeçalho podem ser ajustados no YAML sem mexer no código.
+
 ## ADR-011. Supressão de contagens pequenas
 
 - **Decisão:** médias anuais de óbitos hospitalares por DRSAI abaixo de 5 por município são publicadas como "menos de 5" (`null` com explicação). Contagens de pessoas quilombolas com todas as células sob sigilo ficam `null`.

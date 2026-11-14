@@ -9,10 +9,11 @@ function read<T>(...parts: string[]): T {
   return JSON.parse(readFileSync(join(DATA, ...parts), "utf8")) as T;
 }
 
-export interface UFEntry { sigla: string; code: string; name: string; slug: string; region: string }
+export interface UFEntry { sigla: string; code: string; name: string; slug: string; region: string; preposicao?: string; capital?: string | null }
 
 export function ufs(): UFEntry[] {
-  return read<{ ufs: UFEntry[] }>("index.json").ufs;
+  // Ordem alfabética em todo o site (seletores, rodapé, home), não a ordem do ufs.yaml
+  return [...read<{ ufs: UFEntry[] }>("index.json").ufs].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
 
 const resumoCache = new Map<string, Resumo>();

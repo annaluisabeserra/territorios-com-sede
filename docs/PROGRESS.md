@@ -16,8 +16,9 @@ Registro por marco (SPEC §10). Revisões críticas em `docs/REVIEWS/`.
 
 ## Números da entrega
 
-- 601 fichas de município (417 BA + 184 CE), 1.219 páginas estáticas, 601 cards de compartilhamento.
-- Testes: 77 (pipeline) + 416 (Vitest) + 54 (Playwright/axe) + teste de privacidade do Worker.
+- 1.794 fichas de município (9 estados do Nordeste), 13.003 arquivos publicados (limite do Cloudflare Pages: 20 mil),
+  build do site em cerca de 2 minutos e 20 segundos.
+- Testes: 149 (pipeline, vários repetidos por estado) + 418 (Vitest) + 66 (Playwright/axe) + teste de privacidade do Worker.
 - Ficha: 0 KB de JavaScript, ~8 KB comprimida; mapa interativo carregado sob demanda.
 
 ## Backlog (itens não graves das revisões)
@@ -27,11 +28,22 @@ Registro por marco (SPEC §10). Revisões críticas em `docs/REVIEWS/`.
 - Comparação do saneamento de domicílios quilombolas e indígenas com o município (Censo 2022).
 - Etnia das terras indígenas pelo campo oficial da FUNAI (entra no Actions).
 - Uso da ANA como reforço do componente de esgoto no índice; parâmetro de defasagem na calculadora; Theil–Sen como alternativa robusta no termômetro.
-- Campo de metodologia na série (quebra SNIS 2022 e transição para o SINISA).
-- Leitores de SISAGUA, S2ID, INCRA, Palmares, CadÚnico e SICONFI.
+- Regressão do termômetro só com anos do SINISA quando houver 3 deles (hoje a mistura é sinalizada como incerta).
+- Leitores de INCRA, Palmares e CadÚnico.
+- Monitor de Secas pela parcela da área municipal em seca, em vez do ponto representativo.
+- Volumes e despesas do SINISA para a camada "água perdida" (hoje usa o último ano do SNIS).
 - Formulário de retirada sem login (hoje: e-mail e formulário do GitHub).
 - Ações do GitHub fixadas por SHA (exige acesso à API do GitHub).
 - Testar a publicação de ponta a ponta (Cloudflare) com as ações já atualizadas para Node 24 e o runner fixado em ubuntu-24.04; migrar para o Ubuntu 26 depois de um teste do CI nele.
+
+### Atualizações 4 a 6 (revisão em `docs/REVIEWS/A4-A6.md`)
+
+- Panorama estadual imprimível (`/estado/{uf}`) e atuação do Instituto SDW na ficha, no mapa e no panorama.
+- Leitor do SINISA (ADR-012), com a troca de sistema sinalizada nas projeções.
+- Conta de impacto em camadas, inspirada no True Value (ADR-013): SUS, renda perdida, vidas, água perdida, dias de aula.
+- Leitores de SIM, SISAGUA, S2ID, Monitor de Secas, Censo Escolar e SICONFI (ADR-014); índice com componentes nas
+  cinco dimensões.
+- Consulta SQL no navegador (`/dados/sql`).
 
 ### Resolvidos depois da entrega inicial
 
