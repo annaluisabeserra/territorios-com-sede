@@ -290,7 +290,13 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         )
     r = inp.get("censo_raca")
     if r is not None:
-        base = base.join(r.set_index("cod_ibge7")[["pop_cor_indigena"]])
+        r = r.set_index("cod_ibge7")
+        if "pop_soma_cor_raca" in r:
+            # Inconsistência pontual da fonte (ver validação): sem cor ou raça nesses municípios, nunca um valor errado
+            bad = r["pop_soma_cor_raca"] > base["populacao"].reindex(r.index) * 1.001
+            r.loc[bad, "pop_cor_indigena"] = float("nan")
+            ctx["flags"]["raca_descartada"] = sorted(r.index[bad].tolist())
+        base = base.join(r[["pop_cor_indigena"]])
     if "pop_quilombola" in base and "pop_cor_indigena" in base:
         # Limite inferior com as partes conhecidas (revisão M4: a presença indígena não pode sumir porque a
         # contagem quilombola está sob sigilo). Desconhecido só se as duas partes forem desconhecidas.

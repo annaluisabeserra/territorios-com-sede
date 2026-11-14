@@ -43,3 +43,13 @@ export function oneInN(pct: number | null | undefined): string | null {
   if (n < 2 || n > 20) return null;
   return `1 em cada ${n}`;
 }
+
+/** "da Bahia" / "do Ceará" / "de Pernambuco" a partir da preposição do `ufs.yaml`. */
+export function deUF(nome: string, prep?: string | null): string {
+  return `${prep || "de"} ${nome}`;
+}
+
+/** "na Bahia" / "no Ceará" / "em Pernambuco". */
+export function emUF(nome: string, prep?: string | null): string {
+  return `${({ da: "na", do: "no" } as Record<string, string>)[prep ?? ""] ?? "em"} ${nome}`;
+}

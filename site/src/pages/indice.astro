@@ -15,7 +15,7 @@ const list = ufs();
     <p class="text">O índice de prioridade combina cinco dimensões. Cada uma vira um percentil dentro do estado (100 = pior situação). Mude os pesos para ver como o ranking muda: a conta é refeita no seu navegador.</p>
     <div class="grid layout">
       <form class="card" id="w" onsubmit="return false">
-        <div class="field"><label for="uf">Estado</label><select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select></div>
+        <div class="field"><label for="uf">Estado</label><select id="uf">{list.map((u) => <option value={u.slug} selected={u.slug === DEFAULT_UF}>{u.name}</option>)}</select></div>
         <fieldset>
           <legend>Pesos das dimensões</legend>
           {Object.entries(dims).map(([k, d]) => (
@@ -66,7 +66,7 @@ const list = ufs();
     const ranked = R.municipios.filter((m) => pos[m.cod] !== null).sort((a, b) => (pos[a.cod]! - pos[b.cod]!));
     const thead = $("rank").querySelector("thead")!, tbody = $("rank").querySelector("tbody")!;
     if (!ranked.length) {
-      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.sigla === "BA" ? "a Bahia" : R.uf.sigla === "CE" ? "o Ceará" : R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes que ainda não puderam ser lidas nesta atualização (veja o <a href="/metodologia#fontes">estado das fontes</a>). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
+      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado ${({ da: "para a", do: "para o" } as Record<string, string>)[R.uf.preposicao ?? ""] ?? "para"} ${R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes que ainda não puderam ser lidas nesta atualização (veja o <a href="/metodologia#fontes">estado das fontes</a>). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
       thead.innerHTML = ""; tbody.innerHTML = ""; $("rank-wrap").hidden = true; return;
     }
     $("state").innerHTML = `<p>${ranked.length} municípios ranqueados.</p>`;

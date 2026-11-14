@@ -24,7 +24,7 @@ const list = ufs();
         <select id="ind">{inds.map(([k, d]) => <option value={k} selected={k === base.ind}>{d.short}</option>)}</select>
         <span>em</span>
         <label class="visually-hidden" for="uf">Estado</label>
-        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+        <select id="uf">{list.map((u) => <option value={u.slug} selected={u.slug === DEFAULT_UF}>{u.name}</option>)}</select>
         <label class="visually-hidden" for="region">Região intermediária</label>
         <select id="region"><option value="todas">todas as regiões</option>{regions.map((r) => <option value={r}>região de {r}</option>)}</select>
         <span>,</span>

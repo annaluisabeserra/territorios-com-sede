@@ -2,18 +2,20 @@
 // Consulta SQL no navegador (DuckDB-WASM) sobre os arquivos Parquet abertos. Nada é enviado a servidor nosso:
 // o motor é baixado do jsDelivr só quando a pessoa clica em "Ativar".
 import Base from "../../layouts/Base.astro";
-import { ufs } from "../../lib/data";
+import { DEFAULT_UF, ufs } from "../../lib/data";
+import { deUF } from "../../lib/format";
 
 const list = ufs();
 const tables = list.flatMap((u) => [
-  { name: `${u.slug}_municipios`, file: `/data/${u.slug}/dados/${u.slug}_municipios.csv`, desc: `Uma linha por município ${u.slug === "ba" ? "da Bahia" : u.slug === "ce" ? "do Ceará" : `de ${u.name}`}, com todos os indicadores` },
+  { name: `${u.slug}_municipios`, file: `/data/${u.slug}/dados/${u.slug}_municipios.csv`, desc: `Uma linha por município ${deUF(u.name, u.preposicao)}, com todos os indicadores` },
   { name: `${u.slug}_series_snis`, file: `/data/${u.slug}/dados/${u.slug}_series_snis.csv`, desc: `Série histórica SNIS/SINISA por município, indicador e ano, em formato longo (colunas cod_ibge7, indicador, ano, valor) (${u.name})` },
 ]);
-const first = list[0].slug;
+const ref = list.find((u) => u.slug === DEFAULT_UF) ?? list[0];
+const first = ref.slug;
 const examples = [
   { t: "Os 10 municípios com menos esgoto coletado e tratado", q: `SELECT nome, populacao, snis_esgoto_tratado_pct\nFROM ${first}_municipios\nWHERE snis_esgoto_tratado_pct IS NOT NULL\nORDER BY snis_esgoto_tratado_pct\nLIMIT 10;` },
   { t: "Média de atendimento de água por região intermediária", q: `SELECT regiao_intermediaria, COUNT(*) AS municipios,\n       ROUND(AVG(snis_agua_pct), 1) AS agua_media\nFROM ${first}_municipios\nGROUP BY 1 ORDER BY 3;` },
-  { t: "Evolução do esgoto em um município", q: `SELECT ano, indicador, valor\nFROM ${first}_series_snis\nWHERE cod_ibge7 = '${list[0].slug === "ba" ? "2927408" : "2304400"}'\n  AND indicador IN ('snis_esgoto_pct', 'snis_esgoto_tratado_pct')\n  AND valor IS NOT NULL\nORDER BY ano, indicador;` },
+  { t: "Evolução do esgoto em um município", q: `SELECT ano, indicador, valor\nFROM ${first}_series_snis\nWHERE cod_ibge7 = '${ref.capital ?? ""}'\n  AND indicador IN ('snis_esgoto_pct', 'snis_esgoto_tratado_pct')\n  AND valor IS NOT NULL\nORDER BY ano, indicador;` },
   { t: "Ver as colunas de uma tabela", q: `DESCRIBE ${first}_municipios;` },
 ];
 ---

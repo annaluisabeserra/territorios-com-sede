@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { indicators, resumo, ufs } from "../lib/data";
 import { REPO_URL } from "../lib/site";
+import { deUF } from "../lib/format";
 
 const list = ufs().map((u) => ({ ...u, r: resumo(u.slug) }));
 const IND = indicators();
@@ -53,7 +54,7 @@ const UNITS: Record<string, string> = { pct: "% (0 a 100)", count: "pessoas", ra
     <p class="small">Cópias públicas: Base dos Dados (CC BY 4.0) e geobr/Ipea (MIT), que redistribuem dados oficiais do IBGE, do Ministério das Cidades, da ANA, da Sudene e da FUNAI. Detalhes em <a href={`${REPO_URL}/blob/main/docs/DATA_SOURCES.md`}>DATA_SOURCES.md</a>.</p>
 
     <h2>Como citar</h2>
-    <blockquote>Instituto SDW. <em>Territórios com Sede: observatório de água e saneamento</em>. Dados {list.map((u) => (u.sigla === "BA" ? "da Bahia" : u.sigla === "CE" ? "do Ceará" : `de ${u.name}`)).join(", ")}, versão de {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")}. Disponível em: https://territorios.institutosdw.org/dados. Licença CC BY 4.0.</blockquote>
+    <blockquote>Instituto SDW. <em>Territórios com Sede: observatório de água e saneamento</em>. Dados {list.map((u) => deUF(u.name, u.preposicao)).join(", ")}, versão de {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")}. Disponível em: https://territorios.institutosdw.org/dados. Licença CC BY 4.0.</blockquote>
 
     <h2>Histórico de mudanças</h2>
     <p class="small">Cada atualização mensal gera um registro público no <a href={`${REPO_URL}/commits/main/data/processed`}>histórico do repositório</a>, com o que mudou em cada base. A primeira versão pública foi gerada em {new Date(list[0].r.generated_at).toLocaleDateString("pt-BR")} (pipeline {list[0].r.pipeline_version}).</p>

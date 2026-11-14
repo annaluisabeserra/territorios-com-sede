@@ -26,3 +26,13 @@ describe("fmtDate", () => {
     expect(fmtDate("lixo")).toBe("sem dado");
   });
 });
+
+describe("deUF/emUF", () => {
+  it("usa a preposição do estado", async () => {
+    const { deUF, emUF } = await import("./format");
+    expect(deUF("Bahia", "da")).toBe("da Bahia");
+    expect(emUF("Ceará", "do")).toBe("no Ceará");
+    expect(emUF("Pernambuco", "de")).toBe("em Pernambuco");
+    expect(deUF("Sergipe")).toBe("de Sergipe");
+  });
+});

@@ -174,6 +174,10 @@ def main(argv: list[str] | None = None) -> int:
     ufs = [config.uf(s) for s in args.uf] if args.uf else config.ufs()
     failures = 0
     for uf in ufs:
+        if args.only_build and not (config.PROCESSED_DIR / uf.slug / "municipios.parquet").exists():
+            # UF recém-ativada ainda sem dados processados (entram no próximo data-refresh): não derruba CI e deploy
+            log.warning("[%s] sem dados processados ainda; pulada no --only-build", uf.sigla)
+            continue
         try:
             if not args.only_build:
                 status = ingest(uf, skip_sih=args.skip_sih)

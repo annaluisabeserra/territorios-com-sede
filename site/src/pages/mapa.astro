@@ -25,7 +25,7 @@ const hasData = (id: string) => id.startsWith("thermo") || id === "semiarido" ||
       <h1>Mapa</h1>
       <div class="field">
         <label for="uf">Estado</label>
-        <select id="uf">{list.map((u) => <option value={u.slug}>{u.name}</option>)}</select>
+        <select id="uf">{list.map((u) => <option value={u.slug} selected={u.slug === DEFAULT_UF}>{u.name}</option>)}</select>
       </div>
       <div class="field">
         <label for="layer">O que mostrar</label>

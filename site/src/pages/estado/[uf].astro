@@ -3,7 +3,7 @@
 import Base from "../../layouts/Base.astro";
 import StaticMap from "../../components/StaticMap.astro";
 import { resumo, ufs } from "../../lib/data";
-import { fmtBRLShort, fmtDate, fmtNumber, fmtPct } from "../../lib/format";
+import { deUF, emUF, fmtBRLShort, fmtDate, fmtNumber, fmtPct } from "../../lib/format";
 import { THERMO_COLORS, THERMO_LABEL } from "../../lib/indicators";
 import type { Num, ResumoMunicipio } from "../../lib/types";
 
@@ -16,7 +16,8 @@ const R = resumo(uf!);
 const t = R.totals;
 const M = R.municipios;
 const n = M.length;
-const article = R.uf.sigla === "BA" ? "na" : R.uf.sigla === "CE" ? "no" : "em";
+const noEstado = emUF(R.uf.nome, R.uf.preposicao); // "na Bahia"
+const doEstado = deUF(R.uf.nome, R.uf.preposicao); // "da Bahia"
 
 const statusCounts = (svc: "agua" | "esgoto") =>
   Object.keys(THERMO_LABEL).map((k) => ({ k, label: THERMO_LABEL[k], n: M.filter((m) => m.thermo[svc] === k).length }));
@@ -56,10 +57,10 @@ const sources = Object.entries(R.sources).filter(([, s]) => s.name && s.status !
 const missing = Object.values(R.sources).filter((s) => s.name && s.status === "unavailable").map((s) => s.name);
 const statusText: Record<string, string> = { ok: "atualizada", stale: "última versão válida", unavailable: "indisponível" };
 ---
-<Base title={`Panorama ${article === "em" ? "de" : article === "na" ? "da" : "do"} ${R.uf.nome}`} description={`Água, esgoto e meta de 2033 nos ${n} municípios ${article === "na" ? "da" : article === "no" ? "do" : "de"} ${R.uf.nome}, com fontes oficiais.`}>
+<Base title={`Panorama ${doEstado}`} description={`Água, esgoto e meta de 2033 nos ${n} municípios ${doEstado}, com fontes oficiais.`}>
   <article class="wrap section estado">
     <p class="eyebrow">Panorama estadual · {R.uf.sigla}</p>
-    <h1>Água e esgoto {article} {R.uf.nome}</h1>
+    <h1>Água e esgoto {noEstado}</h1>
     <p class="text">Um retrato dos {n} municípios a partir de dados públicos do IBGE, do SNIS e de outras fontes oficiais. Cada número traz a fonte e o ano de referência. Para salvar ou imprimir este panorama, use o botão abaixo.</p>
     <p class="no-print"><button type="button" class="btn" id="print">Salvar em PDF ou imprimir</button></p>
 
@@ -78,7 +79,7 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
       <p class="text">O Marco Legal do Saneamento (Lei 14.026/2020) pede que, até 2033, 99% da população tenha água tratada e 90% tenha esgoto coletado e tratado. Pela tendência de cada município no SNIS, dá para estimar se ele chega lá a tempo. É como olhar a velocidade de um carro e calcular a hora de chegada: a conta só vale se o ritmo continuar o mesmo.</p>
       <div class="meta grid">
         <figure class="card">
-          <StaticMap uf={uf!} values={{}} palette={[]} categorical={thermoColors} label={`Mapa ${article === "na" ? "da" : "do"} ${R.uf.nome}: situação de cada município na meta de esgoto de 2033`} />
+          <StaticMap uf={uf!} values={{}} palette={[]} categorical={thermoColors} label={`Mapa ${doEstado}: situação de cada município na meta de esgoto de 2033`} />
           <figcaption class="small">Esgoto coletado e tratado, tendência até {R.snis_year}.</figcaption>
         </figure>
         <div>
@@ -147,7 +148,7 @@ const statusText: Record<string, string> = { ok: "atualizada", stale: "última v
 
     {sdwHere.length > 0 && (
       <section class="section">
-        <h2>Onde o Instituto SDW atua {article} {R.uf.nome}</h2>
+        <h2>Onde o Instituto SDW atua {noEstado}</h2>
         <ul class="text">{sdwHere.map((m) => <li><a href={`/municipio/${uf}/${m.slug}`}>{m.nome}</a></li>)}</ul>
       </section>
     )}

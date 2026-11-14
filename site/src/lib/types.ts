@@ -46,7 +46,7 @@ export interface IndexInfo {
 }
 
 export interface Resumo {
-  uf: { sigla: string; nome: string; code: string; slug: string; region: string };
+  uf: { sigla: string; nome: string; code: string; slug: string; region: string; preposicao?: string };
   generated_at: string;
   pipeline_version: string;
   sources: Record<string, SourceStatus>;

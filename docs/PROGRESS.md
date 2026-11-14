@@ -16,8 +16,9 @@ Registro por marco (SPEC §10). Revisões críticas em `docs/REVIEWS/`.
 
 ## Números da entrega
 
-- 601 fichas de município (417 BA + 184 CE), 1.219 páginas estáticas, 601 cards de compartilhamento.
-- Testes: 77 (pipeline) + 416 (Vitest) + 54 (Playwright/axe) + teste de privacidade do Worker.
+- 1.794 fichas de município (9 estados do Nordeste), 13.003 arquivos publicados (limite do Cloudflare Pages: 20 mil),
+  build do site em cerca de 2 minutos e 20 segundos.
+- Testes: 149 (pipeline, vários repetidos por estado) + 418 (Vitest) + 66 (Playwright/axe) + teste de privacidade do Worker.
 - Ficha: 0 KB de JavaScript, ~8 KB comprimida; mapa interativo carregado sob demanda.
 
 ## Backlog (itens não graves das revisões)

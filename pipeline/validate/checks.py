@@ -124,9 +124,17 @@ def check_census_consistency(uf: config.UF, rep: Report) -> None:
     if pop is not None and raca is not None and "pop_soma_cor_raca" in raca:
         m = raca.merge(pop, on="cod_ibge7")
         over = m[m["pop_soma_cor_raca"] > m["populacao"] * 1.001]
+        # Muitos municípios = erro sistemático (ex.: Censos 2010 e 2022 somados): derruba a UF.
+        # Um ou outro = inconsistência pontual da fonte: o build descarta a cor ou raça só desses municípios.
+        systematic = len(over) > max(2, 0.01 * len(m))
         rep.check(
-            over.empty, f"soma por cor ou raça maior que a população em {len(over)} municípios (anos misturados?)"
+            not systematic, f"soma por cor ou raça maior que a população em {len(over)} municípios (anos misturados?)"
         )
+        if len(over) and not systematic:
+            rep.warn(
+                f"cor ou raça descartada em {len(over)} município(s) com soma maior que a população: "
+                f"{', '.join(over['cod_ibge7'].tolist())}"
+            )
     q = _read(uf, "censo_quilombola")
     if pop is not None and q is not None:
         m = q.merge(pop, on="cod_ibge7")
