@@ -57,4 +57,6 @@ export const THERMO_COLORS: Record<string, string> = {
 export const SOURCE_LABEL: Record<string, string> = {
   ibge_censo2022: "IBGE, Censo 2022", snis: "SNIS (Ministério das Cidades)", datasus_sih: "DATASUS, SIH/SUS",
   ana_atlas_esgotos: "ANA, Atlas Esgotos", derivado: "Cálculo da plataforma", sudene_semiarido: "Sudene",
+  datasus_sim: "DATASUS, SIM", sisagua: "Ministério da Saúde, SISAGUA", s2id: "MIDR, S2ID", monitor_secas: "ANA, Monitor de Secas",
+  censo_escolar: "INEP, Censo Escolar", siconfi: "Tesouro Nacional, SICONFI",
 };

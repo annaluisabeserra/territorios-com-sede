@@ -46,6 +46,9 @@ const rows = [
   ["censo_agua_rede_pct", "censo_agua"], ["censo_esgoto_adequado_pct", "censo_esgoto"], ["censo_lixo_coletado_pct", "censo_lixo"],
   ["snis_agua_pct", "snis"], ["snis_esgoto_pct", "snis"], ["snis_esgoto_tratado_pct", "snis"], ["snis_tratamento_pct", "snis"], ["snis_perdas_pct", "snis"],
   ["snis_consumo_lhabdia", "snis"], ["drsai_taxa_10mil", "sih_drsai"], ["drsai_custo_per_capita", "sih_drsai"],
+  ["obitos_drsai_100mil", "sim_drsai"], ["sisagua_pct_fora_padrao", "sisagua"], ["sisagua_ecoli_pct_fora", "sisagua"],
+  ["escolas_sem_agua_potavel_pct", "censo_escolar"], ["escolas_sem_banheiro_pct", "censo_escolar"], ["escolas_sem_esgoto_pct", "censo_escolar"],
+  ["seca_meses_12m", "monitor_secas"], ["decretos_seca_5a", "s2id"], ["decretos_chuva_5a", "s2id"], ["despesa_saneamento_pc", "siconfi"],
 ] as const;
 const nbVals = f.neighbors.map((n) => ({ ...n, m: R.municipios.find((x) => x.cod === n.cod)! }));
 const h = f.health;
@@ -165,7 +168,13 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <div class="card stat"><p class="n">{fmtBRLShort(h.valor)}</p><p>pagos pelo SUS por ano nessas internações</p></div>
           <div class="card stat"><p class="n">{fmtNumber(h.taxa_10mil, 1)}</p><p>internações por 10 mil habitantes (mediana {f.uf}: {fmtNumber(stats.drsai_taxa_10mil?.median_uf, 1)})</p></div>
         </div>
-      ) : (
+      ) : null}
+      {src.sim_drsai && src.sim_drsai.status !== "unavailable" ? (
+        <p class="text">{f.ind.obitos_drsai_anual != null
+          ? <><strong>{fmtNumber(f.ind.obitos_drsai_anual, 1)} mortes por ano</strong> de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS).</>
+          : <>Menos de 5 mortes por ano de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS). Números tão pequenos não são detalhados, para proteger a privacidade das famílias.</>}</p>
+      ) : null}
+      {h ? null : (
         <div class="card pending">
           <p><strong>Os dados de internações ainda não foram processados nesta versão.</strong></p>
           <p class="small">Eles vêm do sistema de internações do SUS (SIH, DATASUS) e entram na nossa atualização mensal. Quando estiverem disponíveis, esta seção mostrará quantas pessoas são internadas por ano por doenças como diarreia, hepatite A e leptospirose, quanto isso custa ao SUS e quanto o município economizaria com saneamento.</p>

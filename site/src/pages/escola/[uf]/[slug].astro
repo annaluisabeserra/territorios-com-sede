@@ -42,6 +42,15 @@ const ritmo: Record<string, string> = { atingida: "já chegou lá", no_ritmo: "e
       <p>Uma lei de 2020 (o Marco Legal do Saneamento) diz que, até 2033, 99 em cada 100 brasileiros devem ter água potável e 90 em cada 100 devem ter esgoto coletado e tratado.</p>
       <p>Na água, {f.nome} <strong>{ritmo[ta.status]}</strong>. No esgoto, <strong>{ritmo[te.status]}</strong>.</p>
     </section>
+    {f.ind.escolas_publicas != null && f.ind.escolas_sem_agua_potavel_pct != null && (
+      <section class="box">
+        <h2><span aria-hidden="true">🏫</span> E nas escolas?</h2>
+        <p>{f.nome} tem <strong>{fmtNumber(f.ind.escolas_publicas)} escolas públicas</strong> funcionando.{f.ind.escolas_sem_agua_potavel_pct > 0
+          ? <> Em <strong>{fmtNumber(f.ind.escolas_sem_agua_potavel_pct, 0)} de cada 100</strong>, não há água potável, e {fmtNumber(f.ind.escolas_sem_agua_potavel_matriculas)} estudantes estudam nessas escolas.</>
+          : <> Todas declararam ter água potável.</>}{f.ind.escolas_sem_banheiro_pct != null && f.ind.escolas_sem_banheiro_pct > 0 && <> Em {fmtNumber(f.ind.escolas_sem_banheiro_pct, 0)} de cada 100, não há banheiro.</>}</p>
+        <p class="source">Fonte: Censo Escolar (INEP), informação de cada escola.</p>
+      </section>
+    )}
     <section class="box">
       <h2><span aria-hidden="true">🩺</span> Por que isso importa?</h2>
       <p>Sem água limpa e sem esgoto tratado, doenças como diarreia, hepatite A, verminoses e leptospirose se espalham. Crianças ficam doentes e faltam à escola, adultos faltam ao trabalho, e o SUS gasta com internações que poderiam ser evitadas.</p>

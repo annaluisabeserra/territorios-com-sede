@@ -197,16 +197,18 @@ censo_indigenas:
   urls: []
 
 sisagua:
-  name: Ministério da Saúde — SISAGUA (qualidade da água para consumo humano)
-  official_reference: "OpenDataSUS / dados.gov.br (conjuntos 'SISAGUA - Controle' e 'Vigilância'); arquivos grandes por ano"
-  unavailable_reason: "sem acesso aos domínios do Ministério da Saúde no ambiente de construção e sem espelho público; módulo de leitura a implementar com a fonte em mãos"
-  urls: []
+  name: Ministério da Saúde — SISAGUA, controle mensal de parâmetros básicos
+  license: Dados públicos Ministério da Saúde
+  official_reference: "https://opendatasus.saude.gov.br/dataset/sisagua-controle-mensal-parametros-basicos"
+  ckan_api: "https://opendatasus.saude.gov.br"
+  ckan_package: sisagua-controle-mensal-parametros-basicos
 
 s2id:
-  name: MIDR — S2ID (decretos de situação de emergência e calamidade)
-  official_reference: "Sistema Integrado de Informações sobre Desastres (S2ID) e dados abertos do MIDR"
-  unavailable_reason: "sem acesso aos domínios gov.br no ambiente de construção e sem espelho público verificado"
-  urls: []
+  name: MIDR — S2ID, reconhecimentos federais de situação de emergência e calamidade
+  license: Dados públicos MIDR
+  official_reference: "https://dadosabertos.mdr.gov.br/dataset/s2id_sedec"
+  ckan_api: "https://dadosabertos.mdr.gov.br"
+  ckan_package: s2id_sedec
 
 cadunico:
   name: MDS — CadÚnico (dados agregados por município)
@@ -215,7 +217,25 @@ cadunico:
   urls: []
 
 siconfi:
-  name: Tesouro Nacional — SICONFI (despesa municipal com saneamento)
-  official_reference: "API de dados abertos do SICONFI (apidatalake.tesouro.gov.br)"
-  unavailable_reason: "domínio do Tesouro bloqueado no ambiente de construção; espelho público só em nível de UF"
-  urls: []
+  name: Tesouro Nacional — SICONFI, despesa municipal na função Saneamento (DCA Anexo I-E)
+  license: Dados públicos Tesouro Nacional
+  official_reference: "https://apidatalake.tesouro.gov.br/docs/siconfi/"
+  api: "https://apidatalake.tesouro.gov.br/ords/siconfi/tt"
+  pause_s: 0.3
+
+datasus_sim:
+  name: DATASUS — SIM, declarações de óbito por residência
+  license: Dados públicos Ministério da Saúde
+  url_template: "ftp://ftp.datasus.gov.br/dissemin/publicos/SIM/CID10/DORES/DO{uf}{yyyy}.dbc"
+
+monitor_secas:
+  name: ANA — Monitor de Secas do Brasil (mapas mensais)
+  license: Dados públicos ANA
+  official_reference: "https://monitordesecas.ana.gov.br/dados-sig"
+  page_template: "https://monitordesecas.ana.gov.br/dados-sig?ano={ano}"
+
+censo_escolar:
+  name: INEP — Censo Escolar, microdados da educação básica (escolas)
+  license: Dados públicos INEP
+  official_reference: "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/censo-escolar"
+  url_template: "https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_{ano}.zip"

@@ -9,7 +9,7 @@ const c = impacto.camadas;
 const t = impacto.total;
 const brl = (lo: number | null, hi: number | null) =>
   lo === null ? "sem dado" : hi === null ? `pelo menos ${fmtBRLShort(lo)}` : Math.abs(hi - lo) < 1 ? fmtBRLShort(lo) : `${fmtBRLShort(lo)} a ${fmtBRLShort(hi)}`;
-const order = ["saude_sus", "trabalho", "agua_perdida", "escola"] as const;
+const order = ["saude_sus", "trabalho", "vidas", "agua_perdida", "escola"] as const;
 const LABEL_TIPO: Record<string, string> = { observado: "valor medido", estimado: "estimativa", indicador: "não convertido em dinheiro" };
 ---
 <div class="impacto">

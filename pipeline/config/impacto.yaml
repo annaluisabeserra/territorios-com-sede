@@ -13,6 +13,18 @@ camadas:
     premissa: >-
       Cada dia de internação vale um dia da renda domiciliar per capita do município (Censo 2022). Para
       crianças, conta como o dia de um adulto acompanhante. Mesma regra da calculadora.
+  vidas:
+    label: Renda futura perdida com mortes evitáveis
+    pergunta: Quanto as famílias deixam de receber com as mortes por doenças ligadas ao saneamento
+    tipo: estimado
+    premissa: >-
+      Cada óbito (SIM, causa básica no núcleo conservador de doenças ligadas ao saneamento) conta os anos que a
+      pessoa ainda trabalharia, dos 15 aos 65 anos, valorados pela renda domiciliar per capita do município e
+      trazidos a valor presente com a taxa social de desconto de 8,5% ao ano. É a abordagem de capital humano,
+      a mais conservadora: não atribui valor à vida em si. Município com menos de 5 óbitos por ano não é
+      estimado, para proteger a privacidade.
+    idade_inicio: 15
+    idade_fim: 65
   escola:
     label: Dias de aula perdidos
     pergunta: Quantos dias de aula crianças e adolescentes de 6 a 17 anos passam internados

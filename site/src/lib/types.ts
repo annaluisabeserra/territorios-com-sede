@@ -76,8 +76,8 @@ export interface ImpactoCamada {
   baixo: Num; alto: Num; unidade: "brl" | "dias"; referencia: string | null; fonte: string; volume_m3?: number;
 }
 export interface Impacto {
-  camadas: Record<"saude_sus" | "trabalho" | "escola" | "agua_perdida", ImpactoCamada>;
-  total: { baixo: Num; alto: Num; por_pessoa_baixo: Num; por_pessoa_alto: Num; inclui: string[]; faltando: ("saude_sus" | "trabalho" | "agua_perdida")[]; alto_parcial: string[] };
+  camadas: Record<"saude_sus" | "trabalho" | "vidas" | "escola" | "agua_perdida", ImpactoCamada>;
+  total: { baixo: Num; alto: Num; por_pessoa_baixo: Num; por_pessoa_alto: Num; inclui: string[]; faltando: ("saude_sus" | "trabalho" | "vidas" | "agua_perdida")[]; alto_parcial: string[] };
   price_base: Num;
 }
 

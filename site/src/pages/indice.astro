@@ -39,7 +39,7 @@ const list = ufs();
     {sens?.status === "ok" ? (
       <p class="text">Variando cada peso em ±10 pontos percentuais, o top 20 mantém em média {fmtNumber(sens.mean_overlap, 1)} dos 20 municípios (mínimo de {sens.min_overlap}).</p>
     ) : (
-      <p class="text">A análise de sensibilidade (quanto o top 20 muda variando cada peso em ±10 pontos) é publicada quando o índice pode ser calculado. Nesta versão, faltam dados de {R.index.dims_missing.map((d) => dims[d].label.toLowerCase()).join(", ")}.</p>
+      <p class="text">A análise de sensibilidade (quanto o top 20 muda variando cada peso em ±10 pontos) é publicada quando o índice pode ser calculado.{R.index.dims_missing.length > 0 && ` Nesta versão, faltam dados de ${R.index.dims_missing.map((d) => dims[d].label.toLowerCase()).join(", ")}.`}</p>
     )}
     <p class="small"><a href="/metodologia#indice">Como o índice é calculado</a></p>
   </section>
@@ -66,7 +66,7 @@ const list = ufs();
     const ranked = R.municipios.filter((m) => pos[m.cod] !== null).sort((a, b) => (pos[a.cod]! - pos[b.cod]!));
     const thead = $("rank").querySelector("thead")!, tbody = $("rank").querySelector("tbody")!;
     if (!ranked.length) {
-      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.sigla === "BA" ? "a Bahia" : R.uf.sigla === "CE" ? "o Ceará" : R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes ainda indisponíveis (internações do SUS, decretos de emergência e qualidade da água). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
+      $("state").innerHTML = `<p><strong>O índice ainda não pode ser calculado para ${R.uf.sigla === "BA" ? "a Bahia" : R.uf.sigla === "CE" ? "o Ceará" : R.uf.nome}.</strong></p><p class="small">Há dados para ${R.index.dims_available.length} de 5 dimensões (${R.index.dims_available.map((d) => R.index.dimensions[d].label).join(", ")}). Faltam ${R.index.dims_missing.map((d) => R.index.dimensions[d].label).join(", ")}, que dependem de fontes que ainda não puderam ser lidas nesta atualização (veja o <a href="/metodologia#fontes">estado das fontes</a>). Preferimos não publicar um ranking incompleto que poderia levar a decisões erradas.</p><p class="small">Enquanto isso, veja as dimensões disponíveis de cada município na ficha ou no <a href="/mapa">mapa</a>.</p>`;
       thead.innerHTML = ""; tbody.innerHTML = ""; $("rank-wrap").hidden = true; return;
     }
     $("state").innerHTML = `<p>${ranked.length} municípios ranqueados.</p>`;

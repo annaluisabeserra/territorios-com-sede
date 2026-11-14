@@ -76,6 +76,34 @@ def water_losses(snis: pd.DataFrame, deflator: dict[int, float], outlier_mult: f
     ]
 
 
+def lives_value(
+    ages: list[tuple[float | None, float]], daily_income: float | None, rate: float, start: int, end: int
+) -> float | None:
+    """Valor presente da renda dos anos produtivos perdidos (capital humano), somado sobre os óbitos médios anuais.
+
+    `ages`: pares (idade, óbitos por ano). Idade desconhecida não entra. Um óbito aos `a` anos perde os anos
+    t = max(0, start − a) … end − a − 1 contados a partir de hoje, descontados por (1 + rate)^t.
+    """
+    inc = _num(daily_income)
+    if inc is None or inc < 0 or not ages:
+        return None
+    annual = inc * 365.0
+    total = 0.0
+    for age, n in ages:
+        if age is None or n <= 0:
+            continue
+        a = int(age)
+        if a >= end:
+            continue
+        pv, f = 0.0, 1.0
+        for t in range(0, end - a):
+            if t >= max(0, start - a):
+                pv += f
+            f /= 1.0 + rate
+        total += n * pv * annual
+    return total
+
+
 def account(
     hospital_cost: float | None,
     hospital_days: float | None,
@@ -86,6 +114,8 @@ def account(
     cfg: dict,
     period: str | None,
     price_base: int | None,
+    lives: float | None = None,
+    lives_ref: str | None = None,
 ) -> dict:
     cam = cfg["camadas"]
     b = Baseline(_num(hospital_cost), _num(hospital_days), _num(school_days), _num(daily_income))
@@ -110,6 +140,7 @@ def account(
     h, pr = comp.get("hospital"), comp.get("productivity")
     layer("saude_sus", h, h, "brl", period, "DATASUS, SIH/SUS")
     layer("trabalho", pr, pr, "brl", period, "DATASUS, SIH/SUS; IBGE, Censo 2022 (renda)")
+    layer("vidas", lives, lives, "brl", lives_ref, "DATASUS, SIM; IBGE, Censo 2022 (renda)")
     layer("escola", b.school_days, b.school_days, "dias", period, "DATASUS, SIH/SUS")
     w = water or {}
     layer(

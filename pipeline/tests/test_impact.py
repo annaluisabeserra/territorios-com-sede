@@ -69,7 +69,7 @@ def test_deflator_applies_to_money_not_volume():
 def test_account_never_turns_missing_into_zero():
     acc = impact.account(None, None, None, None, None, 1000, CFG, None, 2023)
     assert acc["total"]["baixo"] is None
-    assert set(acc["total"]["faltando"]) == {"saude_sus", "trabalho", "agua_perdida"}
+    assert set(acc["total"]["faltando"]) == {"saude_sus", "trabalho", "agua_perdida", "vidas"}
     assert all(c["baixo"] is None for c in acc["camadas"].values())
 
 

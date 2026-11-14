@@ -1,0 +1,138 @@
+---
+// Consulta SQL no navegador (DuckDB-WASM) sobre os arquivos Parquet abertos. Nada é enviado a servidor nosso:
+// o motor é baixado do jsDelivr só quando a pessoa clica em "Ativar".
+import Base from "../../layouts/Base.astro";
+import { ufs } from "../../lib/data";
+
+const list = ufs();
+const tables = list.flatMap((u) => [
+  { name: `${u.slug}_municipios`, file: `/data/${u.slug}/dados/${u.slug}_municipios.csv`, desc: `Uma linha por município ${u.slug === "ba" ? "da Bahia" : u.slug === "ce" ? "do Ceará" : `de ${u.name}`}, com todos os indicadores` },
+  { name: `${u.slug}_series_snis`, file: `/data/${u.slug}/dados/${u.slug}_series_snis.csv`, desc: `Série histórica SNIS/SINISA por município, indicador e ano, em formato longo (colunas cod_ibge7, indicador, ano, valor) (${u.name})` },
+]);
+const first = list[0].slug;
+const examples = [
+  { t: "Os 10 municípios com menos esgoto coletado e tratado", q: `SELECT nome, populacao, snis_esgoto_tratado_pct\nFROM ${first}_municipios\nWHERE snis_esgoto_tratado_pct IS NOT NULL\nORDER BY snis_esgoto_tratado_pct\nLIMIT 10;` },
+  { t: "Média de atendimento de água por região intermediária", q: `SELECT regiao_intermediaria, COUNT(*) AS municipios,\n       ROUND(AVG(snis_agua_pct), 1) AS agua_media\nFROM ${first}_municipios\nGROUP BY 1 ORDER BY 3;` },
+  { t: "Evolução do esgoto em um município", q: `SELECT ano, indicador, valor\nFROM ${first}_series_snis\nWHERE cod_ibge7 = '${list[0].slug === "ba" ? "2927408" : "2304400"}'\n  AND indicador IN ('snis_esgoto_pct', 'snis_esgoto_tratado_pct')\n  AND valor IS NOT NULL\nORDER BY ano, indicador;` },
+  { t: "Ver as colunas de uma tabela", q: `DESCRIBE ${first}_municipios;` },
+];
+---
+<Base title="Consulta SQL" description="Consulte os dados abertos da plataforma com SQL direto no navegador, sem instalar nada.">
+  <section class="wrap section">
+    <p class="eyebrow">Dados abertos</p>
+    <h1>Pergunte aos dados em SQL</h1>
+    <p class="text">Para pesquisadores, jornalistas e equipes técnicas: escreva uma consulta e veja o resultado aqui mesmo. O banco de dados (DuckDB) roda dentro do seu navegador e lê os mesmos arquivos da página <a href="/dados">Dados abertos</a>. As consultas não saem do seu computador.</p>
+    <details class="card flat">
+      <summary><strong>Tabelas disponíveis</strong></summary>
+      <ul class="small">{tables.map((t) => <li><code>{t.name}</code>: {t.desc}. <a href={t.file} download>baixar</a></li>)}</ul>
+      <p class="xsmall muted">O significado de cada coluna está no <a href="/data/dicionario_de_dados.csv" download>dicionário de dados</a>. Valores ausentes são NULL, nunca zero.</p>
+    </details>
+
+    <div id="gate" class="card">
+      <p>Ao ativar, o navegador baixa o DuckDB (cerca de 30 MB, uma vez) do serviço público jsDelivr.</p>
+      <button type="button" class="btn" id="activate">Ativar a consulta SQL</button>
+    </div>
+
+    <form id="sqlform" hidden onsubmit="return false">
+      <div class="field">
+        <label for="q">Consulta</label>
+        <textarea id="q" rows="8" spellcheck="false">{examples[0].q}</textarea>
+      </div>
+      <div class="row">
+        <button type="submit" class="btn" id="run">Executar</button>
+        <label for="ex" class="visually-hidden">Exemplos</label>
+        <select id="ex">{examples.map((e, i) => <option value={i}>{e.t}</option>)}</select>
+        <button type="button" class="btn secondary" id="csv" disabled>Baixar resultado (CSV)</button>
+      </div>
+    </form>
+    <p id="status" class="small" aria-live="polite"></p>
+    <div class="table-scroll" id="out-wrap" hidden tabindex="0" role="region" aria-label="Resultado da consulta"><table id="out"><thead></thead><tbody></tbody></table></div>
+  </section>
+  <script type="application/json" id="cfg" set:html={JSON.stringify({ tables, examples })} />
+</Base>
+<script>
+  const DUCKDB = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm";
+  const MAX_ROWS = 1000;
+  const cfg = JSON.parse(document.getElementById("cfg")!.textContent!);
+  const $ = (id: string) => document.getElementById(id)!;
+  const status = (t: string) => ($("status").textContent = t);
+  let conn: any = null;
+  let lastRows: Record<string, unknown>[] = [];
+  let lastCols: string[] = [];
+
+  const esc = (v: unknown) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  const show = (v: unknown) => (v === null || v === undefined ? "NULL" : typeof v === "bigint" ? v.toLocaleString("pt-BR") : typeof v === "number" ? v.toLocaleString("pt-BR", { maximumFractionDigits: 4 }) : String(v));
+
+  async function activate() {
+    ($("activate") as HTMLButtonElement).disabled = true;
+    status("Baixando o DuckDB…");
+    try {
+      const duckdb: any = await import(/* @vite-ignore */ DUCKDB);
+      const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+      const workerUrl = URL.createObjectURL(new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" }));
+      const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING), new Worker(workerUrl));
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      URL.revokeObjectURL(workerUrl);
+      conn = await db.connect();
+      // Nada de baixar extensões de outros servidores
+      await conn.query("SET autoinstall_known_extensions = false; SET autoload_known_extensions = false;");
+      for (const t of cfg.tables) {
+        // CSV (leitor nativo do DuckDB): o Parquet exigiria baixar uma extensão de outro servidor.
+        const res = await fetch(t.file);
+        if (!res.ok) throw new Error(`não foi possível ler ${t.file}`);
+        await db.registerFileBuffer(`${t.name}.csv`, new Uint8Array(await res.arrayBuffer()));
+        await conn.query(`CREATE TABLE ${t.name} AS SELECT * FROM read_csv('${t.name}.csv', header = true, types = {'cod_ibge7': 'VARCHAR'})`);
+      }
+      $("gate").hidden = true;
+      $("sqlform").hidden = false;
+      status(`Pronto. ${cfg.tables.length} tabelas carregadas.`);
+      ($("q") as HTMLTextAreaElement).focus();
+    } catch (e) {
+      status(`Não foi possível ativar: ${(e as Error).message}`);
+      ($("activate") as HTMLButtonElement).disabled = false;
+    }
+  }
+
+  async function run() {
+    if (!conn) return;
+    const q = ($("q") as HTMLTextAreaElement).value;
+    status("Executando…");
+    const t0 = performance.now();
+    try {
+      const res = await conn.query(q);
+      lastCols = res.schema.fields.map((f: any) => f.name);
+      lastRows = res.toArray().map((r: any) => r.toJSON());
+      const shown = lastRows.slice(0, MAX_ROWS);
+      $("out").querySelector("thead")!.innerHTML = `<tr>${lastCols.map((c) => `<th scope="col">${esc(c)}</th>`).join("")}</tr>`;
+      $("out").querySelector("tbody")!.innerHTML = shown.map((r) => `<tr>${lastCols.map((c) => `<td>${esc(show(r[c]))}</td>`).join("")}</tr>`).join("");
+      $("out-wrap").hidden = false;
+      ($("csv") as HTMLButtonElement).disabled = lastRows.length === 0;
+      status(`${lastRows.length.toLocaleString("pt-BR")} linha(s) em ${Math.round(performance.now() - t0)} ms${lastRows.length > MAX_ROWS ? `; mostrando as primeiras ${MAX_ROWS} (o CSV traz todas)` : ""}.`);
+    } catch (e) {
+      status(`Erro na consulta: ${(e as Error).message}`);
+    }
+  }
+
+  function downloadCsv() {
+    const cell = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : typeof v === "bigint" ? v.toString() : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [lastCols.join(","), ...lastRows.map((r) => lastCols.map((c) => cell(r[c])).join(","))].join("\n");
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })), download: "consulta.csv" });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $("activate").addEventListener("click", activate);
+  $("sqlform").addEventListener("submit", run);
+  $("csv").addEventListener("click", downloadCsv);
+  $("ex").addEventListener("change", (e) => (($("q") as HTMLTextAreaElement).value = cfg.examples[Number((e.target as HTMLSelectElement).value)].q));
+  $("q").addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter" && ((e as KeyboardEvent).ctrlKey || (e as KeyboardEvent).metaKey)) run(); });
+</script>
+<style>
+  textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm); padding: var(--s-3); border: 1px solid var(--c-line, #c9c4ba); border-radius: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; margin-top: var(--s-3); }
+  #out td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  details { margin: var(--s-4) 0; }
+</style>

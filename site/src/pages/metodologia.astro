@@ -68,9 +68,10 @@ const byGroup = Object.entries(IND).reduce((acc, [k, d]) => { (acc[d.group] ??= 
         <li><strong>Gasto do SUS com internações</strong> (valor medido): média anual paga pelo SIH/SUS por doenças ligadas ao saneamento, corrigida pelo IPCA.</li>
         <li><strong>Renda perdida com internações</strong> (estimativa): dias de internação × renda domiciliar per capita diária do município (Censo 2022). Mesma regra da calculadora.</li>
         <li><strong>Água tratada perdida</strong> (estimativa em faixa): volume perdido = produzido + importado − consumido − volume de serviço (numerador do índice de perdas IN049 do SNIS; o volume consumido já inclui a água exportada). O volume calculado precisa reproduzir o IN049 declarado com folga de 2 pontos, senão fica sem dado. Cenário baixo: energia e produtos químicos por m³ produzido. Cenário alto: despesa de exploração por m³ faturado (IN026). Custos por m³ acima de 10 vezes a mediana do estado são tratados como erro de declaração.</li>
+        <li><strong>Renda futura perdida com mortes evitáveis</strong> (estimativa): para cada óbito por doença ligada ao saneamento (SIM), os anos que a pessoa ainda trabalharia, dos 15 aos 65, valorados pela renda per capita do município e trazidos a valor presente a 8,5% ao ano. É a abordagem de capital humano: não atribui valor à vida em si, só à renda que deixa de existir. Municípios com menos de 5 óbitos por ano não são estimados.</li>
         <li><strong>Dias de aula perdidos</strong> (indicador): dias de internação de 6 a 17 anos. Não é convertido em dinheiro.</li>
       </ul>
-      <p>O total soma só as camadas com dado e diz quais faltam. Ainda não entram: óbitos (depende do SIM), atendimentos ambulatoriais e efeitos ambientais, que exigem coeficientes revisados por especialistas.</p>
+      <p>O total soma só as camadas com dado e diz quais faltam. Ainda não entram: atendimentos ambulatoriais e efeitos ambientais, que exigem coeficientes revisados por especialistas.</p>
     </div>
 
     <h2 id="drsai">Doenças relacionadas ao saneamento (DRSAI)</h2>

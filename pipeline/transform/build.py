@@ -194,6 +194,39 @@ def health_tables(inp: Inputs, pop: pd.Series) -> tuple[pd.DataFrame | None, dic
     return out, info
 
 
+def sim_table(inp: Inputs) -> tuple[pd.DataFrame | None, dict]:
+    """Óbitos por DRSAI (núcleo conservador, causa básica): média anual, com supressão de contagens pequenas.
+
+    Também devolve, por município, a distribuição média anual de idades, usada na camada "vidas" da conta de
+    impacto. Município com média abaixo de SMALL_CELL fica sem valor e sem distribuição (ADR-011).
+    """
+    sim = inp.get("sim_drsai")
+    if sim is None or sim.empty:
+        return None, {}
+    from pipeline.transform.cid import core_groups
+
+    years = sorted(int(y) for y in sim["year"].unique())
+    core = sim[sim["group"].isin(core_groups())]
+    avg = core.groupby("cod_ibge7")["obitos"].sum() / len(years)
+    small = avg < SMALL_CELL
+    out = pd.DataFrame({"obitos_drsai_anual": avg.where(~small)})
+    ages = (
+        core[core["cod_ibge7"].isin(avg.index[~small])]
+        .groupby(["cod_ibge7", "age"], dropna=False)["obitos"]
+        .sum()
+        .div(len(years))
+    )
+    info = {
+        "years": years,
+        "ages": {
+            c: [(None if pd.isna(a) else float(a), float(n)) for (_, a), n in g.items()]
+            for c, g in ages.groupby(level=0)
+        },
+        "suppressed": int(small.sum()),
+    }
+    return out, info
+
+
 # --------------------------------------------------------------------------- tabela de indicadores
 
 
@@ -211,10 +244,32 @@ def indicator_table(inp: Inputs) -> tuple[pd.DataFrame, dict]:
         "ana_atlas": ["ana_coleta_tratamento_pct", "ana_solucao_individual_pct", "ana_sem_atendimento_pct"],
         "censo_renda": ["renda_domiciliar_pc"],
         "censo_indigenas": ["pop_indigena"],
+        "sisagua": ["sisagua_pct_fora_padrao", "sisagua_ecoli_pct_fora", "sisagua_amostras"],
+        "s2id": ["decretos_seca_5a", "decretos_chuva_5a"],
+        "monitor_secas": ["seca_meses_12m", "seca_classe_max_12m"],
+        "censo_escolar": [
+            "escolas_publicas",
+            "escolas_sem_agua_potavel_pct",
+            "escolas_sem_banheiro_pct",
+            "escolas_sem_esgoto_pct",
+            "escolas_sem_agua_potavel_matriculas",
+            "escolas_sem_banheiro_matriculas",
+            "escolas_sem_esgoto_matriculas",
+        ],
+        "siconfi": ["despesa_saneamento", "despesa_saneamento_ano"],
     }.items():
         df = inp.get(name)
         if df is not None:
             base = base.join(df.set_index("cod_ibge7")[[c for c in cols if c in df.columns]])
+    if "despesa_saneamento" in base:
+        base["despesa_saneamento_pc"] = base["despesa_saneamento"] / base["populacao"]
+        ctx["siconfi_ano"] = (
+            int(base["despesa_saneamento_ano"].max()) if base["despesa_saneamento_ano"].notna().any() else None
+        )
+    sim_t, ctx["sim"] = sim_table(inp)
+    if sim_t is not None:
+        base = base.join(sim_t)
+        base["obitos_drsai_100mil"] = base["obitos_drsai_anual"] / base["populacao"] * 100_000
     if "censo_agua_rede_pct" in base:
         base["censo_sem_agua_rede_pct"] = 100 - base["censo_agua_rede_pct"]
     if "censo_esgoto_adequado_pct" in base:
@@ -870,6 +925,18 @@ def build_uf(uf: config.UF) -> None:
                 imp_cfg,
                 sih_period,
                 imp_base,
+                impact.lives_value(
+                    ctx.get("sim", {}).get("ages", {}).get(code, []),
+                    daily_income,
+                    float(calc_cfg["discount_rate"]),
+                    int(imp_cfg["camadas"]["vidas"]["idade_inicio"]),
+                    int(imp_cfg["camadas"]["vidas"]["idade_fim"]),
+                )
+                if code in ctx.get("sim", {}).get("ages", {})
+                else None,
+                f"média {ctx['sim']['years'][0]}–{ctx['sim']['years'][-1]}"
+                if ctx.get("sim", {}).get("years")
+                else None,
             ),
             "calculator": {
                 "baseline": {

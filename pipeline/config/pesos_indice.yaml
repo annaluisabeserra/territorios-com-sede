@@ -36,11 +36,13 @@ dimensions:
     components:
       - { indicator: decretos_seca_5a, direction: higher_is_worse }
       - { indicator: decretos_chuva_5a, direction: higher_is_worse }
+      - { indicator: seca_meses_12m, direction: higher_is_worse }
   qualidade:
     label: Qualidade da água
     weight: 0.10
     components:
       - { indicator: sisagua_pct_fora_padrao, direction: higher_is_worse }
+      - { indicator: sisagua_ecoli_pct_fora, direction: higher_is_worse }
 sensitivity:
   delta_points: 10   # variação de ±10 pontos percentuais em cada peso
   top_n: 20

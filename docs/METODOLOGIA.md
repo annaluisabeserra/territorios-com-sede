@@ -115,6 +115,21 @@ Mostra quanto o território economizaria reduzindo as DRSAI em X%. **Não estima
 - **Paridade:** a mesma conta roda em Python (pipeline) e em TypeScript (site), com igualdade exata verificada em
   204 casos.
 
+## Fontes complementares (ADR-014) {#complementares}
+
+- **Óbitos (SIM/DATASUS):** causa básica da declaração de óbito, por município de residência, grupos de CID do
+  núcleo conservador de DRSAI (os mesmos do SIH), média dos últimos 5 anos consolidados. Abaixo de 5 óbitos por ano
+  o valor não é publicado. A idade alimenta a camada "vidas" da conta de impacto.
+- **Qualidade da água (SISAGUA):** controle mensal do prestador, parâmetros básicos, último ano completo. Mede a
+  água da rede, não a de poços, cisternas ou carros-pipa.
+- **Clima (S2ID e Monitor de Secas):** reconhecimentos federais de emergência por seca/estiagem e por chuvas nos
+  últimos 5 anos completos; meses em seca moderada ou pior nos últimos 12 mapas do Monitor de Secas, pela classe no
+  ponto representativo do município (um ponto garantidamente dentro do polígono municipal).
+- **Escolas (Censo Escolar/INEP):** escolas públicas em atividade sem água potável, sem banheiro ou sem nenhum
+  esgotamento, e matrículas nelas. Autodeclarado pela escola.
+- **Gasto municipal (SICONFI):** despesa liquidada na função 17 (Saneamento), DCA Anexo I-E, por habitante, em R$
+  do exercício. Não inclui investimentos de companhias estaduais nem do governo federal.
+
 ## Índice de prioridade territorial
 
 - Cinco dimensões com pesos padrão: déficit de acesso (30%), carga de saúde (25%), vulnerabilidade social (20%),
