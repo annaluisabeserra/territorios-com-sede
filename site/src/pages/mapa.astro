@@ -171,7 +171,9 @@ const hasData = (id: string) => (id === "prioridade" ? R0.municipios.some((m) =>
     R = r; IND = ind;
     geo = null;
     paint();
-    if (mapReady) await addToMap();
+    // O mapa pode estar carregando (mapReady já verdadeiro, mas `map` ainda não criado): nesse caso, o initMap
+    // desenha o estado escolhido ao terminar. Antes, trocar de estado nesse intervalo dava erro de JavaScript.
+    if (mapReady && map) await addToMap();
   }
 
   async function addToMap() {
@@ -304,12 +306,13 @@ const hasData = (id: string) => (id === "prioridade" ? R0.municipios.some((m) =>
   }
 </script>
 <style>
-  .mapwrap { display: grid; gap: var(--s-4); padding-top: var(--s-5); }
+  /* minmax(0, 1fr): sem isso, a opção mais longa do seletor alargava a coluna e criava rolagem lateral no celular */
+  .mapwrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); padding-top: var(--s-5); }
   @media (min-width: 900px) { .mapwrap { grid-template-columns: 20rem 1fr; } }
-  .side { display: grid; gap: var(--s-3); align-content: start; }
+  .side { display: grid; gap: var(--s-3); align-content: start; min-width: 0; }
   .field { border: 0; padding: 0; margin: 0; display: grid; gap: var(--s-1); }
   .field label, .field legend { font-weight: 700; }
-  select { padding: 0.6rem; border: 1px solid var(--c-ink-muted); border-radius: 8px; min-height: 44px; background: #fff; }
+  select { padding: 0.6rem; border: 1px solid var(--c-ink-muted); border-radius: 8px; min-height: 44px; background: #fff; width: 100%; }
   .check { font-weight: 400 !important; display: flex; gap: var(--s-2); align-items: center; min-height: 32px; }
   .check input { width: 20px; height: 20px; }
   .mapbox { position: relative; }

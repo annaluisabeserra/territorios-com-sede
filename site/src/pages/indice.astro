@@ -58,7 +58,7 @@ const list = ufs();
 </Base>
 <script>
   import { rank, weightedIndex } from "../lib/priority";
-  import { fmtNumber } from "../lib/format";
+  import { emUF, fmtNumber } from "../lib/format";
   import { prioClass } from "../lib/indicators";
   import type { Resumo, ResumoMunicipio } from "../lib/types";
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -103,7 +103,7 @@ const list = ufs();
       $("out-note").textContent = "";
       return;
     }
-    $("state").innerHTML = `<p><strong>${n} municípios ranqueados</strong> em ${esc(uf.nome)}. <a href="/mapa?uf=${uf.slug}&c=prioridade">Ver o ranking no mapa</a></p>${R.index.provisional ? `<p class="small provisorio"><strong>Ranking provisório.</strong> Ainda sem a dimensão ${(R.index.provisional_without ?? []).map((d) => R.index.dimensions[d].label.toLowerCase()).join(" e ")}, que entra quando os dados do SUS forem processados. As posições podem mudar.</p>` : ""}`;
+    $("state").innerHTML = `<p><strong>${n} municípios ranqueados</strong> ${esc(emUF(uf.nome, uf.preposicao))}. <a href="/mapa?uf=${uf.slug}&c=prioridade">Ver o ranking no mapa</a></p>${R.index.provisional ? `<p class="small provisorio"><strong>Ranking provisório.</strong> Ainda sem a dimensão ${(R.index.provisional_without ?? []).map((d) => R.index.dimensions[d].label.toLowerCase()).join(" e ")}, que entra quando os dados do SUS forem processados. As posições podem mudar.</p>` : ""}`;
     $("out-note").textContent = out > 0 ? `${out} município(s) fora do ranking por falta de dados em dimensões obrigatórias. A ficha de cada um explica o que falta.` : "";
     $("filters").hidden = false;
     render();
@@ -132,8 +132,10 @@ const list = ufs();
   load();
 </script>
 <style>
-  .layout { grid-template-columns: 1fr; align-items: start; margin-top: var(--s-5); }
-  @media (min-width: 900px) { .layout { grid-template-columns: 22rem 1fr; } }
+  .layout { grid-template-columns: minmax(0, 1fr); align-items: start; margin-top: var(--s-5); }
+  /* No celular, o ranking vem antes dos controles de peso (quem chega quer ver a lista) */
+  .layout > form { order: 2; }
+  @media (min-width: 900px) { .layout { grid-template-columns: 22rem minmax(0, 1fr); } .layout > form { order: 0; } }
   fieldset { border: 0; padding: 0; margin: var(--s-3) 0; display: grid; gap: var(--s-3); }
   legend { font-weight: 700; margin-bottom: var(--s-2); }
   .field { display: grid; gap: 2px; }

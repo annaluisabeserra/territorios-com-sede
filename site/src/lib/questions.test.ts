@@ -26,3 +26,12 @@ describe("perguntas guiadas", () => {
   });
   it("tem pelo menos 10 perguntas prontas", () => expect(READY.length).toBeGreaterThanOrEqual(10));
 });
+
+describe("fromQuery respeita a ordem padrão", () => {
+  it("sem parâmetro 'o' usa a ordem do padrão; com 'o' usa a do link", async () => {
+    const { fromQuery } = await import("./questions");
+    const d = { mode: "ranking", ind: "snis_agua_pct", region: "todas", filter: "todos", order: "asc", n: 10 } as const;
+    expect(fromQuery(new URLSearchParams(""), d as any).order).toBe("asc");
+    expect(fromQuery(new URLSearchParams("o=desc"), d as any).order).toBe("desc");
+  });
+});

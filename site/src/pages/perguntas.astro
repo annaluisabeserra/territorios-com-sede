@@ -46,6 +46,7 @@ const list = ufs();
   import { answer, fromQuery, toQuery, FILTERS, type Spec } from "../lib/questions";
   import { fmtValue, unitLabel } from "../lib/indicators";
   import { normalize } from "../lib/search";
+  import { emUF } from "../lib/format";
   import { track } from "../lib/learn";
   import type { IndicatorDef, Resumo } from "../lib/types";
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -72,8 +73,8 @@ const list = ufs();
     const res = answer(R.municipios, s);
     const def = IND[s.ind];
     const max = Math.max(...res.rows.map((r) => r.v ?? 0), 1);
-    const where = s.region === "todas" ? R.uf.nome : `região de ${s.region} (${R.uf.sigla})`;
-    const title = `${mode === "ranking" ? `Ranking (${s.n})` : mode === "lista" ? "Lista" : "Comparação"}: ${def?.label ?? s.ind} em ${where}${s.filter !== "todos" ? `, ${FILTERS[s.filter]}` : ""}`;
+    const where = s.region === "todas" ? emUF(R.uf.nome, R.uf.preposicao) : `na região de ${s.region} (${R.uf.sigla})`;
+    const title = `${mode === "ranking" ? `Ranking (${s.n})` : mode === "lista" ? "Lista" : "Comparação"}: ${def?.label ?? s.ind} ${where}${s.filter !== "todos" ? `, ${FILTERS[s.filter]}` : ""}`;
     const src = def?.source === "snis" ? R.sources.snis : def?.source === "ibge_censo2022" ? R.sources.populacao : def?.source === "datasus_sih" ? R.sources.sih_drsai : null;
     if (!res.rows.length) {
       $("answer").innerHTML = `<div class="card"><h2>${title}</h2><p class="nodata">Nenhum município com dado para esta pergunta${res.universe ? ` (${res.universe} sem dado)` : ""}.</p></div>`;

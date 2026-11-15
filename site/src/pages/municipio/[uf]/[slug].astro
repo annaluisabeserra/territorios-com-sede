@@ -26,6 +26,16 @@ const ref = (k: string) => (src[k]?.status === "unavailable" ? null : src[k]);
 const SNIS_CODE: Record<string, string> = { snis_agua_pct: "IN055", snis_esgoto_pct: "IN056", snis_esgoto_tratado_pct: "IN056 × IN016",
   snis_tratamento_pct: "IN046", snis_perdas_pct: "IN049", snis_consumo_lhabdia: "IN022" };
 // Equivalentes no SINISA (a partir do ano de referência 2023), quando o código é conhecido.
+// Fonte dos três números grandes com o ano de cada um (o SINISA pode não trazer um indicador que o SNIS trazia)
+const sysYear = (k: string) => {
+  const y = f.ind_ano[k];
+  if (y == null) return null;
+  return `${(R.sinisa_years ?? []).includes(Number(y)) ? "SINISA" : "SNIS"} ${y}`;
+};
+const heroParts = [["água", sysYear("snis_agua_pct")], ["esgoto coletado e tratado", sysYear("snis_esgoto_tratado_pct")]].filter(([, s]) => s);
+const heroSource = heroParts.length
+  ? `Ministério das Cidades: ${heroParts.map(([n, s]) => `${n}, ${s}`).join("; ")}`
+  : "SNIS/SINISA (Ministério das Cidades)";
 const SINISA_CODE: Record<string, string> = { snis_agua_pct: "IAG0001", snis_esgoto_pct: "IES0001", snis_tratamento_pct: "IES2003" };
 const cellSource = (k: string, s: string) => {
   if (!ref(s)) return "fonte indisponível nesta atualização";
@@ -82,7 +92,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
           <li><span class="kn">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "sem rede" : fmtPct(f.ind.snis_esgoto_tratado_pct)}</span><span class="kl">{f.ind.snis_esgoto_tratado_pct === null && f.esgoto_sem_declaracao ? "nenhum prestador de esgoto declarado" : "com esgoto coletado e tratado"}</span></li>
           <li><span class:list={["kn", THERMO_CLASS[f.thermometer.esgoto.status]]}>{THERMO_LABEL[f.thermometer.esgoto.status]}</span><span class="kl">na meta de esgoto de 2033</span></li>
         </ul>
-        <p class="source">{(R.sinisa_years ?? []).includes(Number(snisYear)) ? "SINISA, sucessor do SNIS" : "SNIS"} (Ministério das Cidades), {snisYear}{src.snis?.url_kind === "mirror" && !(R.sinisa_years ?? []).includes(Number(snisYear)) ? ", cópia pública do dado oficial" : ""}.{(R.sinisa_years ?? []).length > 0 && <> A série junta SNIS (até 2022) e SINISA (desde 2023), que mudou parte da metodologia: compare os anos com cuidado. <a href="/metodologia#sinisa">Entenda</a>.</>}</p>
+        <p class="source">{heroSource}.{(R.sinisa_years ?? []).length > 0 && <> A série junta SNIS (até 2022) e SINISA (desde 2023), que mudou parte da metodologia: compare os anos com cuidado. <a href="/metodologia#sinisa">Entenda</a>.</>}</p>
         <div class="actions no-print">
           <a class="btn" href={calcUrl}>Calcular a economia</a>
           <a class="btn secondary" href={`/escola/${uf}/${slug}`}>Versão para a escola</a>
@@ -102,7 +112,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       <h2>Como está o saneamento</h2>
       <div class="table-scroll card flat" tabindex="0" role="region" aria-label="Indicadores do município">
         <table class="stack">
-          <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana da {f.uf_nome} e do Brasil</caption>
+          <caption class="visually-hidden">Indicadores de {f.nome} comparados com a mediana {deUF(f.uf_nome, f.uf_preposicao)} e do Brasil</caption>
           <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">{f.nome}</th><th scope="col" class="num">Mediana {f.uf}</th><th scope="col" class="num">Mediana Brasil</th><th scope="col">Fonte</th></tr></thead>
           <tbody>
             {rows.filter(([, s]) => ref(s)).map(([k, s]) => {
@@ -172,7 +182,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
       ) : null}
       {src.sim_drsai && src.sim_drsai.status !== "unavailable" ? (
         <p class="text">{f.ind.obitos_drsai_anual != null
-          ? <><strong>{fmtNumber(f.ind.obitos_drsai_anual, 1)} mortes por ano</strong> de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS).</>
+          ? <><strong>{fmtNumber(f.ind.obitos_drsai_anual, Number.isInteger(f.ind.obitos_drsai_anual) ? 0 : 1)} mortes por ano</strong> de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS).</>
           : <>Menos de 5 mortes por ano de moradores de {f.nome} tiveram como causa uma dessas doenças ({src.sim_drsai.reference_period}, SIM/DATASUS). Números tão pequenos não são detalhados, para proteger a privacidade das famílias.</>}</p>
       ) : null}
       {h ? null : (
@@ -304,7 +314,7 @@ const dimLabel: Record<string, string> = Object.fromEntries(Object.entries(R.ind
   .sdw h3 { margin-top: var(--s-2); }
   .tis li { margin-bottom: var(--s-2); }
   .dims { display: grid; gap: var(--s-2); max-width: 40rem; margin: var(--s-4) 0; }
-  .dim { display: grid; grid-template-columns: 11rem 1fr 4.5rem; gap: var(--s-3); align-items: center; }
+  .dim { display: grid; grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; }
   .dbar { height: 12px; background: var(--c-sand-100); border-radius: 999px; overflow: hidden; }
   .dbar div { height: 100%; background: var(--c-alert); }
   .num { text-align: right; }

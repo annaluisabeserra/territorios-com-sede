@@ -55,7 +55,7 @@ export function fromQuery(q: URLSearchParams, d: Spec): Spec {
   const mode = (["ranking", "lista", "comparacao"] as Mode[]).includes(q.get("m") as Mode) ? (q.get("m") as Mode) : d.mode;
   const filter = (Object.keys(FILTERS) as Filter[]).includes(q.get("f") as Filter) ? (q.get("f") as Filter) : d.filter;
   const n = Math.min(100, Math.max(3, Number(q.get("n")) || d.n));
-  return { mode, ind: q.get("i") ?? d.ind, region: q.get("r") ?? d.region, filter, order: q.get("o") === "asc" ? "asc" : "desc", n, compare: q.get("c")?.split(",").filter(Boolean) };
+  return { mode, ind: q.get("i") ?? d.ind, region: q.get("r") ?? d.region, filter, order: q.get("o") === "asc" ? "asc" : q.get("o") === "desc" ? "desc" : d.order, n, compare: q.get("c")?.split(",").filter(Boolean) };
 }
 
 export const READY: { label: string; spec: Partial<Spec> }[] = [

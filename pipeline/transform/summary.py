@@ -100,8 +100,10 @@ def municipal_summary(
 
     if has("drsai_internacoes") and has("drsai_valor_anual"):
         parts.append(
-            f"Em média, {num(ind['drsai_internacoes'])} pessoas por ano são internadas no SUS por doenças ligadas à "
-            f"falta de saneamento, o que custa {brl(ind['drsai_valor_anual'])} por ano ({extra.get('sih_period')})."
+            # "internações", não "pessoas": a mesma pessoa pode ser internada mais de uma vez no ano
+            f"Em média, o SUS registra {num(ind['drsai_internacoes'])} internações por ano de moradores por doenças "
+            f"ligadas à falta de saneamento, o que custa {brl(ind['drsai_valor_anual'])} por ano "
+            f"({extra.get('sih_period')})."
         )
     else:
         parts.append(
